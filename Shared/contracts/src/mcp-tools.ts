@@ -1,0 +1,15 @@
+/**
+ * Nombres oficiales de las herramientas MCP expuestas por apps/mcp-server.
+ */
+
+export const MCP_TOOLS = {
+  FINCAS_LISTAR: "fincas_listar",
+  FINCAS_CREAR: "fincas_crear",
+  CLIMA_PERFIL_FINCA: "clima_perfil_finca",
+  CULTIVOS_LISTAR: "cultivos_listar",
+  CULTIVOS_OBTENER: "cultivos_obtener",
+  ROTACIONES_COMPARAR: "rotaciones_comparar",
+  // @scaffold:mcp-tools
+} as const;
+
+export type McpToolName = (typeof MCP_TOOLS)[keyof typeof MCP_TOOLS];

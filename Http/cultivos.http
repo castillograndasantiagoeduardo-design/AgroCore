@@ -1,0 +1,37 @@
+@baseUrl = http://localhost:8001/api
+@token = PEGA_AQUI_UN_ACCESS_TOKEN_JWT
+
+### Catálogo completo (200, 11 cultivos ordenados por nombre)
+GET {{baseUrl}}/cultivos
+Authorization: Bearer {{token}}
+
+### Aptos a 2.530 m — centro de Duitama (200, primero los "optima")
+GET {{baseUrl}}/cultivos?altitudM=2530
+Authorization: Bearer {{token}}
+
+### Aptos a 3.300 m — zona alta (200: desaparecen maíz, cebolla y trigo)
+GET {{baseUrl}}/cultivos?altitudM=3300
+Authorization: Bearer {{token}}
+
+### Leguminosas que fijan nitrógeno (200)
+GET {{baseUrl}}/cultivos?familia=fabaceas&fijaNitrogeno=true
+Authorization: Bearer {{token}}
+
+### Forrajes que aguantan heladas fuertes (200: avena + vicia)
+GET {{baseUrl}}/cultivos?uso=forraje&toleranciaHeladaMin=alta
+Authorization: Bearer {{token}}
+
+### Ficha de un cultivo (200)
+GET {{baseUrl}}/cultivos/papa
+Authorization: Bearer {{token}}
+
+### Cultivo inexistente (404 CULTIVO_NO_ENCONTRADO)
+GET {{baseUrl}}/cultivos/yuca
+Authorization: Bearer {{token}}
+
+### Filtro inválido (400 VALIDATION_ERROR)
+GET {{baseUrl}}/cultivos?familia=rosaceas
+Authorization: Bearer {{token}}
+
+### Sin token (401 NO_AUTENTICADO)
+GET {{baseUrl}}/cultivos

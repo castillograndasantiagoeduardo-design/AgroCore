@@ -1,0 +1,9 @@
+{
+  "name": "@duitamacrece/api",
+  "version": "0.1.0",
+  "exports": "./main.ts",
+  "tasks": {
+    "dev": "deno run --watch -A --env-file=../../../.env main.ts",
+    "start": "deno run -A --env-file=../../../.env main.ts"
+  }
+}
