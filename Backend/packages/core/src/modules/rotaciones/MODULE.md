@@ -72,9 +72,9 @@ revisar con un agrónomo, las 7 reglas evaluadas y puntajes 0–100.
 
 ## ⚙️ Casos de Uso
 
-| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Permiso | Audita |
-| :--- | :--- | :--- | :--- | :--- |
-| `CompararRotacionesUseCase` | `compararRotaciones` | `IFincaRepository`, `ICultivoRepository`, `IPerfilClimaticoQuery` (lo cumple `ObtenerPerfilClimaticoUseCase`) | `PERMISSIONS.ROTACIONES_COMPARAR` | ❌ (solo lectura) |
+| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Audita |
+| :--- | :--- | :--- | :--- |
+| `CompararRotacionesUseCase` | `compararRotaciones` | `IFincaRepository`, `ICultivoRepository`, `IPerfilClimaticoQuery` (lo cumple `ObtenerPerfilClimaticoUseCase`) | ❌ (solo lectura) |
 
 ---
 
@@ -82,7 +82,7 @@ revisar con un agrónomo, las 7 reglas evaluadas y puntajes 0–100.
 
 ### 1. Contrato — Shared/contracts
 - `Shared/contracts/src/rotaciones.schema.ts` (`CompararRotacionesBodySchema`, `CompararRotacionesSchema`, `ComparacionRotacionesSchema` y sus partes)
-- `permissions.ts` → `ROTACIONES_COMPARAR` · `mcp-tools.ts` → `ROTACIONES_COMPARAR`
+- `mcp-tools.ts` → `ROTACIONES_COMPARAR`
 
 ### 2. Dominio — core/domain
 - `domain/errors/rotacion.errors.ts`
@@ -118,7 +118,6 @@ revisar con un agrónomo, las 7 reglas evaluadas y puntajes 0–100.
 
 ```http
 POST /api/rotaciones/fincas/1/comparar
-Authorization: Bearer <token>
 Content-Type: application/json
 
 { "prioridades": { "suelo": 5, "plagas": 4, "forraje": 1 }, "secuenciaActual": ["papa", "arveja"] }

@@ -10,14 +10,14 @@ export const cultivosController = {
   listar: safeHandler(async (c) => {
     const parsed = ListarCultivosQuerySchema.safeParse(c.req.query());
     if (!parsed.success) return presentValidationError(c, parsed.error);
-    const result = await c.get("container").listarCultivos.execute(parsed.data, c.get("actor"));
+    const result = await c.get("container").listarCultivos.execute(parsed.data, c.get("contexto"));
     return presentResult(c, result);
   }),
 
   obtener: safeHandler(async (c) => {
     const parsed = ObtenerCultivoParamsSchema.safeParse({ clave: c.req.param("clave") });
     if (!parsed.success) return presentValidationError(c, parsed.error);
-    const result = await c.get("container").obtenerCultivo.execute(parsed.data, c.get("actor"));
+    const result = await c.get("container").obtenerCultivo.execute(parsed.data, c.get("contexto"));
     return presentResult(c, result);
   }),
 };

@@ -1,7 +1,7 @@
 /**
- * Herramientas MCP del módulo rotaciones. ToolGateway valida, autoriza, ejecuta y registra.
+ * Herramientas MCP del módulo rotaciones. ToolGateway valida, ejecuta y registra.
  */
-import { CompararRotacionesSchema, MCP_TOOLS, PERMISSIONS } from "@duitamacrece/contracts";
+import { CompararRotacionesSchema, MCP_TOOLS } from "@duitamacrece/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 export function registrarRotacionesTools(gateway: ToolGateway): void {
@@ -16,7 +16,6 @@ export function registrarRotacionesTools(gateway: ToolGateway): void {
       "vacíos de información, riesgos y puntajes. Sugiere y explica: no reemplaza al agrónomo. " +
       "La primera consulta de una finca puede tardar ~45 s por la consulta del clima.",
     schema: CompararRotacionesSchema,
-    permission: PERMISSIONS.ROTACIONES_COMPARAR,
-    execute: (input, container, actor) => container.compararRotaciones.execute(input, actor),
+    execute: (input, container, contexto) => container.compararRotaciones.execute(input, contexto),
   });
 }

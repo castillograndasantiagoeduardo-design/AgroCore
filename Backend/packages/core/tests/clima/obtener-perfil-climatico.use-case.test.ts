@@ -19,6 +19,7 @@ import {
   ObtenerPerfilClimaticoUseCase,
   type RegistroClimaDiario,
   UbicacionFinca,
+  type ContextoSolicitud,
 } from "../../src/index.ts";
 
 // ---------------------------------------------------------------------------
@@ -82,7 +83,7 @@ function finca(id: number, altitudM: number | null): Finca {
 }
 
 const reloj = { hoy: () => new Date("2026-11-12T00:00:00Z") };
-const actor = { usuarioId: 1, rol: "admin", ip: null };
+const actor: ContextoSolicitud = { origen: "script", ip: null };
 
 /** Proveedor IDEAM sin estaciones cerca. */
 const sinEstacion: INormalesClimatologicasProvider = { estacionMasCercana: () => Promise.resolve(Result.ok(null)) };

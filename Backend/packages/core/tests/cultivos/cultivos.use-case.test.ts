@@ -8,6 +8,7 @@ import {
   type ICultivoRepository,
   ListarCultivosUseCase,
   ObtenerCultivoUseCase,
+  type ContextoSolicitud,
 } from "../../src/index.ts";
 
 /** Plantilla válida; cada test cambia solo lo que le interesa. */
@@ -57,7 +58,7 @@ function repo(cultivos: Cultivo[]): ICultivoRepository {
   };
 }
 
-const actor = { usuarioId: 1, rol: "admin", ip: null };
+const actor: ContextoSolicitud = { origen: "script", ip: null };
 const listar = new ListarCultivosUseCase(repo([haba, maiz, papa]));
 
 // ---------------------------------------------------------------------------

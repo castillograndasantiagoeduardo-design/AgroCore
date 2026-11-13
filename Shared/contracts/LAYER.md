@@ -13,7 +13,7 @@ Es el **idioma común** entre el Frontend, la API REST, el servidor MCP y el Cor
 
 - Esquemas de validación de entrada (`Crear<Entidad>Schema`, `Listar<Modulo>QuerySchema`).
 - Tipos inferidos con `z.infer<typeof Schema>` (DTOs).
-- Catálogo oficial de roles (`ROLES`), permisos (`PERMISSIONS`), acciones de auditoría (`AUDIT_ACTIONS`) y nombres de herramientas MCP (`MCP_TOOLS`).
+- Catálogo oficial de acciones de auditoría (`AUDIT_ACTIONS`) y nombres de herramientas MCP (`MCP_TOOLS`).
 
 ---
 
@@ -29,7 +29,7 @@ Es el **idioma común** entre el Frontend, la API REST, el servidor MCP y el Cor
 
 - `contracts` valida la **forma** del dato; `core` valida las **reglas de negocio**. No mezclar.
 - Ningún dato externo entra a un caso de uso sin pasar por un esquema de este paquete (Regla 5).
-- Todo permiso nuevo se agrega en `permissions.ts` y toda acción auditable en `auditoria.catalogo.ts`.
+- Toda acción auditable se agrega en `auditoria.catalogo.ts` (no hay control de acceso: la API es abierta).
 
 ---
 

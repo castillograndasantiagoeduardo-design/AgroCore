@@ -11,7 +11,7 @@ import { Finca, type FincaSnapshot } from "../../domain/entities/finca.entity.ts
 import { FincaCultivoDesconocidoError } from "../../domain/errors/finca.errors.ts";
 import type { IFincaRepository } from "../../domain/repositories/finca.repository.ts";
 import { verificarNombreFincaDisponible } from "../../domain/services/finca.service.ts";
-import type { ContextoActor, IAuditor, IUnitOfWork } from "../ports/index.ts";
+import type { ContextoSolicitud, IAuditor, IUnitOfWork } from "../ports/index.ts";
 
 export class CrearFincaUseCase {
   constructor(
@@ -21,7 +21,7 @@ export class CrearFincaUseCase {
     private readonly cultivos: ICultivoRepository,
   ) {}
 
-  async execute(input: CrearFincaInput, contexto: ContextoActor): Promise<Result<FincaSnapshot, DomainError>> {
+  async execute(input: CrearFincaInput, contexto: ContextoSolicitud): Promise<Result<FincaSnapshot, DomainError>> {
     const creado = Finca.crear(input);
     if (!creado.ok) return creado;
 

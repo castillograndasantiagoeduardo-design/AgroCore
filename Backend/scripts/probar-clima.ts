@@ -4,7 +4,7 @@
  *
  * Uso (desde Backend/):  deno run -A scripts/probar-clima.ts [altitudM] [latitud] [longitud]
  */
-import { Finca, type IFincaRepository, type INormalesClimatologicasProvider, ObtenerPerfilClimaticoUseCase } from "@duitamacrece/core";
+import { type ContextoSolicitud, Finca, type IFincaRepository, type INormalesClimatologicasProvider, ObtenerPerfilClimaticoUseCase } from "@duitamacrece/core";
 import { IdeamNormalesClient, NasaPowerClient, SistemaReloj } from "@duitamacrece/platform";
 import { Result } from "@duitamacrece/shared-kernel";
 
@@ -25,7 +25,7 @@ const repo: IFincaRepository = {
 const nasa = new NasaPowerClient();
 const reloj = new SistemaReloj();
 const sinIdeam: INormalesClimatologicasProvider = { estacionMasCercana: () => Promise.resolve(Result.ok(null)) };
-const actor = { usuarioId: 0, rol: "admin", ip: null };
+const actor: ContextoSolicitud = { origen: "script", ip: null };
 
 const inicio = performance.now();
 const [crudo, calibrado] = [

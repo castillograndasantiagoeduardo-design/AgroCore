@@ -29,7 +29,7 @@ import {
   DISTANCIA_MAX_CALIBRACION_KM,
 } from "../../domain/services/calibracion.service.ts";
 import { ClimaSinDatosError } from "../../domain/errors/clima.errors.ts";
-import type { ContextoActor, IClimaProvider, INormalesClimatologicasProvider, IReloj } from "../ports/index.ts";
+import type { ContextoSolicitud, IClimaProvider, INormalesClimatologicasProvider, IReloj } from "../ports/index.ts";
 
 export const ANIOS_NORMAL_CLIMATOLOGICA = 30;
 
@@ -43,7 +43,7 @@ export class ObtenerPerfilClimaticoUseCase {
     private readonly reloj: IReloj,
   ) {}
 
-  async execute(input: PerfilClimaticoParams, _contexto: ContextoActor): Promise<Result<PerfilClimaticoDto, DomainError>> {
+  async execute(input: PerfilClimaticoParams, _contexto: ContextoSolicitud): Promise<Result<PerfilClimaticoDto, DomainError>> {
     // 1. Finca
     const finca = await this.fincas.buscarPorId(input.fincaId);
     if (!finca) return Result.err(new FincaNoEncontradoError(input.fincaId));

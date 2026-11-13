@@ -10,7 +10,7 @@ Protocolo que la IA debe seguir estrictamente al agregar o modificar funcionalid
 
 ### Paso 1: Contrato (`Shared/contracts`)
 - Crea el esquema Zod de entrada/salida en `src/<modulo>.schema.ts` y expórtalo en `src/index.ts`.
-- Si aplica, agrega el permiso en `permissions.ts` y la acción en `auditoria.catalogo.ts`.
+- Si aplica, agrega la acción en `auditoria.catalogo.ts` y el nombre de la tool en `mcp-tools.ts` (no hay permisos: la API es abierta).
 
 ### Paso 2: Dominio (`Backend/packages/core/.../domain`)
 - Crea o actualiza la Entidad, los Value Objects, los errores de dominio (`DomainError`) y la firma del método en la interfaz `I*Repository`.

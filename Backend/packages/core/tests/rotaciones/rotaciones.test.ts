@@ -28,6 +28,7 @@ import {
   NombreFinca,
   puntajeIngresoReferencia,
   UbicacionFinca,
+  type ContextoSolicitud,
 } from "../../src/index.ts";
 
 // ---------------------------------------------------------------------------
@@ -165,7 +166,7 @@ function clima(p: PerfilClimaticoDto): IPerfilClimaticoQuery {
   return { execute: () => Promise.resolve(Result.ok(p)) };
 }
 
-const actor = { usuarioId: 1, rol: "admin", ip: null };
+const actor: ContextoSolicitud = { origen: "script", ip: null };
 const PRIORIDADES = { agua: 3, suelo: 3, plagas: 3, forraje: 3, ingreso: 3 };
 
 function caso(f: Finca | null = finca(), p: PerfilClimaticoDto = perfil(), cultivos: Cultivo[] = CATALOGO) {

@@ -12,7 +12,7 @@ export class MySqlMcpToolLogger implements IMcpToolLogger {
   async registrar(ejecucion: EjecucionMcpTool): Promise<void> {
     await dbActual(this.db).insert(logsMcpToolsTable).values({
       herramienta: ejecucion.herramienta,
-      usuarioId: ejecucion.usuarioId,
+      origen: ejecucion.origen,
       argumentos: sanitizarDetalles(ejecucion.argumentos),
       exito: ejecucion.exito,
       error: ejecucion.error,

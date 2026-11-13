@@ -4,9 +4,9 @@
  */
 import type { PerfilClimaticoDto, PerfilClimaticoParams } from "@duitamacrece/contracts";
 import type { DomainError, Result } from "@duitamacrece/shared-kernel";
-import type { ContextoActor } from "../../../auditoria/application/ports/auditor.port.ts";
+import type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
 
-export type { ContextoActor } from "../../../auditoria/application/ports/auditor.port.ts";
+export type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
 export type { IFincaRepository } from "../../../fincas/domain/repositories/finca.repository.ts";
 export type { ICultivoRepository } from "../../../cultivos/domain/repositories/cultivo.repository.ts";
 
@@ -16,5 +16,5 @@ export type { ICultivoRepository } from "../../../cultivos/domain/repositories/c
  * se inyecta directamente; en los tests se reemplaza por un perfil fijo.
  */
 export interface IPerfilClimaticoQuery {
-  execute(input: PerfilClimaticoParams, contexto: ContextoActor): Promise<Result<PerfilClimaticoDto, DomainError>>;
+  execute(input: PerfilClimaticoParams, contexto: ContextoSolicitud): Promise<Result<PerfilClimaticoDto, DomainError>>;
 }

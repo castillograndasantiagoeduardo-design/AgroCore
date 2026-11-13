@@ -5,7 +5,7 @@
  * Uso (desde Backend/):  deno run -A scripts/probar-rotaciones.ts [altitudM] [cultivoActual]
  * Por defecto: 2530 y "papa".
  */
-import { CompararRotacionesUseCase, Finca, type IFincaRepository, ObtenerPerfilClimaticoUseCase } from "@duitamacrece/core";
+import { CompararRotacionesUseCase, type ContextoSolicitud, Finca, type IFincaRepository, ObtenerPerfilClimaticoUseCase } from "@duitamacrece/core";
 import { CatalogoCultivosEnMemoria } from "@duitamacrece/database";
 import { IdeamNormalesClient, NasaPowerClient, SistemaReloj } from "@duitamacrece/platform";
 
@@ -22,7 +22,7 @@ const fincas: IFincaRepository = {
   listar: () => Promise.resolve({ items: [finca], total: 1, page: 1, pageSize: 1 }),
   guardar: (f) => Promise.resolve(f),
 };
-const actor = { usuarioId: 0, rol: "admin", ip: null };
+const actor: ContextoSolicitud = { origen: "script", ip: null };
 
 const perfil = new ObtenerPerfilClimaticoUseCase(fincas, new NasaPowerClient(), new IdeamNormalesClient(), new SistemaReloj());
 const caso = new CompararRotacionesUseCase(fincas, new CatalogoCultivosEnMemoria(), perfil);

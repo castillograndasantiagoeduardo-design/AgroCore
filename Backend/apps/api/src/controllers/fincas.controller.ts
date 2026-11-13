@@ -10,7 +10,7 @@ export const fincasController = {
   listar: safeHandler(async (c) => {
     const parsed = ListarFincasQuerySchema.safeParse(c.req.query());
     if (!parsed.success) return presentValidationError(c, parsed.error);
-    const result = await c.get("container").listarFincas.execute(parsed.data, c.get("actor"));
+    const result = await c.get("container").listarFincas.execute(parsed.data, c.get("contexto"));
     return presentResult(c, result);
   }),
 
@@ -18,7 +18,7 @@ export const fincasController = {
     const body = await c.req.json().catch(() => null);
     const parsed = CrearFincaSchema.safeParse(body);
     if (!parsed.success) return presentValidationError(c, parsed.error);
-    const result = await c.get("container").crearFinca.execute(parsed.data, c.get("actor"));
+    const result = await c.get("container").crearFinca.execute(parsed.data, c.get("contexto"));
     return presentResult(c, result, 201);
   }),
 };

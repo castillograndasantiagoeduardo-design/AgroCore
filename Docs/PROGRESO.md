@@ -48,8 +48,8 @@ para comparar **3 estrategias de rotación** (actual + 2 alternativas) con evide
 ## ⏳ Pendiente inmediato (del usuario)
 
 - [ ] **BLOQUEANTE:** aplicar `Docs/migraciones/001_fincas_ubicacion.sql` y después `002_fincas_cultivo_actual_clave.sql` (en ese orden). Verificado el 2026-11-12: `fincas` está vacía y solo tiene `id, nombre, descripcion, activo, creado_en`; sin esto `/api/fincas` y `/api/rotaciones` responden 500.
-- [ ] `.env`: dejar un solo `JWT_SECRET` y usar el usuario `duitama_app` en vez de `root` (cambiar la clave de root).
-- [ ] No hay login todavía. Atajo SOLO de desarrollo: `cd Backend && deno run -A --env-file=../.env scripts/emitir-token.ts --frontend` emite un JWT admin de 8 h (lo imprime para los `.http` y lo guarda en `Frontend/.env.local`, que `http-client.ts` lee fuera de producción). Quitar ambos cuando exista login.
+- [ ] `.env`: usar un usuario de aplicación en vez de `root` (cambiar la clave de root). Ya no hace falta ninguna variable de sesión.
+- [x] Fase 0.5 (2026-11-12): **sin login ni roles**. API y MCP abiertos; auditoría por `origen` (api/mcp/script). Migración `003b_quitar_usuarios.sql`. Si existía `Frontend/.env.local` con un token, bórralo.
 - [ ] Frontend: `npm audit` reporta 1 vulnerabilidad alta en una dependencia (sin revisar). Falta un enlace a `/rotaciones` en el layout del panel y probar con `npm run dev`.
 
 ## 🗺️ Siguientes pasos del plan
@@ -57,7 +57,7 @@ para comparar **3 estrategias de rotación** (actual + 2 alternativas) con evide
 1. ~~Módulo `cultivos`~~ ✅ (paso 3).
 2. ~~Motor `rotaciones`~~ ✅ (pasos 4 y 5). Mejoras pendientes: cultivos que ocupen dos semestres (maíz, tarwi),
    regla de cobertura en pendiente > 25 % (necesita SRTM), revisar pesos con agrónomo.
-3. **Login y emisión de JWT** (SIGUIENTE sugerido: sin él no se puede probar la API ni el Frontend de extremo a extremo).
+3. ~~Login~~: descartado por decisión del usuario (Fase 0.5). Antes de publicar en internet, revisar la exposición de la API.
 4. Altitud y pendiente automáticas con **SRTM** y NDVI (MODIS/HLS) vía **AppEEARS** (cuenta Earthdata ya creada).
 5. Fichas explicativas con IA (solo con datos calculados) y frontend con mapa de Duitama.
 6. Caché persistente del clima en MySQL (la primera consulta tarda ~45 s).
