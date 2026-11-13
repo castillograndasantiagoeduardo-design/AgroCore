@@ -44,7 +44,7 @@ function cifrasSinFuente(x: unknown, ruta = "$"): string[] {
 
 /** Lee Docs/fuentes/ecocrop_registros.tsv (el extracto de FAO ECOCROP con el que se generó el catálogo). */
 function registrosEcocrop(): Map<string, Record<string, string>[]> {
-  const [cab, ...lineas] = Deno.readTextFileSync(new URL("../../../../../Docs/fuentes/ecocrop_registros.tsv", import.meta.url)).split("\n").filter(Boolean);
+  const [cab, ...lineas] = Deno.readTextFileSync(new URL("../../../../../Docs/fuentes/ecocrop_registros.tsv", import.meta.url)).replace(/\r/g, "").split("\n").filter(Boolean);
   const campos = cab.split("\t");
   const m = new Map<string, Record<string, string>[]>();
   for (const l of lineas) {
