@@ -1,3 +1,55 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+/* impresión térmica */
+.ticket-imprimible {
+  width: 48mm;
+  padding: 2mm 0;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.25;
+  color: #000;
+  background: #fff;
+  border: 1px dashed #94a3b8;
+  overflow-wrap: anywhere;
+}
+.ticket-imprimible p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.ticket-imprimible .ticket-titulo {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+}
+.ticket-imprimible .ticket-negrita {
+  font-weight: 700;
+}
+.ticket-imprimible .ticket-centrado {
+  text-align: center;
+}
+.ticket-imprimible hr.ticket-separador {
+  margin: 1mm 0;
+  border: 0;
+  border-top: 1px dashed #000;
+}
+
+@page {
+  size: 58mm auto;
+  margin: 0;
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .ticket-imprimible,
+  .ticket-imprimible * {
+    visibility: visible;
+  }
+  .ticket-imprimible {
+    position: absolute;
+    left: 0;
+    top: 0;
+    border: 0;
+  }
+}

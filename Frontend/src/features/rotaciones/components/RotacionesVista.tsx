@@ -9,9 +9,11 @@ import { fincasApi } from "@/features/fincas/api/fincas.api";
 import type { PaginaFincas } from "@/features/fincas/types/fincas.types";
 import { useComparacionRotaciones } from "../hooks/use-comparacion-rotaciones";
 import { ETIQUETA_PRIORIDAD } from "../types/rotaciones.types";
+import { CalendarioLote } from "@/features/explorar/components/CalendarioLote";
+import { ListaOportunidades } from "@/features/explorar/components/ListaOportunidades";
+import { TablaEstrategias } from "@/features/explorar/components/TablaEstrategias";
+import { TarjetaEstrategiaGlobal } from "@/features/explorar/components/TarjetaEstrategiaGlobal";
 import { ResumenFincaClima } from "./ResumenFincaClima";
-import { TablaComparativa } from "./TablaComparativa";
-import { TarjetaEstrategia } from "./TarjetaEstrategia";
 
 const PRIORIDADES_INICIALES: PrioridadesRotacion = { agua: 3, suelo: 3, plagas: 3, forraje: 3, ingreso: 3 };
 
@@ -107,7 +109,7 @@ export function RotacionesVista() {
       <div>
         <h1 className="text-2xl font-bold">Rotaciones de cultivos</h1>
         <p className="text-sm text-slate-600">
-          Elige una finca y el objetivo prioritario para tu lote. El motor consultará la NASA y el IDEAM para comparar 3 estrategias.
+          Elige una finca y el objetivo prioritario para tu lote. El motor consultará 30 años de clima NASA POWER y el terreno para comparar las estrategias.
         </p>
       </div>
 
@@ -213,13 +215,15 @@ export function RotacionesVista() {
       {comparacion && (
         <div className="space-y-4">
           <ResumenFincaClima comparacion={comparacion} />
-          <TablaComparativa comparacion={comparacion} />
+          <CalendarioLote calendario={comparacion.calendario} />
+          <TablaEstrategias comparacion={comparacion} />
 
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {comparacion.estrategias.map((e) => (
-              <TarjetaEstrategia key={e.id} estrategia={e} mejor={e.id === comparacion.estrategiaMejorPuntuada} />
+              <TarjetaEstrategiaGlobal key={e.id} estrategia={e} mejor={e.id === comparacion.estrategiaMejorPuntuada} />
             ))}
           </div>
+          <ListaOportunidades oportunidades={comparacion.oportunidades} />
 
           {comparacion.advertencias.length > 0 && (
             <div className="rounded border border-amber-300 bg-amber-50 p-3 text-sm">
