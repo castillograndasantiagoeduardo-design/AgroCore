@@ -12,6 +12,14 @@ export const TEMPORADAS = ["lluviosa", "seca"] as const;
 export const TemporadaSchema = z.enum(TEMPORADAS);
 export type Temporada = z.infer<typeof TemporadaSchema>;
 
+/**
+ * Clasificación climática genérica del sitio, DERIVADA del perfil (nadie la escribe a mano).
+ * Ver core/clima/domain/services/clasificacion-climatica.service.ts para la regla.
+ */
+export const CLASIFICACIONES_CLIMATICAS = ["tropical", "subtropical", "templado", "frio", "de_altura"] as const;
+export const ClasificacionClimaticaSchema = z.enum(CLASIFICACIONES_CLIMATICAS);
+export type ClasificacionClimatica = z.infer<typeof ClasificacionClimaticaSchema>;
+
 /** Resumen climático de un mes (promedio de todos los años del periodo). */
 export const ClimaMensualSchema = z.object({
   mes: z.number().int().min(1).max(12),
@@ -58,7 +66,8 @@ export const CalibracionSchema = z.object({
 export type CalibracionDto = z.infer<typeof CalibracionSchema>;
 
 export const PerfilClimaticoSchema = z.object({
-  fincaId: z.number().int(),
+  /** null cuando el perfil se pidió para un punto del mapa sin finca guardada. */
+  fincaId: z.number().int().nullable(),
   latitud: z.number(),
   longitud: z.number(),
   /** Altitud usada para la corrección (la de la finca o, si no se conoce, la de la celda). */
@@ -80,6 +89,7 @@ export const PerfilClimaticoSchema = z.object({
     mesesSecos: z.array(z.number().int()),
     /** Meses con probabilidad de helada ≥ 25 %. */
     mesesRiesgoHelada: z.array(z.number().int()),
+    clasificacionClimatica: ClasificacionClimaticaSchema,
   }),
   advertencias: z.array(z.string()),
 });

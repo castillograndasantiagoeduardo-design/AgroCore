@@ -36,7 +36,7 @@ if (!r.ok) {
 }
 
 const c = r.value;
-console.log(`\nFinca a ${c.finca.altitudReferenciaM} m (${c.finca.zonaAltitudinal}) · cultivo actual: ${c.finca.cultivoActual} · riego: ${c.finca.tieneRiego}`);
+console.log(`\nFinca a ${c.finca.altitudReferenciaM} m (${c.finca.clasificacionClimatica}) · cultivo actual: ${c.finca.cultivoActual} · riego: ${c.finca.tieneRiego}`);
 console.log(`Clima: ${c.clima.fuente} · calibrado: ${c.clima.calibrado} · ${c.clima.lluviaAnualMm} mm/año`);
 console.log("Meses lluviosos:", c.clima.mesesLluviosos, "· meses de helada:", c.clima.mesesRiesgoHelada);
 console.log("Ventanas de siembra:", c.ventanasSiembra.map((v) => `${v.nombreMes}${v.coincideConLluvias ? "" : " (sin lluvias)"}`).join(" y "));

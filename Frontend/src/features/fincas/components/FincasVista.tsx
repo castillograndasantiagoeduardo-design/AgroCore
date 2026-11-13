@@ -2,10 +2,10 @@
 
 /**
  * Vista del módulo fincas: formulario de registro + tabla.
- * (Más adelante el formulario de coordenadas se reemplaza por un clic en el mapa de Duitama.)
+ * La finca puede estar en cualquier lugar del mundo: se marca un punto o se dibuja un área en el mapa.
  */
 import { type FormEvent, useEffect, useState } from "react";
-import type { CultivoDto, ZonaAltitudinal } from "@agrocore/contracts";
+import type { AreaSeleccionadaDto, CultivoDto } from "@agrocore/contracts";
 import { cultivosApi } from "@/features/cultivos/api/cultivos.api";
 import { useFincas } from "../hooks/use-fincas";
 import { SelectorMapa } from "./SelectorMapa";
@@ -15,15 +15,11 @@ const FORM_VACIO = {
   latitud: "",
   longitud: "",
   altitudM: "",
-  vereda: "",
+  localidad: "",
+  region: "",
+  pais: "",
   cultivoActual: "",
   tieneRiego: false,
-};
-
-const ETIQUETA_ZONA: Record<ZonaAltitudinal, string> = {
-  valle: "Valle (< 2.600 m)",
-  ladera: "Ladera (2.600–3.000 m)",
-  alta: "Alta (> 3.000 m)",
 };
 
 /** "" → undefined; "5,83" → 5.83 (acepta coma decimal). */
@@ -39,6 +35,7 @@ function textoOpcional(valor: string): string | undefined {
 export function FincasVista() {
   const { pagina, cargando, error, crear } = useFincas();
   const [form, setForm] = useState(FORM_VACIO);
+  const [area, setArea] = useState<AreaSeleccionadaDto | null>(null);
   const [cultivos, setCultivos] = useState<CultivoDto[]>([]);
 
   useEffect(() => {
@@ -55,9 +52,20 @@ export function FincasVista() {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
-  function onSelectCoordenadas(lat: number, lon: number) {
-    cambiar("latitud", String(lat));
-    cambiar("longitud", String(lon));
+  /** Lo que el usuario marcó o dibujó en el mapa. */
+  function onCambioMapa(nueva: AreaSeleccionadaDto | null) {
+    setArea(nueva && nueva.tipo === "poligono" ? nueva : null);
+    if (!nueva) {
+      setForm((f) => ({ ...f, latitud: "", longitud: "" }));
+    } else if (nueva.tipo === "punto") {
+      setForm((f) => ({ ...f, latitud: String(nueva.latitud), longitud: String(nueva.longitud) }));
+    } else {
+      // Centro del área = promedio de los vértices (sin el de cierre)
+      const anillo = nueva.geojson.coordinates[0].slice(0, -1);
+      const lon = anillo.reduce((s, p) => s + p[0], 0) / anillo.length;
+      const lat = anillo.reduce((s, p) => s + p[1], 0) / anillo.length;
+      setForm((f) => ({ ...f, latitud: lat.toFixed(6), longitud: lon.toFixed(6) }));
+    }
   }
 
   async function onSubmit(e: FormEvent) {
@@ -67,34 +75,45 @@ export function FincasVista() {
       latitud: numeroOpcional(form.latitud) ?? NaN,
       longitud: numeroOpcional(form.longitud) ?? NaN,
       altitudM: numeroOpcional(form.altitudM),
-      vereda: textoOpcional(form.vereda),
+      localidad: textoOpcional(form.localidad),
+      region: textoOpcional(form.region),
+      pais: textoOpcional(form.pais),
+      area: area?.tipo === "poligono" ? area.geojson : undefined,
       cultivoActual: textoOpcional(form.cultivoActual),
       tieneRiego: form.tieneRiego,
     });
-    if (ok) setForm(FORM_VACIO);
+    if (ok) {
+      setForm(FORM_VACIO);
+      setArea(null);
+    }
   }
+
+  const latNum = numeroOpcional(form.latitud);
+  const lonNum = numeroOpcional(form.longitud);
+  const valorMapa: AreaSeleccionadaDto | null =
+    area ??
+    (latNum !== undefined && lonNum !== undefined && Math.abs(latNum) <= 90 && Math.abs(lonNum) <= 180
+      ? { tipo: "punto", latitud: latNum, longitud: lonNum }
+      : null);
 
   const campo = "rounded border border-slate-300 px-3 py-2";
 
   return (
     <section className="space-y-4">
-      <h1 className="text-2xl font-bold">Fincas de Duitama</h1>
+      <h1 className="text-2xl font-bold">Fincas</h1>
 
       <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-base font-semibold text-slate-800">Registrar nueva finca</h2>
-        <SelectorMapa
-          latitud={numeroOpcional(form.latitud)}
-          longitud={numeroOpcional(form.longitud)}
-          onSelectCoordenadas={onSelectCoordenadas}
-          altura="280px"
-        />
+        <h2 className="text-base font-semibold text-slate-800">Registrar nueva finca (en cualquier lugar)</h2>
+        <SelectorMapa valor={valorMapa} onCambio={onCambioMapa} altura="320px" />
 
-        <form onSubmit={onSubmit} className="grid gap-2 sm:grid-cols-2 pt-2">
+        <form onSubmit={onSubmit} className="grid gap-2 pt-2 sm:grid-cols-2">
           <input value={form.nombre} onChange={(e) => cambiar("nombre", e.target.value)} placeholder="Nombre de la finca" className={campo} />
-          <input value={form.vereda} onChange={(e) => cambiar("vereda", e.target.value)} placeholder="Vereda (opcional)" className={campo} />
+          <input value={form.localidad} onChange={(e) => cambiar("localidad", e.target.value)} placeholder="Localidad / vereda (opcional)" className={campo} />
+          <input value={form.region} onChange={(e) => cambiar("region", e.target.value)} placeholder="Región / estado / departamento (opcional)" className={campo} />
+          <input value={form.pais} onChange={(e) => cambiar("pais", e.target.value)} placeholder="País (opcional)" className={campo} />
           <input value={form.latitud} onChange={(e) => cambiar("latitud", e.target.value)} placeholder="Latitud (ej. 5.8269 o clic en mapa)" inputMode="decimal" className={campo} />
           <input value={form.longitud} onChange={(e) => cambiar("longitud", e.target.value)} placeholder="Longitud (ej. -73.0297 o clic en mapa)" inputMode="decimal" className={campo} />
-          <input value={form.altitudM} onChange={(e) => cambiar("altitudM", e.target.value)} placeholder="Altitud en metros (opcional)" inputMode="numeric" className={campo} />
+          <input value={form.altitudM} onChange={(e) => cambiar("altitudM", e.target.value)} placeholder="Altitud en metros, -500 a 6000 (opcional)" inputMode="numeric" className={campo} />
           <select value={form.cultivoActual} onChange={(e) => cambiar("cultivoActual", e.target.value)} aria-label="Cultivo actual" className={campo}>
             <option value="">Sin registrar</option>
             {cultivos.map((c) => (
@@ -117,9 +136,9 @@ export function FincasVista() {
           <thead>
             <tr className="border-b">
               <th className="py-2">Nombre</th>
-              <th className="py-2">Vereda</th>
+              <th className="py-2">Lugar</th>
+              <th className="py-2">Área</th>
               <th className="py-2">Altitud</th>
-              <th className="py-2">Zona</th>
               <th className="py-2">Cultivo actual</th>
               <th className="py-2">Riego</th>
             </tr>
@@ -128,9 +147,9 @@ export function FincasVista() {
             {pagina?.items.map((item) => (
               <tr key={item.id} className="border-b">
                 <td className="py-2">{item.nombre}</td>
-                <td className="py-2">{item.vereda ?? "—"}</td>
+                <td className="py-2">{[item.localidad, item.region, item.pais].filter(Boolean).join(", ") || "—"}</td>
+                <td className="py-2">{item.areaHa !== null ? item.areaHa.toFixed(2) + " ha" : "—"}</td>
                 <td className="py-2">{item.altitudM !== null ? item.altitudM + " m" : "Pendiente (SRTM)"}</td>
-                <td className="py-2">{item.zonaAltitudinal ? ETIQUETA_ZONA[item.zonaAltitudinal] : "—"}</td>
                 <td className="py-2">{item.cultivoActual ?? "—"}</td>
                 <td className="py-2">{item.tieneRiego ? "Sí" : "No"}</td>
               </tr>

@@ -13,7 +13,7 @@ export function ResumenFincaClima({ comparacion }: { comparacion: ComparacionRot
         <li>
           Altitud: {finca.altitudReferenciaM} m {finca.altitudConocida ? "" : "(estimada del perfil climático)"}
         </li>
-        <li>Zona: {finca.zonaAltitudinal ?? "—"}</li>
+        <li>Clima: {finca.clasificacionClimatica}</li>
         <li>Riego: {finca.tieneRiego ? "Sí" : "No"}</li>
         <li>Cultivo actual: {finca.cultivoActual ?? "Sin registrar"}</li>
         <li>Lluvia anual: {Math.round(clima.lluviaAnualMm)} mm</li>

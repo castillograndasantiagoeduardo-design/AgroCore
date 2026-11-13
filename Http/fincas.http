@@ -1,31 +1,50 @@
 @baseUrl = http://localhost:8001/api
 
-### Listar fincas
+### Listar fincas (API abierta: sin cabecera Authorization)
 GET {{baseUrl}}/fincas?page=1&pageSize=20
 
-### Crear finca en el valle de Duitama (201, zonaAltitudinal = "valle")
+### Crear finca en Duitama, Colombia (201)
 POST {{baseUrl}}/fincas
 Content-Type: application/json
 
 {
   "nombre": "La Esperanza",
-  "descripcion": "Finca de prueba cerca al casco urbano",
-  "latitud": 5.8269,
-  "longitud": -73.0297,
-  "altitudM": 2530,
-  "vereda": "Higueras",
-  "tieneRiego": true,
+  "latitud": 5.8040,
+  "longitud": -73.0700,
+  "altitudM": 2580,
+  "localidad": "Vereda San Lorenzo",
+  "region": "Boyacá",
+  "pais": "Colombia",
+  "tieneRiego": false,
   "cultivoActual": "papa"
 }
 
-### Crear finca sin altitud (201, zonaAltitudinal = null; se completará con SRTM)
+### Crear finca con el polígono del lote en Ames, Iowa (201, areaHa ≈ 4)
 POST {{baseUrl}}/fincas
 Content-Type: application/json
 
 {
-  "nombre": "El Alto",
-  "latitud": 5.90,
-  "longitud": -73.00
+  "nombre": "Lote Iowa",
+  "latitud": 42.009,
+  "longitud": -93.699,
+  "region": "Iowa",
+  "pais": "Estados Unidos",
+  "cultivoActual": "maiz",
+  "area": {
+    "type": "Polygon",
+    "coordinates": [[[-93.7, 42.008], [-93.6976, 42.008], [-93.6976, 42.0098], [-93.7, 42.0098], [-93.7, 42.008]]]
+  }
+}
+
+### Crear finca sin altitud en Nakuru, Kenia (201; la altitud sale luego de SRTM o del clima)
+POST {{baseUrl}}/fincas
+Content-Type: application/json
+
+{
+  "nombre": "Shamba Nakuru",
+  "latitud": -0.3031,
+  "longitud": 36.0800,
+  "pais": "Kenia"
 }
 
 ### Crear finca duplicada (409 FINCA_DUPLICADO)
@@ -33,9 +52,9 @@ POST {{baseUrl}}/fincas
 Content-Type: application/json
 
 {
-  "nombre": "La Esperanza",
-  "latitud": 5.8269,
-  "longitud": -73.0297
+  "nombre": "la esperanza",
+  "latitud": 5.8040,
+  "longitud": -73.0700
 }
 
 ### Cultivo actual que no está en el catálogo (422 FINCA_CULTIVO_DESCONOCIDO). Claves válidas: GET /api/cultivos
@@ -43,31 +62,32 @@ POST {{baseUrl}}/fincas
 Content-Type: application/json
 
 {
-  "nombre": "Finca con yuca",
-  "latitud": 5.8269,
-  "longitud": -73.0297,
-  "cultivoActual": "yuca"
+  "nombre": "Finca con cultivo raro",
+  "latitud": 37.85,
+  "longitud": -4.85,
+  "cultivoActual": "unobtanio"
 }
 
-### Finca fuera de Duitama, coordenadas de Bogotá (422 FINCA_FUERA_DE_AREA)
+### Polígono de más de 100 ha (422 AREA_DEMASIADO_GRANDE)
 POST {{baseUrl}}/fincas
 Content-Type: application/json
 
 {
-  "nombre": "Finca en Bogotá",
-  "latitud": 4.711,
-  "longitud": -74.0721
+  "nombre": "Demasiado grande",
+  "latitud": -0.29,
+  "longitud": 36.09,
+  "area": { "type": "Polygon", "coordinates": [[[36.08, -0.3], [36.10, -0.3], [36.10, -0.28], [36.08, -0.28], [36.08, -0.3]]] }
 }
 
-### Altitud imposible (422 FINCA_ALTITUD_INVALIDA)
+### Altitud imposible (422 FINCA_ALTITUD_INVALIDA; rango −500 a 6.000 m)
 POST {{baseUrl}}/fincas
 Content-Type: application/json
 
 {
-  "nombre": "Finca baja",
-  "latitud": 5.8269,
-  "longitud": -73.0297,
-  "altitudM": 800
+  "nombre": "Cumbre",
+  "latitud": 27.98,
+  "longitud": 86.92,
+  "altitudM": 8000
 }
 
 ### Sin coordenadas (400 VALIDATION_ERROR)
@@ -75,8 +95,5 @@ POST {{baseUrl}}/fincas
 Content-Type: application/json
 
 {
-  "nombre": "Sin ubicación"
+  "nombre": "Sin coordenadas"
 }
-
-### Sin token (401 NO_AUTENTICADO)
-GET {{baseUrl}}/fincas

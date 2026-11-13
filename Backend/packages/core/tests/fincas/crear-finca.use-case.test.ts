@@ -33,7 +33,10 @@ class RepositorioEnMemoria implements IFincaRepository {
       nombre: NombreFinca.reconstruir(s.nombre),
       descripcion: s.descripcion,
       ubicacion: UbicacionFinca.reconstruir(s.latitud, s.longitud, s.altitudM),
-      vereda: s.vereda,
+      area: entidad.area,
+      localidad: s.localidad,
+      pais: s.pais,
+      region: s.region,
       tieneRiego: s.tieneRiego,
       cultivoActual: s.cultivoActual,
       activo: s.activo,
@@ -87,33 +90,69 @@ Deno.test("CrearFincaUseCase rechaza nombre inválido sin auditar", async () => 
   assertEquals(eventos.length, 0);
 });
 
-Deno.test("CrearFincaUseCase rechaza una finca fuera de Duitama (Bogotá)", async () => {
+Deno.test("CrearFincaUseCase acepta fincas en cualquier lugar del mundo", async () => {
+  const useCase = crearUseCase();
+  const lugares = [
+    { nombre: "Nakuru, Kenia", latitud: -0.3031, longitud: 36.08, altitudM: 1850 },
+    { nombre: "Córdoba, España", latitud: 37.85, longitud: -4.85, altitudM: 120 },
+    { nombre: "Ames, Iowa", latitud: 42.008, longitud: -93.7, altitudM: 290 },
+    { nombre: "Punjab, India", latitud: 30.9, longitud: 75.85, altitudM: 250 },
+    { nombre: "Chubut, Patagonia", latitud: -43.3, longitud: -65.1, altitudM: 30 },
+  ];
+  for (const lugar of lugares) {
+    const r = await useCase.execute({ ...lugar, localidad: "Lote 1", pais: "X" }, actor);
+    assertEquals(r.ok, true, lugar.nombre);
+  }
+});
+
+Deno.test("CrearFincaUseCase rechaza coordenadas fuera de rango", async () => {
   const eventos: EventoAuditoria[] = [];
-  const result = await crearUseCase(eventos).execute({ ...fincaDuitama, latitud: 4.711, longitud: -74.0721 }, actor);
+  const result = await crearUseCase(eventos).execute({ ...fincaDuitama, latitud: 95, longitud: 10 }, actor);
 
   assertEquals(result.ok, false);
-  if (!result.ok) assertEquals(result.error.code, "FINCA_FUERA_DE_AREA");
+  if (!result.ok) assertEquals(result.error.code, "FINCA_COORDENADAS_INVALIDAS");
   assertEquals(eventos.length, 0);
 });
 
-Deno.test("CrearFincaUseCase rechaza una altitud imposible para Duitama", async () => {
-  const result = await crearUseCase().execute({ ...fincaDuitama, altitudM: 800 }, actor);
+Deno.test("CrearFincaUseCase acepta altitudes de −500 a 6.000 m y rechaza las imposibles", async () => {
+  const useCase = crearUseCase();
+  const marMuerto = await useCase.execute({ ...fincaDuitama, nombre: "Jericó", altitudM: -250 }, actor);
+  const altiplano = await useCase.execute({ ...fincaDuitama, nombre: "Altiplano", altitudM: 4100 }, actor);
+  const imposible = await useCase.execute({ ...fincaDuitama, nombre: "Everest", altitudM: 8000 }, actor);
 
-  assertEquals(result.ok, false);
-  if (!result.ok) assertEquals(result.error.code, "FINCA_ALTITUD_INVALIDA");
+  assertEquals(marMuerto.ok, true);
+  assertEquals(altiplano.ok, true);
+  assertEquals(imposible.ok, false);
+  if (!imposible.ok) assertEquals(imposible.error.code, "FINCA_ALTITUD_INVALIDA");
 });
 
-Deno.test("CrearFincaUseCase calcula la zona altitudinal", async () => {
-  const useCase = crearUseCase();
-  const valle = await useCase.execute({ ...fincaDuitama, nombre: "Valle", altitudM: 2530 }, actor);
-  const ladera = await useCase.execute({ ...fincaDuitama, nombre: "Ladera", altitudM: 2800 }, actor);
-  const alta = await useCase.execute({ ...fincaDuitama, nombre: "Alta", altitudM: 3200 }, actor);
-  const sinAltitud = await useCase.execute({ ...fincaDuitama, nombre: "Sin dato", altitudM: undefined }, actor);
+Deno.test("CrearFincaUseCase guarda el polígono del lote y calcula sus hectáreas", async () => {
+  // Cuadrado de ~200 m × 200 m (≈ 4 ha) en Iowa.
+  const d = 200 / 111_320;
+  const dLon = 200 / (111_320 * Math.cos((42.008 * Math.PI) / 180));
+  const area = {
+    type: "Polygon" as const,
+    coordinates: [[[-93.7, 42.008], [-93.7 + dLon, 42.008], [-93.7 + dLon, 42.008 + d], [-93.7, 42.008 + d], [-93.7, 42.008]] as [number, number][]],
+  };
+  const r = await crearUseCase().execute({ nombre: "Lote Iowa", latitud: 42.009, longitud: -93.699, area }, actor);
 
-  assertEquals(valle.ok && valle.value.zonaAltitudinal, "valle");
-  assertEquals(ladera.ok && ladera.value.zonaAltitudinal, "ladera");
-  assertEquals(alta.ok && alta.value.zonaAltitudinal, "alta");
-  assertEquals(sinAltitud.ok && sinAltitud.value.zonaAltitudinal, null);
+  assertEquals(r.ok, true);
+  if (r.ok) {
+    assertEquals(r.value.area !== null, true);
+    assertEquals(Math.round(r.value.areaHa ?? 0), 4);
+  }
+});
+
+Deno.test("CrearFincaUseCase rechaza un polígono de más de 100 ha", async () => {
+  const d = 0.02; // ~2,2 km de lado ≈ 490 ha
+  const area = {
+    type: "Polygon" as const,
+    coordinates: [[[36.08, -0.3], [36.08 + d, -0.3], [36.08 + d, -0.3 + d], [36.08, -0.3 + d]] as [number, number][]],
+  };
+  const r = await crearUseCase().execute({ nombre: "Muy grande", latitud: -0.29, longitud: 36.09, area }, actor);
+
+  assertEquals(r.ok, false);
+  if (!r.ok) assertEquals(r.error.code, "AREA_DEMASIADO_GRANDE");
 });
 
 Deno.test("CrearFincaUseCase acepta un cultivo actual que está en el catálogo", async () => {

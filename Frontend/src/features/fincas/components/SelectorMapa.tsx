@@ -1,222 +1,322 @@
 "use client";
 
 /**
- * Componente de Mapa Interactivo (OpenStreetMap + Leaflet).
- * Permite hacer clic en cualquier parte del mapa para seleccionar coordenadas (latitud/longitud),
- * muestra el límite del área de estudio de Duitama y un marcador interactivo.
+ * Selector de ubicación en mapa mundial (OpenStreetMap + Leaflet).
+ * Modos: punto (un clic) o área (polígono libre o rectángulo), dibujados sin librerías extra.
+ * Incluye buscador opcional de lugares (Nominatim) que solo consulta al enviar el formulario.
+ * El CSS de Leaflet se importa globalmente en app/globals.css.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type * as L from "leaflet";
+import { AREA_MAXIMA_HA, MAX_VERTICES_AREA, type AreaSeleccionadaDto } from "@agrocore/contracts";
 
-interface SelectorMapaProps {
-  latitud?: number;
-  longitud?: number;
-  onSelectCoordenadas?: (lat: number, lon: number) => void;
+export interface SelectorMapaProps {
+  valor?: AreaSeleccionadaDto | null;
+  onCambio?: (area: AreaSeleccionadaDto | null) => void;
   soloLectura?: boolean;
   altura?: string;
-  zoomInicial?: number;
+  /** Polilíneas [lat, lon] dibujadas encima (ej. la vía detectada). */
+  resaltado?: { lineas: [number, number][][]; color?: string } | null;
 }
 
-// Bounding box oficial de AgroCore (5.70 a 6.15 N, -73.25 a -72.85 W)
-const AREA_DUITAMA = {
-  latMin: 5.70,
-  latMax: 6.15,
-  lonMin: -73.25,
-  lonMax: -72.85,
-};
+type Modo = "punto" | "area";
+type Vertice = [number, number]; // [lat, lon]
+type ResultadoBusqueda = { place_id: number; display_name: string; lat: string; lon: string };
 
-export function SelectorMapa({
-  latitud,
-  longitud,
-  onSelectCoordenadas,
-  soloLectura = false,
-  altura = "320px",
-  zoomInicial = 12,
-}: SelectorMapaProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+/** Área aproximada en ha con proyección plana local (suficiente para lotes de hasta ~100 ha). */
+function areaAproximadaHa(vertices: Vertice[]): number {
+  if (vertices.length < 3) return 0;
+  const latMedia = vertices.reduce((s, v) => s + v[0], 0) / vertices.length;
+  const mLat = 111_320;
+  const mLon = 111_320 * Math.cos((latMedia * Math.PI) / 180);
+  const pts = vertices.map((v) => [v[1] * mLon, v[0] * mLat]);
+  let suma = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % pts.length];
+    suma += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(suma) / 2 / 10_000;
+}
 
-  const puntoValido =
-    typeof latitud === "number" &&
-    !Number.isNaN(latitud) &&
-    typeof longitud === "number" &&
-    !Number.isNaN(longitud);
+function aVertices(valor: AreaSeleccionadaDto | null | undefined): Vertice[] {
+  if (!valor || valor.tipo !== "poligono") return [];
+  const anillo = valor.geojson.coordinates[0].map(([lon, lat]) => [lat, lon] as Vertice);
+  const primero = anillo[0];
+  const ultimo = anillo[anillo.length - 1];
+  if (anillo.length > 1 && primero[0] === ultimo[0] && primero[1] === ultimo[1]) anillo.pop();
+  return anillo;
+}
 
-  const dentroArea =
-    puntoValido &&
-    latitud >= AREA_DUITAMA.latMin &&
-    latitud <= AREA_DUITAMA.latMax &&
-    longitud >= AREA_DUITAMA.lonMin &&
-    longitud <= AREA_DUITAMA.lonMax;
+function aPoligono(vertices: Vertice[]): AreaSeleccionadaDto {
+  const anillo = vertices.map(([lat, lon]) => [Number(lon.toFixed(6)), Number(lat.toFixed(6))] as [number, number]);
+  anillo.push(anillo[0]);
+  return { tipo: "poligono", geojson: { type: "Polygon", coordinates: [anillo] } };
+}
 
+const BTN = "rounded border px-2 py-1 text-xs font-medium disabled:opacity-40";
+
+export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "320px", resaltado = null }: SelectorMapaProps) {
+  const contenedorRef = useRef<HTMLDivElement | null>(null);
+  const mapaRef = useRef<L.Map | null>(null);
+  const leafletRef = useRef<typeof L | null>(null);
+  const capaRef = useRef<L.LayerGroup | null>(null);
+  const capaResaltadoRef = useRef<L.LayerGroup | null>(null);
+  const [listo, setListo] = useState(false);
+
+  const [modo, setModo] = useState<Modo>("punto");
+  const [borrador, setBorrador] = useState<Vertice[]>([]); // vértices en dibujo
+  const [dibujando, setDibujando] = useState(false);
+  const [esRectangulo, setEsRectangulo] = useState(false);
+
+  const [consulta, setConsulta] = useState("");
+  const [resultados, setResultados] = useState<ResultadoBusqueda[]>([]);
+  const [buscando, setBuscando] = useState(false);
+  const [errorBusqueda, setErrorBusqueda] = useState<string | null>(null);
+  const ultimaBusquedaRef = useRef(0);
+
+  // Ref para que los manejadores de Leaflet (creados una sola vez) vean el estado actual.
+  const estado = useRef({ modo, dibujando, esRectangulo, borrador, soloLectura, onCambio });
+  useEffect(() => {
+    estado.current = { modo, dibujando, esRectangulo, borrador, soloLectura, onCambio };
+  });
+
+  const verticesValor = aVertices(valor);
+  const verticesMostrados = dibujando || valor?.tipo !== "poligono" ? borrador : verticesValor;
+  const areaHa = areaAproximadaHa(verticesMostrados);
+  const excede = areaHa > AREA_MAXIMA_HA;
+
+  // Crear el mapa una sola vez
   useEffect(() => {
     let cancelado = false;
+    import("leaflet").then((Lf) => {
+      if (cancelado || !contenedorRef.current || mapaRef.current) return;
+      leafletRef.current = Lf;
+      const punto = valor?.tipo === "punto" ? ([valor.latitud, valor.longitud] as Vertice) : null;
+      const poligono = aVertices(valor);
+      const centro: Vertice | null = punto ?? (poligono.length ? poligono[0] : null);
 
-    import("leaflet").then((L) => {
-      if (cancelado || !containerRef.current || mapInstanceRef.current) return;
-
-      const centroLat = puntoValido ? latitud : 5.8269;
-      const centroLon = puntoValido ? longitud : -73.0297;
-
-      const map = L.map(containerRef.current).setView(
-        [centroLat, centroLon],
-        zoomInicial,
-      );
-      mapInstanceRef.current = map;
-
-      // Capa base OpenStreetMap
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
+      const map = Lf.map(contenedorRef.current, { worldCopyJump: true }).setView(centro ?? [15, 0], centro ? 15 : 2);
+      Lf.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
       }).addTo(map);
+      capaRef.current = Lf.layerGroup().addTo(map);
+      capaResaltadoRef.current = Lf.layerGroup().addTo(map);
+      mapaRef.current = map;
 
-      // Rectángulo visual del área agronómica de estudio
-      const bounds: L.LatLngBoundsExpression = [
-        [AREA_DUITAMA.latMin, AREA_DUITAMA.lonMin],
-        [AREA_DUITAMA.latMax, AREA_DUITAMA.lonMax],
-      ];
-
-      L.rectangle(bounds, {
-        color: "#059669",
-        weight: 2,
-        dashArray: "6, 6",
-        fillColor: "#10b981",
-        fillOpacity: 0.08,
-      })
-        .addTo(map)
-        .bindTooltip("Área de estudio agronómico de AgroCore (calibrada con IDEAM)", {
-          sticky: true,
-        });
-
-      // Icono de pin con estilo
-      const customIcon = L.divIcon({
-        className: "custom-leaflet-marker",
-        html: `
-          <div style="
-            background: #0f172a;
-            color: #ffffff;
-            width: 32px;
-            height: 32px;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4);
-            border: 2px solid white;
-          ">
-            <span style="transform: rotate(45deg); font-size: 14px; margin-bottom: 2px;">📍</span>
-          </div>
-        `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-      });
-
-      if (puntoValido) {
-        markerRef.current = L.marker([latitud, longitud], { icon: customIcon })
-          .addTo(map)
-          .bindPopup(`<b>Punto seleccionado</b><br/>Lat: ${latitud}<br/>Lon: ${longitud}`);
-      }
-
-      if (!soloLectura && onSelectCoordenadas) {
-        map.on("click", (e: L.LeafletMouseEvent) => {
-          const lat = Number(e.latlng.lat.toFixed(4));
-          const lon = Number(e.latlng.lng.toFixed(4));
-
-          if (markerRef.current) {
-            markerRef.current.setLatLng(e.latlng);
-            markerRef.current.setPopupContent(`<b>Punto seleccionado</b><br/>Lat: ${lat}<br/>Lon: ${lon}`);
+      map.on("click", (e: L.LeafletMouseEvent) => {
+        const s = estado.current;
+        if (s.soloLectura) return;
+        const v: Vertice = [Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6))];
+        if (s.modo === "punto") {
+          s.onCambio?.({ tipo: "punto", latitud: v[0], longitud: v[1] });
+          return;
+        }
+        if (!s.dibujando) return;
+        if (s.esRectangulo) {
+          if (s.borrador.length === 0) {
+            setBorrador([v]);
           } else {
-            markerRef.current = L.marker(e.latlng, { icon: customIcon })
-              .addTo(map)
-              .bindPopup(`<b>Punto seleccionado</b><br/>Lat: ${lat}<br/>Lon: ${lon}`);
+            const [a] = s.borrador;
+            const esquinas: Vertice[] = [a, [a[0], v[1]], v, [v[0], a[1]]];
+            setBorrador(esquinas);
+            setDibujando(false);
+            setEsRectangulo(false);
+            if (areaAproximadaHa(esquinas) <= AREA_MAXIMA_HA) s.onCambio?.(aPoligono(esquinas));
           }
-
-          onSelectCoordenadas(lat, lon);
-        });
-      }
+        } else if (s.borrador.length < MAX_VERTICES_AREA) {
+          setBorrador([...s.borrador, v]);
+        }
+      });
+      setListo(true);
     });
-
     return () => {
       cancelado = true;
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markerRef.current = null;
-      }
+      mapaRef.current?.remove();
+      mapaRef.current = null;
+      capaRef.current = null;
+      capaResaltadoRef.current = null;
+      setListo(false);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Actualizar marcador y vista si cambian las coordenadas desde fuera
+  // Redibujar punto / polígono
   useEffect(() => {
-    if (!mapInstanceRef.current || !puntoValido) return;
+    const Lf = leafletRef.current;
+    const capa = capaRef.current;
+    if (!listo || !Lf || !capa) return;
+    capa.clearLayers();
+    // Tras un rectángulo/área demasiado grande el borrador queda visible (en rojo) aunque no se envíe.
+    const vertices = dibujando || valor?.tipo !== "poligono" ? borrador : aVertices(valor);
+    const exceso = areaAproximadaHa(vertices) > AREA_MAXIMA_HA;
+    if (!dibujando && valor?.tipo === "punto") {
+      Lf.circleMarker([valor.latitud, valor.longitud], { radius: 8, color: "#fff", weight: 2, fillColor: "#0f172a", fillOpacity: 1 })
+        .bindPopup(`<b>Punto</b><br/>Lat: ${valor.latitud}<br/>Lon: ${valor.longitud}`)
+        .addTo(capa);
+    }
+    const color = exceso ? "#dc2626" : "#059669";
+    if (vertices.length >= 3 && !dibujando) {
+      Lf.polygon(vertices, { color, weight: 2, fillColor: color, fillOpacity: 0.2 }).addTo(capa);
+    } else if (vertices.length >= 2) {
+      Lf.polyline(vertices, { color, weight: 2, dashArray: "5,5" }).addTo(capa);
+    }
+    if (dibujando) {
+      vertices.forEach((v) => Lf.circleMarker(v, { radius: 4, color, fillColor: "#fff", fillOpacity: 1, weight: 2 }).addTo(capa));
+    }
+  }, [listo, valor, borrador, dibujando]);
 
-    import("leaflet").then((L) => {
-      if (markerRef.current) {
-        markerRef.current.setLatLng([latitud, longitud]);
-        markerRef.current.setPopupContent(
-          `<b>Punto seleccionado</b><br/>Lat: ${latitud}<br/>Lon: ${longitud}`,
-        );
-      } else if (mapInstanceRef.current) {
-        const customIcon = L.divIcon({
-          className: "custom-leaflet-marker",
-          html: `
-            <div style="
-              background: #0f172a;
-              color: #ffffff;
-              width: 32px;
-              height: 32px;
-              border-radius: 50% 50% 50% 0;
-              transform: rotate(-45deg);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4);
-              border: 2px solid white;
-            ">
-              <span style="transform: rotate(45deg); font-size: 14px; margin-bottom: 2px;">📍</span>
-            </div>
-          `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
-        });
-        markerRef.current = L.marker([latitud, longitud], { icon: customIcon }).addTo(
-          mapInstanceRef.current,
-        );
-      }
-      mapInstanceRef.current?.panTo([latitud, longitud]);
+  // Dibujar polilíneas resaltadas
+  useEffect(() => {
+    const Lf = leafletRef.current;
+    const capa = capaResaltadoRef.current;
+    if (!listo || !Lf || !capa) return;
+    capa.clearLayers();
+    resaltado?.lineas.forEach((linea) => {
+      if (linea.length >= 2) Lf.polyline(linea, { color: resaltado.color ?? "#dc2626", weight: 4 }).addTo(capa);
     });
-  }, [latitud, longitud, puntoValido]);
+  }, [listo, resaltado]);
+
+  // Centrar cuando el valor cambia desde fuera (p. ej. coordenadas escritas a mano)
+  const claveValor = valor ? JSON.stringify(valor) : "";
+  useEffect(() => {
+    if (!listo || !mapaRef.current || !valor || dibujando) return;
+    const mapa = mapaRef.current;
+    if (valor.tipo === "punto") {
+      if (!mapa.getBounds().contains([valor.latitud, valor.longitud])) mapa.setView([valor.latitud, valor.longitud], Math.max(mapa.getZoom(), 15));
+    } else if (leafletRef.current) {
+      mapa.fitBounds(leafletRef.current.latLngBounds(aVertices(valor)), { maxZoom: 17 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listo, claveValor]);
+
+  function cambiarModo(m: Modo) {
+    setModo(m);
+    setDibujando(false);
+    setEsRectangulo(false);
+    setBorrador([]);
+  }
+
+  function iniciarArea(rect: boolean) {
+    setModo("area");
+    setBorrador([]);
+    setDibujando(true);
+    setEsRectangulo(rect);
+  }
+
+  function terminarArea() {
+    if (borrador.length < 3 || borrador.length > MAX_VERTICES_AREA) return;
+    setDibujando(false);
+    if (areaAproximadaHa(borrador) <= AREA_MAXIMA_HA) onCambio?.(aPoligono(borrador));
+  }
+
+  function borrar() {
+    setBorrador([]);
+    setDibujando(false);
+    setEsRectangulo(false);
+    onCambio?.(null);
+  }
+
+  async function buscar(e: FormEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const q = consulta.trim();
+    if (q.length < 2) return;
+    // Throttle: máximo 1 petición por segundo a Nominatim
+    const espera = ultimaBusquedaRef.current + 1000 - Date.now();
+    if (espera > 0) await new Promise((r) => setTimeout(r, espera));
+    ultimaBusquedaRef.current = Date.now();
+    setBuscando(true);
+    setErrorBusqueda(null);
+    try {
+      const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=5&q=" + encodeURIComponent(q));
+      if (!res.ok) throw new Error("status " + res.status);
+      const datos = (await res.json()) as ResultadoBusqueda[];
+      setResultados(datos);
+      if (datos.length === 0) setErrorBusqueda("Sin resultados.");
+    } catch {
+      setErrorBusqueda("No se pudo buscar el lugar.");
+      setResultados([]);
+    } finally {
+      setBuscando(false);
+    }
+  }
+
+  function elegirResultado(r: ResultadoBusqueda) {
+    mapaRef.current?.setView([Number(r.lat), Number(r.lon)], 14);
+    setResultados([]);
+  }
+
+  const ayuda = soloLectura
+    ? "Ubicación en el mapa"
+    : modo === "punto"
+      ? "Haz clic en el mapa para marcar el punto"
+      : dibujando
+        ? esRectangulo
+          ? borrador.length === 0
+            ? "Clic en la primera esquina"
+            : "Clic en la esquina opuesta"
+          : `Clic para agregar vértices (${borrador.length}/${MAX_VERTICES_AREA}); mínimo 3`
+        : "Dibuja con «Área» o «Rectángulo»";
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-xs text-slate-600">
-        <span className="font-medium">
-          {soloLectura ? "Ubicación geográfica en el mapa" : "Haz clic en el mapa para marcar tu finca"}
-        </span>
-        {puntoValido && (
-          <span
-            className={`rounded-full px-2 py-0.5 font-medium ${
-              dentroArea
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-amber-100 text-amber-800"
-            }`}
-          >
-            {dentroArea
-              ? "✓ Dentro del área de Duitama"
-              : "⚠️ Fuera de calibración Duitama"}
+      {!soloLectura && (
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button type="button" onClick={() => cambiarModo("punto")} className={`${BTN} ${modo === "punto" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+              📍 Punto
+            </button>
+            <button type="button" onClick={() => iniciarArea(false)} className={`${BTN} ${modo === "area" && !esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+              ⬛ Área
+            </button>
+            {modo === "area" && (
+              <>
+                <button type="button" onClick={terminarArea} disabled={!dibujando || esRectangulo || borrador.length < 3} className={`${BTN} border-emerald-600 text-emerald-700`}>
+                  Terminar área
+                </button>
+                <button type="button" onClick={() => iniciarArea(true)} className={`${BTN} ${esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+                  Rectángulo
+                </button>
+              </>
+            )}
+            <button type="button" onClick={borrar} className={`${BTN} border-red-300 text-red-700`}>
+              Borrar
+            </button>
+          </div>
+          <form onSubmit={buscar} className="flex gap-1.5">
+            <input value={consulta} onChange={(e) => setConsulta(e.target.value)} placeholder="Buscar un lugar (opcional)" className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs" />
+            <button type="submit" disabled={buscando} className={`${BTN} border-slate-300 bg-white`}>
+              {buscando ? "Buscando…" : "Buscar"}
+            </button>
+          </form>
+          {errorBusqueda && <p className="text-xs text-amber-700">{errorBusqueda}</p>}
+          {resultados.length > 0 && (
+            <ul className="max-h-32 overflow-y-auto rounded border border-slate-200 bg-white text-xs">
+              {resultados.map((r) => (
+                <li key={r.place_id}>
+                  <button type="button" onClick={() => elegirResultado(r)} className="w-full px-2 py-1 text-left hover:bg-slate-100">
+                    {r.display_name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-[10px] text-slate-500">Búsqueda © OpenStreetMap (Nominatim)</p>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+        <span className="font-medium">{ayuda}</span>
+        {verticesMostrados.length >= 3 && (
+          <span className={`rounded-full px-2 py-0.5 font-medium ${excede ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-800"}`}>
+            {excede ? `Área ≈ ${areaHa.toFixed(1)} ha: supera el máximo de ${AREA_MAXIMA_HA} ha (no se enviará)` : `Área ≈ ${areaHa.toFixed(2)} ha`}
           </span>
         )}
       </div>
 
-      <div
-        ref={containerRef}
-        style={{ height: altura, width: "100%" }}
-        className="overflow-hidden rounded-lg border border-slate-300 shadow-inner z-0"
-      />
+      <div ref={contenedorRef} style={{ height: altura, width: "100%" }} className="z-0 overflow-hidden rounded-lg border border-slate-300 shadow-inner" />
     </div>
   );
 }
-

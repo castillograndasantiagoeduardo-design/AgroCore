@@ -178,7 +178,7 @@ export class CompararRotacionesUseCase {
         nombre: finca.nombre,
         altitudReferenciaM: altitudM,
         altitudConocida,
-        zonaAltitudinal: finca.ubicacion.zona,
+        clasificacionClimatica: perfil.resumen.clasificacionClimatica,
         tieneRiego: finca.tieneRiego,
         cultivoActual: finca.cultivoActual,
       },
