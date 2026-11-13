@@ -1,17 +1,16 @@
 /**
  * Puertos del módulo impresion.
  */
-import type { ComparacionRotacionesDto, CompararRotacionesUbicacionInput, LineaTicketDto } from "@agrocore/contracts";
+import type { LineaTicketDto, RecomendacionInput, RecomendacionRapidaDto } from "@agrocore/contracts";
 import type { DomainError, Result } from "@agrocore/shared-kernel";
 import type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
 
 export type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
 export type { IReloj } from "../../../clima/application/ports/index.ts";
-export type { IAnalisisTerrenoQuery } from "../../../rotaciones/application/ports/index.ts";
 
-/** Comparación de rotaciones de cualquier ubicación (la cumple CompararRotacionesUbicacionUseCase). */
-export interface IComparacionRotacionesQuery {
-  execute(input: CompararRotacionesUbicacionInput, contexto: ContextoSolicitud): Promise<Result<ComparacionRotacionesDto, DomainError>>;
+/** Etapa rápida de la recomendación (la cumple RecomendarPorEpocaUseCase). */
+export interface IRecomendacionRapidaQuery {
+  execute(input: RecomendacionInput, contexto: ContextoSolicitud): Promise<Result<RecomendacionRapidaDto, DomainError>>;
 }
 
 /**

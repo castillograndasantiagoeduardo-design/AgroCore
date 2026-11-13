@@ -5,7 +5,15 @@
  * (título, negrita, normal, separador, centrado). Sin bytes ESC/POS (eso vive en platform) y sin Date:
  * la fecha entra ya formateada desde el caso de uso (que la toma de IReloj).
  */
-import type { ComparacionRotacionesDto, LineaTicketDto, PerfilTerrenoDto } from "@agrocore/contracts";
+import {
+  type DatoConFuente,
+  type LineaTicketDto,
+  NOMBRE_FUENTE,
+  NOMBRE_OBJETIVO,
+  type Objetivo,
+  type RecomendacionRapidaDto,
+  textoSinDatos,
+} from "@agrocore/contracts";
 import { NOMBRES_MES } from "../../../clima/domain/services/calendario-climatico.service.ts";
 
 export const AVISO_TICKET = "Herramienta de apoyo. Validar con agrónomo local.";
@@ -43,22 +51,24 @@ export function filaClaveValor(clave: string, valor: string, ancho: number): str
 }
 
 const abrev = (m: number) => NOMBRES_MES[m - 1].slice(0, 3);
-function rangosMeses(meses: readonly number[]): string {
-  if (meses.length === 0) return "ninguno";
-  return [...meses].sort((a, b) => a - b).map(abrev).join(",");
-}
+const r1 = (v: number) => String(Math.round(v * 10) / 10).replace(".", ",");
 
 export interface DatosTicket {
   nombre: string | null;
   /** Fecha ya formateada (la da el caso de uso con IReloj). */
   fecha: string;
-  terreno: PerfilTerrenoDto;
-  /** null si el sitio no es apto (no hay rotaciones). */
-  comparacion: ComparacionRotacionesDto | null;
+  rapida: RecomendacionRapidaDto;
+  objetivo: Objetivo;
   ancho: number;
 }
 
-export function componerTicketTerreno(d: DatosTicket): LineaTicketDto[] {
+/** "1.234 mm (NASA POWER)" o "Sin datos de NASA POWER" (nunca un número sin fuente). */
+function textoDato(d: DatoConFuente<number>): string {
+  if (d.valor === null) return textoSinDatos(d.fuente);
+  return r1(d.valor) + (d.unidad ? " " + d.unidad : "") + (d.tipo === "estimado" ? " aprox." : "");
+}
+
+export function componerTicketRecomendacion(d: DatosTicket): LineaTicketDto[] {
   const w = d.ancho;
   const out: LineaTicketDto[] = [];
   const push = (texto: string, estilo: LineaTicketDto["estilo"] = "normal") => {
@@ -68,56 +78,55 @@ export function componerTicketTerreno(d: DatosTicket): LineaTicketDto[] {
     for (const t of filaClaveValor(k, v, w)) out.push({ texto: t, estilo });
   };
   const separador = () => out.push({ texto: "-".repeat(w), estilo: "separador" });
+  const r = d.rapida;
+  const u = r.ubicacion;
 
-  const u = d.terreno.ubicacion;
   out.push({ texto: "AGROCORE", estilo: "titulo" });
-  push("Resumen del terreno", "centrado");
+  push("Qué sembrar en cada época", "centrado");
   separador();
   if (d.nombre) push(d.nombre, "negrita");
   fila("Lat", u.latitud.toFixed(4));
   fila("Lon", u.longitud.toFixed(4));
-  if (u.areaHa !== null) fila("Area", u.areaHa + " ha");
+  if (u.areaHa !== null) fila("Área", r1(u.areaHa) + " ha");
   fila("Fecha", d.fecha);
   separador();
 
   push("APTITUD", "negrita");
-  push(d.terreno.mensajeAptitud, d.terreno.aptitud === "apto" ? "normal" : "negrita");
-  if (d.terreno.elevacionM !== null) fila("Elevación", d.terreno.elevacionM + " m");
-  if (d.terreno.pendientePct !== null) fila("Pendiente", d.terreno.pendientePct + " %");
-  const s = d.terreno.suelo;
-  fila("Suelo", s ? (s.textura ?? "?") + " pH " + (s.ph ?? "?") : "sin dato");
-  if (d.terreno.cobertura) fila("MODIS", d.terreno.cobertura.nombre.slice(0, w - 7));
+  push(r.aptitud.mensaje, r.aptitud.estado === "apto" ? "normal" : "negrita");
+  if (!r.aptitud.viasVerificadas) push("(sin verificar vías: OpenStreetMap no respondió)");
+  separador();
+  push("CLIMA", "negrita");
+  fila("Lluvia/año", textoDato(r.resumenClima.lluviaAnualMm));
+  fila("T media", textoDato(r.resumenClima.tempMediaC));
+  fila("Altitud", textoDato(r.resumenClima.altitudM));
 
-  if (d.comparacion) {
-    const c = d.comparacion;
+  if (r.aptitud.estado === "apto" && r.epocas.length) {
     separador();
-    push("CLIMA", "negrita");
-    fila("Lluvia/año", Math.round(c.clima.lluviaAnualMm) + " mm");
-    fila("Clima", c.sitio.clasificacionClimatica.replace("_", " "));
-    fila("Baldío", rangosMeses(c.terreno.mesesBaldios));
-    const vulnerables = c.calendario.filter((m) => m.vulnerabilidad.severidadMaxima === "alta" || m.vulnerabilidad.severidadMaxima === "media").map((m) => m.mes);
-    fila("Vulnerable", rangosMeses(vulnerables));
-    separador();
-    push("ESTRATEGIAS (2 años)", "negrita");
-    for (const e of c.estrategias) {
-      const marca = e.id === c.estrategiaMejorPuntuada ? "*" : " ";
-      fila(marca + e.id + " " + e.nombre.slice(0, w - 9), String(e.puntajeTotal), "negrita");
-      push("  " + e.secuencia.filter((p) => !p.continua).map((p) => p.cultivoNombre.split(" (")[0]).join(">"));
+    push("ÉPOCAS · " + NOMBRE_OBJETIVO[d.objetivo].toUpperCase(), "negrita");
+    for (const e of r.epocas) {
+      const rec = r.recomendaciones[d.objetivo].find((x) => x.epocaId === e.id);
+      push(e.nombre, "negrita");
+      if (!rec) continue;
+      push("> " + rec.queSembrar);
+      if (rec.alternativa) {
+        push("  Alternativa: " + rec.alternativa.nombre + (rec.alternativa.presenciaLocal === "poco_comun" ? " (poco común)" : ""));
+      }
     }
-    push("* mejor puntuada con sus prioridades");
-    const oportunidad = c.oportunidades[0];
-    if (oportunidad) {
-      separador();
-      push("OPORTUNIDAD", "negrita");
-      push(oportunidad.texto);
+    if (r.recomendaciones[d.objetivo].some((x) => x.alternativa?.presenciaLocal === "poco_comun")) {
+      push("Poco común = poco sembrado en su zona: confirme comprador.");
     }
-  } else {
+  } else if (r.aptitud.estado !== "apto") {
     separador();
-    push("Sin rotaciones: el sitio no es apto para sembrar.");
+    push("Sin cultivos: el sitio no es apto para sembrar.");
   }
 
   separador();
-  push("Fuentes: " + d.terreno.fuentes.map((f) => f.split(" (")[0]).join("; "));
+  const fuentes = new Set<string>();
+  for (const f of r.aptitud.fuentes) fuentes.add(NOMBRE_FUENTE[f]);
+  fuentes.add(NOMBRE_FUENTE[r.resumenClima.lluviaAnualMm.fuente]);
+  for (const rec of r.recomendaciones[d.objetivo]) for (const f of rec.fuentes) if (f !== "CALCULO") fuentes.add(NOMBRE_FUENTE[f]);
+  if (r.presenciaLocal) fuentes.add(NOMBRE_FUENTE[r.presenciaLocal.fuente]);
+  push("Fuentes: " + [...fuentes].join("; "));
   separador();
   push(AVISO_TICKET, "centrado");
   return out;
