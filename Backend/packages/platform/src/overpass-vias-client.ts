@@ -73,8 +73,8 @@ export class OverpassViasClient implements IViasProvider {
 
   constructor(config: OverpassViasConfig = {}) {
     this.espejos = config.espejos ?? ESPEJOS_POR_DEFECTO;
-    this.timeoutMs = config.timeoutMs ?? 25_000;
-    this.rondas = config.rondas ?? 3;
+    this.timeoutMs = config.timeoutMs ?? 8_000;
+    this.rondas = config.rondas ?? 1;
     this.cache = config.cache;
   }
 

@@ -70,7 +70,7 @@ export class SoilGridsClient implements ISueloProvider {
 
   constructor(config: SoilGridsConfig = {}) {
     this.baseUrl = (config.baseUrl ?? "https://rest.isric.org/soilgrids/v2.0").replace(/\/$/, "");
-    this.timeoutMs = config.timeoutMs ?? 12_000;
+    this.timeoutMs = config.timeoutMs ?? 6_000;
     this.cache = config.cache;
   }
 

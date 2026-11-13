@@ -46,6 +46,8 @@ export interface ProveedoresTerreno {
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export class AnalizarTerrenoUseCase {
+  private readonly enVuelo = new Map<string, Promise<PerfilTerrenoDto>>();
+
   constructor(private readonly p: ProveedoresTerreno) {}
 
   async execute(input: AnalizarTerrenoInput, _contexto: ContextoSolicitud): Promise<Result<PerfilTerrenoDto, DomainError>> {
@@ -54,8 +56,22 @@ export class AnalizarTerrenoUseCase {
     return Result.ok(await this.analizar(areaR.value));
   }
 
-  /** Análisis para un área ya validada (lo reutilizan rotaciones e impresión). */
+  /** Análisis para un área ya validada (lo reutilizan rotaciones e impresión). Deduplica llamadas simultáneas. */
   async analizar(area: AreaSeleccionada): Promise<PerfilTerrenoDto> {
+    const clave = JSON.stringify(area.aDto());
+    const pendiente = this.enVuelo.get(clave);
+    if (pendiente) return await pendiente;
+
+    const promesa = this.ejecutarAnalisis(area);
+    this.enVuelo.set(clave, promesa);
+    try {
+      return await promesa;
+    } finally {
+      this.enVuelo.delete(clave);
+    }
+  }
+
+  private async ejecutarAnalisis(area: AreaSeleccionada): Promise<PerfilTerrenoDto> {
     const [lat, lon] = area.centro;
     const hoy = this.p.reloj.hoy();
     const hasta = hoy.toISOString().slice(0, 10);

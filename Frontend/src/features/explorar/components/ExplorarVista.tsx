@@ -1,27 +1,28 @@
 "use client";
 
 /**
- * Vista principal de Explorar: mapa + formulario + resultados con carga progresiva.
+ * Vista principal directa de Recomendación Agrícola:
+ * - Flujo directo sin gestión de fincas.
+ * - Selección de punto/polígono o ubicaciones rápidas + objetivo principal y época del año.
+ * - Divulgación progresiva: recomendación accionable y calendario descriptivo en la vista principal,
+ *   con acceso bajo demanda al modal de detalles técnicos.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { IconoPin } from "@/components/ui/Iconos";
 import { SelectorMapa } from "@/features/fincas/components/SelectorMapa";
-import { BotonImprimirTicket } from "@/features/impresion/components/BotonImprimirTicket";
 import { useExplorar } from "../hooks/use-explorar";
+import { UBICACIONES_RAPIDAS } from "../types/explorar.types";
 import { BannerAptitud } from "./BannerAptitud";
 import { CalendarioLote } from "./CalendarioLote";
-import { FichaTerreno } from "./FichaTerreno";
 import { FormularioSitio } from "./FormularioSitio";
-import { FuentesYVacios } from "./FuentesYVacios";
-import { GuardarComoFinca } from "./GuardarComoFinca";
-import { ListaOportunidades } from "./ListaOportunidades";
-import { TablaEstrategias } from "./TablaEstrategias";
-import { TarjetaEstrategiaGlobal } from "./TarjetaEstrategiaGlobal";
+import { ModalDetallesTecnicos } from "./ModalDetallesTecnicos";
+import { TarjetaRecomendacionPrincipal } from "./TarjetaRecomendacionPrincipal";
 
 export function ExplorarVista() {
   const x = useExplorar();
-  const { perfil, comparacion } = x;
+  const { perfil, comparacion, recomendacion } = x;
+  const [detallesAbiertos, setDetallesAbiertos] = useState(false);
 
-  // Si el sitio es carretera, se resalta en rojo la vía detectada.
   const resaltado = useMemo(
     () =>
       perfil && perfil.aptitud === "no_apto_carretera" && perfil.viasCercanas.length > 0
@@ -32,90 +33,123 @@ export function ExplorarVista() {
 
   const mensajeCarga =
     x.fase === "terreno"
-      ? "Analizando terreno: OpenStreetMap, MODIS, SRTM, SoilGrids…"
+      ? "Verificando aptitud del terreno, relieve SRTM y suelo..."
       : x.fase === "clima"
-        ? "Consultando 30 años de clima NASA POWER (la primera vez tarda ~1 min)…"
+        ? "Calculando recomendación por época y objetivo con historial climático NASA POWER..."
         : null;
 
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Explora cualquier lugar del mundo</h1>
-        <p className="text-sm text-slate-600">
-          Marca un punto o dibuja un área (hasta 100 ha). Verás el suelo, el terreno, el clima, el calendario del lote y
-          una comparación de estrategias de rotación con su evidencia.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+            Recomendación agrícola por época y objetivo
+          </h1>
+          <p className="text-sm text-slate-600">
+            Selecciona tu terreno en el mapa, elige tu objetivo principal y obtén al instante qué sembrar, cuándo hacerlo y el calendario mes a mes.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-semibold text-slate-500">Ubicaciones rápidas:</span>
+          {UBICACIONES_RAPIDAS.map((u) => (
+            <button
+              key={u.nombre}
+              type="button"
+              onClick={() => x.setArea(u.area)}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:border-emerald-600 hover:bg-emerald-50/50 hover:text-emerald-900"
+            >
+              <IconoPin width={13} height={13} className="text-emerald-700" />
+              <span>{u.nombre}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900">1. Elige el lugar</h2>
-          <SelectorMapa valor={x.area} onCambio={x.setArea} altura="420px" resaltado={resaltado} />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Paso 1</span>
+            <h2 className="text-lg font-bold text-slate-900">Selecciona la ubicación del lote</h2>
+            <p className="text-xs text-slate-500">Haz clic sobre tu terreno o dibuja un polígono de hasta 100 ha</p>
+          </div>
+          <SelectorMapa valor={x.area} onCambio={x.setArea} altura="360px" resaltado={resaltado} />
         </div>
+
         <FormularioSitio
           cultivos={x.cultivos}
           errorCultivos={x.errorCultivos}
           cargando={x.cargando}
           puedeAnalizar={x.area !== null}
+          objetivo={x.objetivo}
+          epoca={x.epoca}
+          onCambioObjetivo={x.setObjetivo}
+          onCambioEpoca={x.setEpoca}
           onAnalizar={x.analizar}
         />
       </div>
 
-      <div aria-live="polite" className="space-y-1">
+      {/* Estado de carga con Skeleton limpio (sin barras de progreso ni emojis) */}
+      <div aria-live="polite" className="space-y-3">
         {mensajeCarga && (
-          <div role="status" className="flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
-            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-sky-600 border-t-transparent" aria-hidden="true" />
-            <div>
-              <p className="font-semibold">{mensajeCarga}</p>
-              <p className="text-xs">
-                Consultando: {x.fuenteActual} · {x.segundos} s
-              </p>
+          <div role="status" className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+            <div className="flex items-center gap-3 text-sm text-slate-800">
+              <span
+                className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent"
+                aria-hidden="true"
+              />
+              <div>
+                <p className="font-semibold text-slate-900">{mensajeCarga}</p>
+                {x.fuenteActual && <p className="text-xs text-slate-500">Fuente activa: {x.fuenteActual}</p>}
+              </div>
+            </div>
+            <div className="grid gap-3 pt-1 sm:grid-cols-3" aria-hidden="true">
+              <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
+              <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
+              <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
             </div>
           </div>
         )}
+
         {x.error && (
-          <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+          <p role="alert" className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
             {x.error}
           </p>
         )}
       </div>
 
       {perfil && <BannerAptitud perfil={perfil} />}
-      {perfil && <FichaTerreno perfil={perfil} />}
 
-      {comparacion && (
-        <div className="space-y-4">
-          <section className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
-            <h2 className="text-lg font-bold">📍 Resumen del sitio</h2>
-            <ul className="mt-1 grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-              <li>Clima: {comparacion.sitio.clasificacionClimatica}</li>
-              <li>
-                Altitud: {Math.round(comparacion.sitio.altitudReferenciaM)} m ({comparacion.sitio.fuenteAltitud})
-              </li>
-              <li>Lluvia anual: {Math.round(comparacion.clima.lluviaAnualMm)} mm</li>
-              <li>ET0 anual: {Math.round(comparacion.clima.etoAnualMm)} mm</li>
-              <li>Régimen de lluvias: {comparacion.clima.regimenLluvias}</li>
-              <li>Riego: {comparacion.sitio.tieneRiego ? "Sí" : "No"}</li>
-            </ul>
-          </section>
+      {/* Vista resumida accionable + Calendario agrícola descriptivo */}
+      {comparacion && recomendacion && (
+        <div className="space-y-6">
+          <TarjetaRecomendacionPrincipal
+            recomendacion={recomendacion}
+            comparacion={comparacion}
+            perfil={perfil}
+            entrada={x.entradaEnviada}
+            objetivo={x.objetivo}
+            epoca={x.epoca}
+            onCambioObjetivo={x.setObjetivo}
+            onCambioEpoca={x.setEpoca}
+            onAbrirDetalles={() => setDetallesAbiertos(true)}
+          />
 
-          <CalendarioLote calendario={comparacion.calendario} />
-          <TablaEstrategias comparacion={comparacion} />
-          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            {comparacion.estrategias.map((e) => (
-              <TarjetaEstrategiaGlobal key={e.id} estrategia={e} mejor={e.id === comparacion.estrategiaMejorPuntuada} />
-            ))}
-          </div>
-          <ListaOportunidades oportunidades={comparacion.oportunidades} />
+          <CalendarioLote
+            calendario={comparacion.calendario}
+            estrategia={recomendacion.estrategia}
+            objetivoNombre={recomendacion.objetivo.nombre}
+          />
 
-          <div className="flex flex-wrap items-start gap-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <GuardarComoFinca comparacion={comparacion} area={x.area} />
-            <BotonImprimirTicket entrada={x.entradaEnviada} comparacion={comparacion} perfil={perfil} />
-          </div>
+          <ModalDetallesTecnicos
+            abierto={detallesAbiertos}
+            onCerrar={() => setDetallesAbiertos(false)}
+            perfil={perfil}
+            comparacion={comparacion}
+            estrategiaDestacadaId={recomendacion.estrategia.id}
+          />
         </div>
       )}
-
-      {(perfil || comparacion) && <FuentesYVacios perfil={perfil} comparacion={comparacion} />}
     </section>
   );
 }

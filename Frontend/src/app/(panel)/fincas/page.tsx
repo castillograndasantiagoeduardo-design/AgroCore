@@ -1,5 +1,5 @@
-import { FincasVista } from "@/features/fincas/components/FincasVista";
+import { redirect } from "next/navigation";
 
 export default function FincasPage() {
-  return <FincasVista />;
+  redirect("/explorar");
 }
