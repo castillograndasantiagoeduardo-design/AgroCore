@@ -2,6 +2,12 @@
 export type { IUnitOfWork } from "./shared/application/ports/unit-of-work.port.ts";
 export type { ICacheProveedores } from "./shared/application/ports/cache-proveedores.port.ts";
 export {
+  ETIQUETAS_TIEMPO,
+  type EtiquetaTiempo,
+  type IMedidorTiempos,
+  MEDIDOR_NULO,
+} from "./shared/application/ports/medidor-tiempos.port.ts";
+export {
   type ContextoSolicitud,
   type DetallesAuditoria,
   type EventoAuditoria,

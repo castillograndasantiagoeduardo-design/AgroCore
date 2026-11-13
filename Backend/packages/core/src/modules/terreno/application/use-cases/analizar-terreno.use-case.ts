@@ -27,6 +27,7 @@ import type {
   ISueloProvider,
   IViasProvider,
 } from "../ports/index.ts";
+import { type IMedidorTiempos, MEDIDOR_NULO } from "../../../../shared/application/ports/medidor-tiempos.port.ts";
 
 /** Años completos de NDVI que se analizan (más lo que va del año actual). */
 export const ANIOS_NDVI = 5;
@@ -41,6 +42,7 @@ export interface ProveedoresTerreno {
   elevacion: IElevacionProvider;
   humedad: IHumedadSueloProvider;
   reloj: IReloj;
+  medidor?: IMedidorTiempos;
 }
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -77,14 +79,15 @@ export class AnalizarTerrenoUseCase {
     const hasta = hoy.toISOString().slice(0, 10);
     const desde = hoy.getUTCFullYear() - ANIOS_NDVI + "-01-01";
     const puntosRelieve = puntosParaPendiente(area.centro);
+    const m = this.p.medidor ?? MEDIDOR_NULO;
 
     const [viasR, coberturaR, ndviR, sueloR, elevR, humedadR] = await Promise.all([
-      this.p.vias.obtenerElementos(area.caja(MARGEN_BUSQUEDA_VIAS_M)),
-      this.p.cobertura.obtenerCobertura(lat, lon),
-      this.p.ndvi.obtenerSerie(lat, lon, desde, hasta),
-      this.p.suelo.obtenerPropiedades(lat, lon),
-      this.p.elevacion.obtenerElevaciones(puntosRelieve),
-      this.p.humedad.obtenerClimatologia(lat, lon),
+      m.medir("overpass", () => this.p.vias.obtenerElementos(area.caja(MARGEN_BUSQUEDA_VIAS_M))),
+      m.medir("modis_cobertura", () => this.p.cobertura.obtenerCobertura(lat, lon)),
+      m.medir("modis_ndvi", () => this.p.ndvi.obtenerSerie(lat, lon, desde, hasta)),
+      m.medir("soilgrids", () => this.p.suelo.obtenerPropiedades(lat, lon)),
+      m.medir("srtm", () => this.p.elevacion.obtenerElevaciones(puntosRelieve)),
+      m.medir("power_humedad", () => this.p.humedad.obtenerClimatologia(lat, lon)),
     ]);
 
     const fuentes: string[] = [];
