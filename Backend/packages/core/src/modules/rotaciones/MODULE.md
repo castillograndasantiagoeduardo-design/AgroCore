@@ -6,8 +6,7 @@
 
 ## 🎯 Propósito
 
-Motor que compara **3 o 4 estrategias de rotación de 2 años** para **cualquier lugar del mundo** (o una finca
-guardada), expresadas en las **temporadas reales del sitio**, con evidencia y su fuente, beneficios, vacíos de
+Motor que compara **3 o 4 estrategias de rotación de 2 años** para **cualquier punto o área del mundo**, expresadas en las **temporadas reales del sitio**, con evidencia y su fuente, beneficios, vacíos de
 información, riesgos, un **calendario de 12 meses** (baldío / vulnerable / oportunidad) y **oportunidades**.
 
 > **Sugiere y explica; no reemplaza el criterio del agricultor ni del agrónomo.** Solo usa datos con fuente: no inventa cifras.
@@ -21,7 +20,7 @@ terreno, el perfil climático o la presencia local, **no se repiten las consulta
 1. Catálogo y secuencia actual (claves válidas). `datosComparacion.cultivoActual` es **opcional** (`string | null`).
 2. **Terreno** (`IAnalisisTerrenoQuery` ← `AnalizarTerrenoUseCase`): si no es apto → `TERRENO_NO_APTO`
    ("No se puede sembrar: es carretera"…) y **no hay rotaciones**.
-3. Altitud: la del usuario / finca → SRTM → celda del clima.
+3. Altitud: la del usuario → SRTM → celda del clima.
 4. **Clima** (`IPerfilClimaticoQuery.porUbicacion` ← `ObtenerPerfilClimaticoUseCase`): temporadas derivadas,
    vulnerabilidad, déficit hídrico.
 5. **Ventanas** (`construirVentanas`): 2 temporadas/año → 2 ventanas; 1 temporada/año → temporada + **intervalo**
@@ -91,21 +90,18 @@ si existe una alternativa viable (opción `evitarPocoComunPrimero`; si no hay al
 | Caso de uso | Clave en `AppContainer` | Audita |
 | :--- | :--- | :--- |
 | `CompararRotacionesUbicacionUseCase` | `compararRotacionesUbicacion` | ❌ (solo lectura) |
-| `CompararRotacionesUseCase` (finca guardada) | `compararRotaciones` | ❌ (solo lectura) |
 
 ## ⚠️ Errores
 
 | Código | HTTP |
 | :--- | :--- |
 | `TERRENO_NO_APTO` (mensaje del terreno, ej. "No se puede sembrar: es carretera") | 422 |
-| `ROTACION_CULTIVO_ACTUAL_REQUERIDO`, `ROTACION_CULTIVO_DESCONOCIDO`, `ROTACION_SIN_ALTERNATIVAS`, `ROTACION_SIN_TEMPORADAS` | 422 |
-| `FINCA_NO_ENCONTRADO` | 404 |
+| `ROTACION_CULTIVO_DESCONOCIDO`, `ROTACION_SIN_ALTERNATIVAS`, `ROTACION_SIN_TEMPORADAS` | 422 |
 
 ## 📁 Entradas
 
-- `POST /api/rotaciones/comparar` `{ area, cultivoActual, secuenciaActual?, tieneRiego, prioridades, altitudM? }`
-- `POST /api/rotaciones/fincas/:fincaId/comparar` `{ prioridades?, secuenciaActual? }`
-- Tools MCP `rotaciones_comparar`, `rotaciones_comparar_ubicacion` · `Http/rotaciones.http`
+- `POST /api/rotaciones/comparar` `{ area, cultivoActual?, secuenciaActual?, tieneRiego, prioridades, altitudM? }`
+- Tool MCP `rotaciones_comparar_ubicacion` · `Http/rotaciones.http`
 - `deno run -A scripts/probar-rotaciones.ts <lat> <lon> <cultivo> [si|no]` (sin MySQL)
 - Para el módulo `recomendacion`: `evaluarPaso`, `puntajesDeUnPaso`, `calcularPuntajes`, `pasoEsViable`,
   `mesesHeladaFrecuente`, `construirVentanas`, `calcularEscalaIngreso`, `PresenciaMotor`, `PRESENCIA_DESCONOCIDA`.

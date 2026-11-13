@@ -8,7 +8,6 @@ import type { ContextoSolicitud } from "../../../auditoria/application/ports/aud
 import type { AreaSeleccionada } from "../../../../shared/domain/geo/area-seleccionada.vo.ts";
 
 export type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
-export type { IFincaRepository } from "../../../fincas/domain/repositories/finca.repository.ts";
 export type { ICultivoRepository } from "../../../cultivos/domain/repositories/cultivo.repository.ts";
 
 /**
@@ -19,7 +18,6 @@ export interface IPerfilClimaticoQuery {
   porUbicacion(
     ubicacion: { latitud: number; longitud: number; altitudM: number | null },
     contexto: ContextoSolicitud,
-    fincaId?: number | null,
   ): Promise<Result<PerfilClimaticoDto, DomainError>>;
 }
 

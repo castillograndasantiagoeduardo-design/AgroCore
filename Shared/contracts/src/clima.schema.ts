@@ -3,10 +3,13 @@
  */
 import { z } from "zod";
 
-export const PerfilClimaticoParamsSchema = z.object({
-  fincaId: z.coerce.number().int().min(1),
+/** POST /api/clima/perfil: perfil climático de cualquier punto del mundo. altitudM opcional (si no, la de la celda). */
+export const PerfilClimaticoUbicacionSchema = z.object({
+  latitud: z.number().min(-90).max(90),
+  longitud: z.number().min(-180).max(180),
+  altitudM: z.number().int().min(-500).max(6000).optional(),
 });
-export type PerfilClimaticoParams = z.infer<typeof PerfilClimaticoParamsSchema>;
+export type PerfilClimaticoUbicacionInput = z.infer<typeof PerfilClimaticoUbicacionSchema>;
 
 export const TEMPORADAS = ["lluviosa", "seca"] as const;
 export const TemporadaSchema = z.enum(TEMPORADAS);
@@ -26,7 +29,7 @@ export const ClimaMensualSchema = z.object({
   nombreMes: z.string(),
   /** Lluvia total promedio del mes (mm). */
   lluviaMm: z.number(),
-  /** Temperaturas promedio del mes, YA corregidas a la altitud de la finca (°C). */
+  /** Temperaturas promedio del mes, YA corregidas a la altitud del sitio (°C). */
   tempMediaC: z.number(),
   tempMinC: z.number(),
   tempMaxC: z.number(),
@@ -122,11 +125,9 @@ export const CalibracionSchema = z.object({
 export type CalibracionDto = z.infer<typeof CalibracionSchema>;
 
 export const PerfilClimaticoSchema = z.object({
-  /** null cuando el perfil se pidió para un punto del mapa sin finca guardada. */
-  fincaId: z.number().int().nullable(),
   latitud: z.number(),
   longitud: z.number(),
-  /** Altitud usada para la corrección (la de la finca o, si no se conoce, la de la celda). */
+  /** Altitud usada para la corrección (la indicada o, si no se conoce, la de la celda). */
   altitudReferenciaM: z.number(),
   /** Altitud promedio de la celda del proveedor (NASA POWER). */
   altitudCeldaM: z.number(),

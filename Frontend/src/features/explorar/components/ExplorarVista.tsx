@@ -9,7 +9,7 @@
  */
 import { useMemo, useState } from "react";
 import { IconoPin } from "@/components/ui/Iconos";
-import { SelectorMapa } from "@/features/fincas/components/SelectorMapa";
+import { SelectorMapa } from "@/features/mapa/components/SelectorMapa";
 import { useExplorar } from "../hooks/use-explorar";
 import { UBICACIONES_RAPIDAS } from "../types/explorar.types";
 import { BannerAptitud } from "./BannerAptitud";

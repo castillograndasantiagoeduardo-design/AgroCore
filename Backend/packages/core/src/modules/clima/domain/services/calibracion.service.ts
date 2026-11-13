@@ -8,9 +8,9 @@
  *  2. Para cada mes se compara con lo que midió el IDEAM:
  *        deltaT       = T_IDEAM − T_NASA          (°C que hay que sumarle a la NASA)
  *        factorLluvia = Lluvia_IDEAM / Lluvia_NASA (por cuánto hay que multiplicar la NASA)
- *  3. Esas correcciones se aplican, día por día, a la serie de la finca.
+ *  3. Esas correcciones se aplican, día por día, a la serie de el sitio.
  *
- * Supuesto: el error de la NASA es parecido en la estación y en la finca (por eso la estación
+ * Supuesto: el error de la NASA es parecido en la estación y en el sitio (por eso la estación
  * debe estar cerca: ver DISTANCIA_MAX_CALIBRACION_KM).
  */
 import type { FactorCalibracionDto } from "@agrocore/contracts";
@@ -18,7 +18,7 @@ import type { RegistroClimaDiario } from "../value-objects/registro-clima-diario
 import type { NormalClimatologica } from "../value-objects/normal-climatologica.vo.ts";
 import { calcularCalendarioMensual } from "./calendario-climatico.service.ts";
 
-/** Más allá de esta distancia la estación ya no representa el clima de la finca. */
+/** Más allá de esta distancia la estación ya no representa el clima de el sitio. */
 export const DISTANCIA_MAX_CALIBRACION_KM = 25;
 
 /** Límites del factor de lluvia para evitar correcciones absurdas por datos raros. */

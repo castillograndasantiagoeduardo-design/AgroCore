@@ -33,7 +33,7 @@ export function BotonImprimirTicket({ entrada, comparacion, perfil }: Props) {
     setMensaje(null);
     setError(null);
     setSinImpresora(false);
-    const res = await impresionApi.imprimirTerreno({ ...entrada, soloVistaPrevia: false });
+    const res = await impresionApi.imprimirTerreno({ area: entrada.area, cultivoActual: entrada.cultivoActual, tieneRiego: entrada.tieneRiego, objetivo: "equilibrado", soloVistaPrevia: false });
     setEnviando(false);
     if (res.ok) {
       setLineas(res.data.lineas);
@@ -51,7 +51,7 @@ export function BotonImprimirTicket({ entrada, comparacion, perfil }: Props) {
   async function imprimirDesdeNavegador() {
     if (!entrada) return;
     setEnviando(true);
-    const res = await impresionApi.imprimirTerreno({ ...entrada, soloVistaPrevia: true });
+    const res = await impresionApi.imprimirTerreno({ area: entrada.area, cultivoActual: entrada.cultivoActual, tieneRiego: entrada.tieneRiego, objetivo: "equilibrado", soloVistaPrevia: true });
     setEnviando(false);
     setLineas(res.ok ? res.data.lineas : componerTicketLocal(comparacion, perfil));
     setTimeout(() => window.print(), 100);

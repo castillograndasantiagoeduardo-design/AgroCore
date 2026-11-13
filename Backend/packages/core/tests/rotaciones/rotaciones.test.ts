@@ -10,7 +10,6 @@ import {
   calcularCalendarioVulnerabilidad,
   calcularTemporadasCultivo,
   CompararRotacionesUbicacionUseCase,
-  CompararRotacionesUseCase,
   construirVentanas,
   type ContextoMotor,
   type ContextoSolicitud,
@@ -18,14 +17,10 @@ import {
   et0MensualMm,
   evaluarPaso,
   evaluarSecuencia,
-  Finca,
   type IAnalisisTerrenoQuery,
   type ICultivoRepository,
-  type IFincaRepository,
   type IPerfilClimaticoQuery,
   MotorRotaciones,
-  NombreFinca,
-  UbicacionFinca,
 } from "../../src/index.ts";
 import { cultivoDePrueba } from "../_fixtures/cultivos.ts";
 
@@ -65,7 +60,6 @@ function perfil(o: OpcionesPerfil): PerfilClimaticoDto {
   });
   const lluviaAnual = o.lluvia.reduce((a, b) => a + b, 0);
   return {
-    fincaId: null,
     latitud: o.latitud,
     longitud: 0,
     altitudReferenciaM: 2500,
@@ -366,32 +360,28 @@ Deno.test("motor: los meses baldíos del NDVI generan la oportunidad de cobertur
 // ---------------------------------------------------------------------------
 // Errores
 // ---------------------------------------------------------------------------
-function finca(cultivoActual: string | null = "papa"): Finca {
-  return Finca.reconstruir({
-    id: 1, nombre: NombreFinca.reconstruir("Finca de prueba"), descripcion: null,
-    ubicacion: UbicacionFinca.reconstruir(5.8, -73, 2500), area: null, localidad: null, pais: null, region: null,
-    tieneRiego: false, cultivoActual, activo: true, creadoEn: null,
-  });
-}
-const repoFincas = (f: Finca | null): IFincaRepository => ({
-  buscarPorId: () => Promise.resolve(f),
-  buscarPorNombre: () => Promise.resolve(null),
-  listar: () => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 20 }),
-  guardar: (x) => Promise.resolve(x),
-});
-
-Deno.test("finca guardada: compara con su cultivo actual", async () => {
-  const r = await new CompararRotacionesUseCase(repoFincas(finca()), motor()).execute({ fincaId: 1, prioridades: PRIORIDADES }, contexto);
+Deno.test("ubicación con altitud del usuario: sitio.tipo ubicacion y fuenteAltitud usuario", async () => {
+  const r = await new CompararRotacionesUbicacionUseCase(motor()).execute(
+    { area: { tipo: "punto", latitud: 5.8, longitud: -73 }, cultivoActual: "papa", altitudM: 2500, tieneRiego: false, prioridades: PRIORIDADES },
+    contexto,
+  );
   assert(r.ok);
-  assertEquals(r.value.sitio.tipo, "finca");
-  assertEquals(r.value.sitio.fuenteAltitud, "finca");
+  assertEquals(r.value.sitio.tipo, "ubicacion");
+  assertEquals(r.value.sitio.fuenteAltitud, "usuario");
+  assertEquals(r.value.sitio.cultivoActual, "papa");
 });
 
-Deno.test("errores: finca inexistente, sin cultivo actual y clave desconocida", async () => {
-  const a = await new CompararRotacionesUseCase(repoFincas(null), motor()).execute({ fincaId: 9, prioridades: PRIORIDADES }, contexto);
-  assertEquals(!a.ok && a.error.code, "FINCA_NO_ENCONTRADO");
-  const b = await new CompararRotacionesUseCase(repoFincas(finca(null)), motor()).execute({ fincaId: 1, prioridades: PRIORIDADES }, contexto);
-  assertEquals(!b.ok && b.error.code, "ROTACION_CULTIVO_ACTUAL_REQUERIDO");
+Deno.test("ubicación sin cultivoActual: compara igual, sin estrategia A", async () => {
+  const r = await new CompararRotacionesUbicacionUseCase(motor()).execute(
+    { area: { tipo: "punto", latitud: 5.8, longitud: -73 }, tieneRiego: false, prioridades: PRIORIDADES },
+    contexto,
+  );
+  assert(r.ok);
+  assertEquals(r.value.sitio.cultivoActual, null);
+  assertEquals(r.value.estrategias.some((e) => e.id === "A"), false);
+});
+
+Deno.test("errores: cultivoActual con clave desconocida → ROTACION_CULTIVO_DESCONOCIDO", async () => {
   const c = await new CompararRotacionesUbicacionUseCase(motor()).execute(
     { area: { tipo: "punto", latitud: 1, longitud: 1 }, cultivoActual: "unobtanio", tieneRiego: false, prioridades: PRIORIDADES },
     contexto,

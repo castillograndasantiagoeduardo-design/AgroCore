@@ -1,10 +1,10 @@
 /**
- * Prueba manual del módulo clima SIN MySQL: crea una finca en memoria y consulta NASA POWER
+ * Prueba manual del módulo clima SIN MySQL: consulta una ubicación y consulta NASA POWER
  * y las normales del IDEAM de verdad. Muestra el perfil SIN calibrar y CALIBRADO lado a lado.
  *
  * Uso (desde Backend/):  deno run -A scripts/probar-clima.ts [altitudM] [latitud] [longitud]
  */
-import { type ContextoSolicitud, Finca, type IFincaRepository, type INormalesClimatologicasProvider, ObtenerPerfilClimaticoUseCase } from "@agrocore/core";
+import { type ContextoSolicitud, type INormalesClimatologicasProvider, ObtenerPerfilClimaticoUseCase } from "@agrocore/core";
 import { IdeamNormalesClient, NasaPowerClient, SistemaReloj } from "@agrocore/platform";
 import { Result } from "@agrocore/shared-kernel";
 
@@ -12,16 +12,7 @@ const altitud = Deno.args[0] ? Number(Deno.args[0]) : 2530;
 const latitud = Deno.args[1] ? Number(Deno.args[1]) : 5.8269;
 const longitud = Deno.args[2] ? Number(Deno.args[2]) : -73.0297;
 
-const creada = Finca.crear({ nombre: "Prueba Duitama", latitud, longitud, altitudM: altitud });
-if (!creada.ok) throw new Error(creada.error.message);
-const finca = creada.value;
-
-const repo: IFincaRepository = {
-  buscarPorId: () => Promise.resolve(finca),
-  buscarPorNombre: () => Promise.resolve(null),
-  listar: () => Promise.resolve({ items: [finca], total: 1, page: 1, pageSize: 1 }),
-  guardar: (f) => Promise.resolve(f),
-};
+const ubicacion = { latitud, longitud, altitudM: altitud };
 const nasa = new NasaPowerClient();
 const reloj = new SistemaReloj();
 const sinIdeam: INormalesClimatologicasProvider = { estacionMasCercana: () => Promise.resolve(Result.ok(null)) };
@@ -29,8 +20,8 @@ const actor: ContextoSolicitud = { origen: "script", ip: null };
 
 const inicio = performance.now();
 const [crudo, calibrado] = [
-  await new ObtenerPerfilClimaticoUseCase(repo, nasa, sinIdeam, reloj).execute({ fincaId: 1 }, actor),
-  await new ObtenerPerfilClimaticoUseCase(repo, nasa, new IdeamNormalesClient(), reloj).execute({ fincaId: 1 }, actor),
+  await new ObtenerPerfilClimaticoUseCase(nasa, sinIdeam, reloj).porUbicacion(ubicacion, actor),
+  await new ObtenerPerfilClimaticoUseCase(nasa, new IdeamNormalesClient(), reloj).porUbicacion(ubicacion, actor),
 ];
 console.log("Tiempo total: " + Math.round(performance.now() - inicio) + " ms");
 if (!crudo.ok || !calibrado.ok) {

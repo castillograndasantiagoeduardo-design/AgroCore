@@ -242,7 +242,7 @@ export class RecomendacionDetalleUseCase {
       const comp = await this.d.motor.comparar(
         {
           area,
-          sitio: { tipo: "ubicacion", fincaId: null, nombre: null },
+          sitio: { tipo: "ubicacion", nombre: null },
           altitudM: terreno.elevacionM,
           fuenteAltitud: null,
           tieneRiego: input.tieneRiego,

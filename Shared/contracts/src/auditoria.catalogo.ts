@@ -3,7 +3,6 @@
  */
 
 export const AUDIT_ACTIONS = {
-  FINCA_CREADO: "fincas.creado",
   // @scaffold:audit-actions
 } as const;
 

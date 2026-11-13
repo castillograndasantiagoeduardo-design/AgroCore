@@ -80,12 +80,12 @@ AgroCore/
 
 Cada módulo vive en `Backend/packages/core/src/modules/<modulo>/` y tiene su `MODULE.md`:
 
-- **`fincas`** — Entidad `Finca` global (punto o polígono ≤ 100 ha) · [MODULE.md](./Backend/packages/core/src/modules/fincas/MODULE.md)
 - **`clima`** — Perfil climático de cualquier ubicación (NASA POWER 30 años, altitud, IDEAM en Colombia, ET0, temporadas derivadas, vulnerabilidad) · [MODULE.md](./Backend/packages/core/src/modules/clima/MODULE.md)
 - **`cultivos`** — Catálogo global de referencia de 51 cultivos (temperaturas ECOCROP, tolerancias, pH, textura, plagas; solo lectura) · [MODULE.md](./Backend/packages/core/src/modules/cultivos/MODULE.md)
 - **`rotaciones`** — Motor que compara 3–4 estrategias de 2 años en temporadas reales de cualquier lugar (A actual, B suelo, C forraje/ingreso, D agua) con evidencia y fuente, calendario y oportunidades · [MODULE.md](./Backend/packages/core/src/modules/rotaciones/MODULE.md)
 - **`terreno`** — Análisis del sitio (punto o área ≤ 100 ha): aptitud ("No se puede sembrar: es carretera"), SRTM, SoilGrids, NDVI MODIS (meses baldíos), cobertura MODIS · [MODULE.md](./Backend/packages/core/src/modules/terreno/MODULE.md)
 - **`impresion`** — Ticket térmico ESC/POS de 58 mm con el resumen del terreno (Xprinter compartida en Windows) · [MODULE.md](./Backend/packages/core/src/modules/impresion/MODULE.md)
+- **`recomendacion`** — Qué sembrar en cada época del año (épocas derivadas del clima real del lugar) para 4 objetivos fijos, con presencia local (EVA/FAOSTAT) y cero datos inventados; etapa rápida, detalle y flujo NDJSON; cada dato lleva su fuente (`DatoConFuente`). Sobre un precálculo regional en MySQL (clima, vías, cobertura, elevación) la etapa rápida responde sin proveedores externos · [MODULE.md](./Backend/packages/core/src/modules/recomendacion/MODULE.md)
 <!-- @scaffold:modules -->
 
 **Transversales (sin `MODULE.md` propio, solo puertos):** `auditoria` (`IAuditor`, `ContextoSolicitud { origen, ip }`, `sanitizarDetalles`), `mcp-audit` (`IMcpToolLogger`) y `shared` (`IUnitOfWork`, `ICacheProveedores`, VO `AreaSeleccionada` y geometría). **La API es abierta: no hay login, JWT ni roles.**

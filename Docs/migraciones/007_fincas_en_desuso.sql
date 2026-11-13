@@ -1,0 +1,5 @@
+-- 007: la tabla `fincas` queda EN DESUSO.
+-- El flujo nuevo trabaja por ÁREA seleccionada en el mapa (módulo `recomendacion` y POST /api/rotaciones/comparar),
+-- sin guardar fincas. El backend ya no lee ni escribe esta tabla.
+-- No se borra para conservar los datos históricos. Si algún día se quiere eliminar, ejecutar a mano:
+-- DROP TABLE fincas;

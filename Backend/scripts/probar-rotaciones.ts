@@ -10,7 +10,6 @@ import {
   AnalizarTerrenoUseCase,
   CompararRotacionesUbicacionUseCase,
   type ContextoSolicitud,
-  type IFincaRepository,
   MotorRotaciones,
   ObtenerPerfilClimaticoUseCase,
 } from "@agrocore/core";
@@ -43,7 +42,7 @@ const terreno = new AnalizarTerrenoUseCase({
   humedad: new NasaPowerHumedadClient(),
   reloj,
 });
-const clima = new ObtenerPerfilClimaticoUseCase({} as IFincaRepository, new NasaPowerClient(), new IdeamNormalesClient(), reloj);
+const clima = new ObtenerPerfilClimaticoUseCase(new NasaPowerClient(), new IdeamNormalesClient(), reloj);
 const caso = new CompararRotacionesUbicacionUseCase(new MotorRotaciones(new CatalogoCultivosEnMemoria(), clima, terreno));
 
 const inicio = performance.now();

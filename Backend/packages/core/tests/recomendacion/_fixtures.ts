@@ -75,7 +75,6 @@ const relojFijo = { hoy: () => new Date("2026-11-13T12:00:00Z") };
 export async function perfilSintetico(meses: MesSintetico[], latitud: number, altitudM: number): Promise<PerfilClimaticoDto> {
   const serie = serieSintetica(meses);
   const uc = new ObtenerPerfilClimaticoUseCase(
-    { buscarPorId: () => Promise.resolve(null) } as never,
     { obtenerSerieDiaria: () => Promise.resolve(Result.ok({ fuente: "NASA POWER", altitudCeldaM: altitudM, registros: serie })) },
     { estacionMasCercana: () => Promise.resolve(Result.ok(null)) },
     relojFijo,

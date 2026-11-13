@@ -10,7 +10,6 @@ import {
   MySqlClimaPrecalculado,
   MySqlCoberturaRegion,
   MySqlElevacionRegion,
-  MySqlFincaRepository,
   MySqlMcpToolLogger,
   MySqlPrecalculo,
   MySqlViasRegion,
@@ -40,12 +39,9 @@ import type { AppConfig } from "./config.ts";
 import {
   AnalizarTerrenoUseCase,
   CompararRotacionesUbicacionUseCase,
-  CompararRotacionesUseCase,
   MotorRotaciones,
-  CrearFincaUseCase,
   ImprimirTicketTerrenoUseCase,
   ListarCultivosUseCase,
-  ListarFincasUseCase,
   ObtenerCultivoUseCase,
   ObtenerPerfilClimaticoUseCase,
   RecomendacionDetalleUseCase,
@@ -102,12 +98,11 @@ export function createContainer(config: AppConfig, opciones: OpcionesContenedor 
     usarPrecalculo && puntoEnCaja(latitud, longitud, config.regionPrecalculo.detalle);
 
   // Repositorios
-  const fincaRepository = new MySqlFincaRepository(db);
   const cultivoRepository = new CatalogoCultivosEnMemoria(); // Fail-Fast: valida el catálogo al arrancar
   // @scaffold:repositories
 
   // Casos de uso que otros casos de uso consumen a través de un puerto
-  const obtenerPerfilClimatico = new ObtenerPerfilClimaticoUseCase(fincaRepository, climaProvider, normalesProvider, reloj, medidor, climatologiaProvider, temporizador);
+  const obtenerPerfilClimatico = new ObtenerPerfilClimaticoUseCase(climaProvider, normalesProvider, reloj, medidor, climatologiaProvider, temporizador);
   const analizarTerreno = new AnalizarTerrenoUseCase({
     vias: viasProvider,
     cobertura: coberturaProvider,
@@ -156,12 +151,9 @@ export function createContainer(config: AppConfig, opciones: OpcionesContenedor 
       presencia: presenciaProvider,
     },
     // Casos de uso
-    crearFinca: new CrearFincaUseCase(fincaRepository, unitOfWork, auditor, cultivoRepository),
-    listarFincas: new ListarFincasUseCase(fincaRepository),
     obtenerPerfilClimatico,
     listarCultivos: new ListarCultivosUseCase(cultivoRepository),
     obtenerCultivo: new ObtenerCultivoUseCase(cultivoRepository),
-    compararRotaciones: new CompararRotacionesUseCase(fincaRepository, motorRotaciones),
     compararRotacionesUbicacion,
     analizarTerreno,
     recomendacionRapida,

@@ -51,7 +51,7 @@ function etapas(c: AppContainer, l: Lugar) {
     recomendacionDetalle?: { execute(i: unknown, ctx: unknown): Promise<{ ok: boolean; error?: { code: string } }> };
   };
   if (conRapida.recomendacionRapida && conRapida.recomendacionDetalle) {
-    const entrada = { area: l.area, cultivoActual: l.cultivoActual, tieneRiego: false };
+    const entrada = { area: l.area, cultivoActual: l.cultivoActual, tieneRiego: false, objetivo: "equilibrado" as const };
     return {
       primer: () => conRapida.recomendacionRapida!.execute(entrada, contexto),
       completo: () => conRapida.recomendacionDetalle!.execute(entrada, contexto),
@@ -95,7 +95,9 @@ const fmt = (ms: number) => (ms / 1000).toFixed(2) + " s";
 
 for (const l of LUGARES) {
   if (solo !== "caliente") {
-    const frio = createContainer(config, { sinCachePersistente: true });
+    // Frío: sin caché en memoria ni MySQL. Dentro de la región el precálculo sigue activo (es la respuesta instantánea);
+    // fuera de la región se apaga también el precálculo para medir el camino en vivo.
+    const frio = createContainer(config, { sinCachePersistente: true, sinPrecalculo: !l.enRegion });
     const m = await medirLugar(frio, l, "frio");
     resultados.push(m);
     console.log("FRÍO     · " + l.nombre.padEnd(22) + " primer " + fmt(m.primerMs).padStart(8) + " · completo " + fmt(m.completoMs).padStart(8) + " · " + m.nota);

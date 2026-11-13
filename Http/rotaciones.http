@@ -41,20 +41,8 @@ Content-Type: application/json
 
 { "area": { "tipo": "punto", "latitud": 37.85, "longitud": -4.85 }, "cultivoActual": "unobtanio" }
 
-### Sin cultivoActual (400 VALIDATION_ERROR)
+### Sin cultivoActual (200): compara sin estrategia A
 POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
 { "area": { "tipo": "punto", "latitud": 37.85, "longitud": -4.85 } }
-
-### Finca guardada 1 con sus datos (200)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Content-Type: application/json
-
-{ "prioridades": { "suelo": 5 } }
-
-### Finca inexistente (404 FINCA_NO_ENCONTRADO)
-POST {{baseUrl}}/rotaciones/fincas/9999/comparar
-Content-Type: application/json
-
-{}

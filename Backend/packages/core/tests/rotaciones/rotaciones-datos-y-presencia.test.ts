@@ -90,7 +90,7 @@ const area = AreaSeleccionada.desdeDto({ tipo: "punto", latitud: 5.8, longitud: 
 if (!area.ok) throw new Error("área de prueba inválida");
 const datos = (cultivoActual: string | null) => ({
   area: area.value,
-  sitio: { tipo: "ubicacion" as const, fincaId: null, nombre: null },
+  sitio: { tipo: "ubicacion" as const, nombre: null },
   altitudM: null,
   fuenteAltitud: null,
   tieneRiego: false,
