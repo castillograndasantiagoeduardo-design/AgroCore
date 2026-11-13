@@ -8,7 +8,7 @@ import {
   CompararRotacionesBodySchema,
   type ComparacionRotacionesDto,
   type PrioridadesRotacion,
-} from "@duitamacrece/contracts";
+} from "@agrocore/contracts";
 import { rotacionesApi } from "../api/rotaciones.api";
 
 export function useComparacionRotaciones() {

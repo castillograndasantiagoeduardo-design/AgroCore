@@ -5,7 +5,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bodyLimit } from "hono/body-limit";
-import { createContainer, loadConfigFromEnv } from "@duitamacrece/composition";
+import { createContainer, loadConfigFromEnv } from "@agrocore/composition";
 import type { AppEnv } from "./src/types.ts";
 import { registrarRutas } from "./src/routes/index.ts";
 import { contextoSolicitud } from "./src/middlewares/proteccion.ts";

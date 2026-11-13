@@ -2,7 +2,7 @@
  * Test unitario de CrearFincaUseCase con adaptadores en memoria (sin MySQL).
  */
 import { assertEquals } from "@std/assert";
-import type { Paginated } from "@duitamacrece/shared-kernel";
+import type { Paginated } from "@agrocore/shared-kernel";
 import {
   CrearFincaUseCase,
   type EventoAuditoria,

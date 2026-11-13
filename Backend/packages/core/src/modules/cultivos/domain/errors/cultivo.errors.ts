@@ -1,7 +1,7 @@
 /**
  * Errores de dominio del módulo cultivos (extienden DomainError, nunca se lanzan).
  */
-import { DomainError } from "@duitamacrece/shared-kernel";
+import { DomainError } from "@agrocore/shared-kernel";
 
 /** No hay cultivo con esa clave en el catálogo. HTTP 404 (sufijo _NO_ENCONTRADO). */
 export class CultivoNoEncontradoError extends DomainError {

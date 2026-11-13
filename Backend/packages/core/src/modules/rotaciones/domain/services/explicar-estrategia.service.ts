@@ -2,7 +2,7 @@
  * Textos explicativos de una estrategia (servicio de dominio puro).
  * Todo se genera con los datos calculados: no se inventan cifras ni se citan datos que no estén en el cálculo.
  */
-import type { IdEstrategia, ReglaRotacion } from "@duitamacrece/contracts";
+import type { IdEstrategia, ReglaRotacion } from "@agrocore/contracts";
 import { NOMBRES_MES } from "../../../clima/domain/services/calendario-climatico.service.ts";
 import { type ContextoMotor, nombresDeMeses } from "./evaluar-paso.service.ts";
 import { EVIDENCIA_REGLAS, RIESGOS_GENERALES, VACIOS_GENERALES } from "./evidencia-reglas.ts";

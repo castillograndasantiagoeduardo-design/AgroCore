@@ -4,7 +4,7 @@
  * Vista del módulo rotaciones: finca + prioridades → comparación de 3 estrategias a 2 años.
  */
 import { type FormEvent, useEffect, useState } from "react";
-import { PRIORIDADES_ROTACION, type PrioridadesRotacion } from "@duitamacrece/contracts";
+import { PRIORIDADES_ROTACION, type PrioridadesRotacion } from "@agrocore/contracts";
 import { fincasApi } from "@/features/fincas/api/fincas.api";
 import type { PaginaFincas } from "@/features/fincas/types/fincas.types";
 import { useComparacionRotaciones } from "../hooks/use-comparacion-rotaciones";

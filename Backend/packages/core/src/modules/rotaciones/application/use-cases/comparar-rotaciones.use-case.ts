@@ -10,8 +10,8 @@ import type {
   CompararRotacionesInput,
   EstrategiaRotacionDto,
   IdEstrategia,
-} from "@duitamacrece/contracts";
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+} from "@agrocore/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import { FincaNoEncontradoError } from "../../../fincas/domain/errors/finca.errors.ts";
 import type { Cultivo } from "../../../cultivos/domain/entities/cultivo.entity.ts";
 import {

@@ -2,8 +2,8 @@
  * MySqlFincaRepository: implementa IFincaRepository con Drizzle.
  */
 import { count, desc, eq } from "drizzle-orm";
-import type { Finca, IFincaRepository } from "@duitamacrece/core";
-import { type Paginated, type PaginationParams, toOffset } from "@duitamacrece/shared-kernel";
+import type { Finca, IFincaRepository } from "@agrocore/core";
+import { type Paginated, type PaginationParams, toOffset } from "@agrocore/shared-kernel";
 import type { Database } from "../connection.ts";
 import { dbActual } from "../unit-of-work.ts";
 import { fincasTable } from "../schema/fincas.schema.ts";

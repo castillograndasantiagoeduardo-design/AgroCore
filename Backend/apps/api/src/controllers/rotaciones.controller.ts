@@ -2,7 +2,7 @@
  * Controlador de rotaciones: valida con Zod (forma), invoca el caso de uso del contenedor
  * y delega la respuesta a presentResult. Sin lógica de negocio ni instanciación manual.
  */
-import { CompararRotacionesSchema } from "@duitamacrece/contracts";
+import { CompararRotacionesSchema } from "@agrocore/contracts";
 import { safeHandler } from "../http/safe-handler.ts";
 import { presentResult, presentValidationError } from "../http/present-result.ts";
 

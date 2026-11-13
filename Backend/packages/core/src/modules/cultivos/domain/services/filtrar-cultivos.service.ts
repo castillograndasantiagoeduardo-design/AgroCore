@@ -2,7 +2,7 @@
  * Servicio de dominio puro: filtra el catálogo según criterios agronómicos.
  * Lo usa ListarCultivosUseCase y lo reutilizará el motor de rotaciones (primer filtro por altitud/helada).
  */
-import type { AptitudAltitud, FamiliaBotanica, Nivel, UsoCultivo } from "@duitamacrece/contracts";
+import type { AptitudAltitud, FamiliaBotanica, Nivel, UsoCultivo } from "@agrocore/contracts";
 import { type Cultivo, nivelAlMenos } from "../entities/cultivo.entity.ts";
 
 export interface CriteriosCultivo {

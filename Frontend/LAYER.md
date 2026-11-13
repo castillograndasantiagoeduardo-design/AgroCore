@@ -7,7 +7,7 @@
 
 ## 🎯 Propósito
 
-Completamente desacoplado del Backend: solo se comunica por HTTP y comparte esquemas vía `@duitamacrece/contracts`.
+Completamente desacoplado del Backend: solo se comunica por HTTP y comparte esquemas vía `@agrocore/contracts`.
 
 ## 📦 ¿Qué contiene?
 

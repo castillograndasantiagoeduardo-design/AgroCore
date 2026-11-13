@@ -1,7 +1,7 @@
 /**
  * Errores de dominio del módulo rotaciones (extienden DomainError, nunca se lanzan). Todos HTTP 422.
  */
-import { DomainError } from "@duitamacrece/shared-kernel";
+import { DomainError } from "@agrocore/shared-kernel";
 
 /** No se puede armar la estrategia A: la finca no tiene cultivoActual y no se envió secuenciaActual. */
 export class RotacionCultivoActualRequeridoError extends DomainError {

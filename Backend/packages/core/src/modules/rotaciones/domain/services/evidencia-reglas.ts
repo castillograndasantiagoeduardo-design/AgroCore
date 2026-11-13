@@ -10,7 +10,7 @@
  *   - "calculada"         = no es una recomendación externa: sale de los datos de la finca
  *                           (clima calibrado, altitud) cruzados con el catálogo de cultivos.
  */
-import type { ReglaRotacion } from "@duitamacrece/contracts";
+import type { ReglaRotacion } from "@agrocore/contracts";
 
 export type RespaldoRegla = "documentada" | "practica_habitual" | "calculada";
 

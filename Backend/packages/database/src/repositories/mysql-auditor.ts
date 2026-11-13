@@ -1,7 +1,7 @@
 /**
  * Implementación de IAuditor sobre logs_auditoria. Sanitiza siempre los detalles.
  */
-import { type EventoAuditoria, type IAuditor, sanitizarDetalles } from "@duitamacrece/core";
+import { type EventoAuditoria, type IAuditor, sanitizarDetalles } from "@agrocore/core";
 import type { Database } from "../connection.ts";
 import { logsAuditoriaTable } from "../schema/index.ts";
 import { dbActual } from "../unit-of-work.ts";

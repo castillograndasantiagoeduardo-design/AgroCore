@@ -1,8 +1,8 @@
 /**
  * Caso de uso: listar fincas paginados (solo lectura, no audita).
  */
-import type { ListarFincasQuery } from "@duitamacrece/contracts";
-import { DomainError, type Paginated, Result } from "@duitamacrece/shared-kernel";
+import type { ListarFincasQuery } from "@agrocore/contracts";
+import { DomainError, type Paginated, Result } from "@agrocore/shared-kernel";
 import type { FincaSnapshot } from "../../domain/entities/finca.entity.ts";
 import type { IFincaRepository } from "../../domain/repositories/finca.repository.ts";
 import type { ContextoSolicitud } from "../ports/index.ts";

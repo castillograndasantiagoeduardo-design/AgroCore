@@ -9,12 +9,12 @@ import {
   MySqlUnitOfWork,
   MySqlFincaRepository,
   CatalogoCultivosEnMemoria,
-} from "@duitamacrece/database";
+} from "@agrocore/database";
 import {
   IdeamNormalesClient,
   NasaPowerClient,
   SistemaReloj,
-} from "@duitamacrece/platform";
+} from "@agrocore/platform";
 import type { AppConfig } from "./config.ts";
 import {
   CrearFincaUseCase,
@@ -23,7 +23,7 @@ import {
   ListarCultivosUseCase,
   ObtenerCultivoUseCase,
   CompararRotacionesUseCase,
-} from "@duitamacrece/core";
+} from "@agrocore/core";
 // @scaffold:imports
 
 export function createContainer(config: AppConfig) {

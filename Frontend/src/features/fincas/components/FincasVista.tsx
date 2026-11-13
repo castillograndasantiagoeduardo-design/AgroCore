@@ -5,7 +5,7 @@
  * (Más adelante el formulario de coordenadas se reemplaza por un clic en el mapa de Duitama.)
  */
 import { type FormEvent, useEffect, useState } from "react";
-import type { CultivoDto, ZonaAltitudinal } from "@duitamacrece/contracts";
+import type { CultivoDto, ZonaAltitudinal } from "@agrocore/contracts";
 import { cultivosApi } from "@/features/cultivos/api/cultivos.api";
 import { useFincas } from "../hooks/use-fincas";
 import { SelectorMapa } from "./SelectorMapa";

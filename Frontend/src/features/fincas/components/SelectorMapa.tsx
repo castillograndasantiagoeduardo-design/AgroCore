@@ -17,7 +17,7 @@ interface SelectorMapaProps {
   zoomInicial?: number;
 }
 
-// Bounding box oficial de DuitamaCrece (5.70 a 6.15 N, -73.25 a -72.85 W)
+// Bounding box oficial de AgroCore (5.70 a 6.15 N, -73.25 a -72.85 W)
 const AREA_DUITAMA = {
   latMin: 5.70,
   latMax: 6.15,

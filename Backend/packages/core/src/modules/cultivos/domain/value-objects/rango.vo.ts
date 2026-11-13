@@ -4,7 +4,7 @@
  *
  * Reglas que protege: ambos extremos son números finitos, no negativos y min ≤ max.
  */
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import { CultivoDatosInvalidosError } from "../errors/cultivo.errors.ts";
 
 export class Rango {

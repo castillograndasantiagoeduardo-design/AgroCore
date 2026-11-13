@@ -1,4 +1,4 @@
-# 🤖 Contexto Global del Proyecto - DuitamaCrece
+# 🤖 Contexto Global del Proyecto - AgroCore
 
 > **Documento Maestro de Contexto para Asistentes de IA (Claude)**
 > Punto de entrada para entender la arquitectura, reglas, flujo de trabajo y módulos de este monorepo con **Clean Architecture + Hexagonal + DDD táctico**.
@@ -25,14 +25,14 @@
 
 | Capa | LAYER.md |
 | :--- | :--- |
-| `@duitamacrece/shared-kernel` | [`Backend/packages/shared-kernel/LAYER.md`](./Backend/packages/shared-kernel/LAYER.md) |
-| `@duitamacrece/contracts` | [`Shared/contracts/LAYER.md`](./Shared/contracts/LAYER.md) |
-| `@duitamacrece/core` | [`Backend/packages/core/LAYER.md`](./Backend/packages/core/LAYER.md) |
-| `@duitamacrece/database` | [`Backend/packages/database/LAYER.md`](./Backend/packages/database/LAYER.md) |
-| `@duitamacrece/platform` | [`Backend/packages/platform/LAYER.md`](./Backend/packages/platform/LAYER.md) |
-| `@duitamacrece/composition` | [`Backend/packages/composition/LAYER.md`](./Backend/packages/composition/LAYER.md) |
-| `@duitamacrece/api` | [`Backend/apps/api/LAYER.md`](./Backend/apps/api/LAYER.md) |
-| `@duitamacrece/mcp-server` | [`Backend/apps/mcp-server/LAYER.md`](./Backend/apps/mcp-server/LAYER.md) |
+| `@agrocore/shared-kernel` | [`Backend/packages/shared-kernel/LAYER.md`](./Backend/packages/shared-kernel/LAYER.md) |
+| `@agrocore/contracts` | [`Shared/contracts/LAYER.md`](./Shared/contracts/LAYER.md) |
+| `@agrocore/core` | [`Backend/packages/core/LAYER.md`](./Backend/packages/core/LAYER.md) |
+| `@agrocore/database` | [`Backend/packages/database/LAYER.md`](./Backend/packages/database/LAYER.md) |
+| `@agrocore/platform` | [`Backend/packages/platform/LAYER.md`](./Backend/packages/platform/LAYER.md) |
+| `@agrocore/composition` | [`Backend/packages/composition/LAYER.md`](./Backend/packages/composition/LAYER.md) |
+| `@agrocore/api` | [`Backend/apps/api/LAYER.md`](./Backend/apps/api/LAYER.md) |
+| `@agrocore/mcp-server` | [`Backend/apps/mcp-server/LAYER.md`](./Backend/apps/mcp-server/LAYER.md) |
 | `Frontend` | [`Frontend/LAYER.md`](./Frontend/LAYER.md) |
 
 ---
@@ -46,28 +46,28 @@
 - **Frontend:** **Next.js 16** (App Router + Features) + **Tailwind v4**.
 - **Dependencias:** siempre apuntan hacia adentro (hacia `core` y `shared-kernel`).
 - **Errores de negocio:** `Result<T, DomainError>`, nunca `throw`.
-- **Ensamblaje:** solo en `createContainer` (`@duitamacrece/composition`).
+- **Ensamblaje:** solo en `createContainer` (`@agrocore/composition`).
 
 ---
 
 ## 🌳 3. Mapa de Directorios
 
 ```text
-DuitamaCrece/
+AgroCore/
 ├── CLAUDE.md / GEMINI.md       # 🌟 Orquestadores de contexto para IA
 ├── context/                    # 📜 rules_architecture.md, ai_development_workflow.md
 ├── Shared/
-│   └── contracts/              # @duitamacrece/contracts (Esquemas Zod, catálogos de auditoría y tools MCP)
+│   └── contracts/              # @agrocore/contracts (Esquemas Zod, catálogos de auditoría y tools MCP)
 ├── Backend/                    # Workspace Deno 2.x (deno.json)
 │   ├── packages/
-│   │   ├── shared-kernel/      # @duitamacrece/shared-kernel (Result<T,E>, DomainError, Pagination)
-│   │   ├── core/               # @duitamacrece/core (Entidades, Value Objects, Casos de Uso, Puertos)
-│   │   ├── database/           # @duitamacrece/database (Drizzle ORM, MySQL2, Repositorios, UnitOfWork)
-│   │   ├── platform/           # @duitamacrece/platform (Proveedores externos NASA/ORNL/OSM, impresora ESC/POS)
-│   │   └── composition/        # @duitamacrece/composition (Contenedor DI: createContainer)
+│   │   ├── shared-kernel/      # @agrocore/shared-kernel (Result<T,E>, DomainError, Pagination)
+│   │   ├── core/               # @agrocore/core (Entidades, Value Objects, Casos de Uso, Puertos)
+│   │   ├── database/           # @agrocore/database (Drizzle ORM, MySQL2, Repositorios, UnitOfWork)
+│   │   ├── platform/           # @agrocore/platform (Proveedores externos NASA/ORNL/OSM, impresora ESC/POS)
+│   │   └── composition/        # @agrocore/composition (Contenedor DI: createContainer)
 │   └── apps/
-│       ├── api/                # @duitamacrece/api (Servidor HTTP REST con Hono)
-│       └── mcp-server/         # @duitamacrece/mcp-server (Servidor MCP para Agentes IA)
+│       ├── api/                # @agrocore/api (Servidor HTTP REST con Hono)
+│       └── mcp-server/         # @agrocore/mcp-server (Servidor MCP para Agentes IA)
 ├── Frontend/                   # Next.js 16 (App Router + Features + Tailwind v4)
 │   └── src/{app, features, components, lib}
 ├── Docs/                       # Documentación técnica (DDL SQL, ADRs, guías)

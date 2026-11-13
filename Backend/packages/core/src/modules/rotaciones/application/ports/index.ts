@@ -2,8 +2,8 @@
  * Puertos que usa el caso de uso de rotaciones.
  * Solo lectura: no necesita IAuditor ni IUnitOfWork (no muta estado).
  */
-import type { PerfilClimaticoDto, PerfilClimaticoParams } from "@duitamacrece/contracts";
-import type { DomainError, Result } from "@duitamacrece/shared-kernel";
+import type { PerfilClimaticoDto, PerfilClimaticoParams } from "@agrocore/contracts";
+import type { DomainError, Result } from "@agrocore/shared-kernel";
 import type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
 
 export type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";

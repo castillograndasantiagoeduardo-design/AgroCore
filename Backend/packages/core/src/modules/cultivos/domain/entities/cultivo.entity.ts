@@ -9,8 +9,8 @@
  *  4. Un cultivo que fija nitrógeno pertenece (al menos en parte) a las fabáceas (leguminosas).
  *  5. Tiene al menos una fuente: el sistema sugiere con evidencia, no con datos inventados.
  */
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
-import type { AptitudAltitud, FamiliaBotanica, Nivel, UsoCultivo, ValorForrajero } from "@duitamacrece/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
+import type { AptitudAltitud, FamiliaBotanica, Nivel, UsoCultivo, ValorForrajero } from "@agrocore/contracts";
 import { Rango } from "../value-objects/rango.vo.ts";
 import { CultivoDatosInvalidosError } from "../errors/cultivo.errors.ts";
 

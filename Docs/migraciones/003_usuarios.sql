@@ -1,8 +1,8 @@
--- Migración 003 — Duitama Crece
+-- Migración 003 — AgroCore
 -- Tabla de usuarios del sistema para autenticación local
 -- Ejecutar en MySQL Workbench.
 
-USE `duitama_crece`;
+USE `agrocore`;
 
 CREATE TABLE IF NOT EXISTS usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,

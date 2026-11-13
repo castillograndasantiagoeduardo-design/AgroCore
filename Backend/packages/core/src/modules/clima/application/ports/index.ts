@@ -1,7 +1,7 @@
 /**
  * Puertos técnicos que usan los casos de uso de clima (Regla 2: core no sabe de fetch ni de Date.now).
  */
-import type { DomainError, Result } from "@duitamacrece/shared-kernel";
+import type { DomainError, Result } from "@agrocore/shared-kernel";
 import type { SerieClimatica } from "../../domain/value-objects/registro-clima-diario.vo.ts";
 import type { NormalClimatologica } from "../../domain/value-objects/normal-climatologica.vo.ts";
 

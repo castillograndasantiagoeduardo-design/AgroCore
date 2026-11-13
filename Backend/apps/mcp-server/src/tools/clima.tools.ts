@@ -1,7 +1,7 @@
 /**
  * Herramientas MCP del módulo clima. ToolGateway valida, ejecuta y registra.
  */
-import { MCP_TOOLS, PerfilClimaticoParamsSchema } from "@duitamacrece/contracts";
+import { MCP_TOOLS, PerfilClimaticoParamsSchema } from "@agrocore/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 export function registrarClimaTools(gateway: ToolGateway): void {

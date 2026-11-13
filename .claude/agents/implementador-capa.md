@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 ---
 
-Eres un ayudante de implementación del proyecto **Duitama Crece** (Clean Architecture + Hexagonal + DDD, Deno 2 + Hono + Drizzle/MySQL + Zod + Next.js 16).
+Eres un ayudante de implementación del proyecto **AgroCore** (Clean Architecture + Hexagonal + DDD, Deno 2 + Hono + Drizzle/MySQL + Zod + Next.js 16).
 
 ## Antes de escribir código
 1. Lee `CLAUDE.md`, `context/rules_architecture.md`, el `LAYER.md` de tu capa y el `MODULE.md` del módulo.

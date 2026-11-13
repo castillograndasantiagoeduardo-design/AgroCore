@@ -8,7 +8,7 @@
  * Para pasarlo a MySQL más adelante: crear MySqlCultivoRepository con el mismo puerto y cambiar
  * una línea en createContainer. core no se entera.
  */
-import { Cultivo, type CrearCultivoDatos, type ICultivoRepository } from "@duitamacrece/core";
+import { Cultivo, type CrearCultivoDatos, type ICultivoRepository } from "@agrocore/core";
 import { CATALOGO_CULTIVOS } from "./catalogo-cultivos.datos.ts";
 
 export class CatalogoCultivosEnMemoria implements ICultivoRepository {

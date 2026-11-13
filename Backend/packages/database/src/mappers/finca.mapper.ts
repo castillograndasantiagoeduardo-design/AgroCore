@@ -1,7 +1,7 @@
 /**
  * Mapper: traduce filas SQL a la entidad Finca de core y viceversa.
  */
-import { Finca, NombreFinca, UbicacionFinca } from "@duitamacrece/core";
+import { Finca, NombreFinca, UbicacionFinca } from "@agrocore/core";
 import type { FincaRow, NuevoFincaRow } from "../schema/fincas.schema.ts";
 
 export const FincaMapper = {

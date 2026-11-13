@@ -19,8 +19,8 @@ import {
   type IClimaProvider,
   type RegistroClimaDiario,
   type SerieClimatica,
-} from "@duitamacrece/core";
-import { type DomainError, Result } from "@duitamacrece/shared-kernel";
+} from "@agrocore/core";
+import { type DomainError, Result } from "@agrocore/shared-kernel";
 
 const FUENTE = "NASA POWER";
 const PARAMETROS = ["T2M", "T2M_MIN", "T2M_MAX", "PRECTOTCORR"] as const;

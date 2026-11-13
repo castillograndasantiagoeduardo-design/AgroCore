@@ -1,4 +1,4 @@
-# 🧱 Capa 1: `@duitamacrece/contracts`
+# 🧱 Capa 1: `@agrocore/contracts`
 
 > Ruta: `Shared/contracts`
 > Antes de modificar esta capa lee este archivo, `context/rules_architecture.md` y el `MODULE.md` del módulo afectado.
@@ -36,7 +36,7 @@ Es el **idioma común** entre el Frontend, la API REST, el servidor MCP y el Cor
 ## 🛠️ Forma de Uso
 
 ```typescript
-import { CrearProductoSchema } from '@duitamacrece/contracts';
+import { CrearProductoSchema } from '@agrocore/contracts';
 
 const parsed = CrearProductoSchema.safeParse(body);
 if (!parsed.success) return presentValidationError(c, parsed.error);

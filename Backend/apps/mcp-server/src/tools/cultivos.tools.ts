@@ -1,7 +1,7 @@
 /**
  * Herramientas MCP del módulo cultivos. ToolGateway valida, ejecuta y registra.
  */
-import { ListarCultivosQuerySchema, MCP_TOOLS, ObtenerCultivoParamsSchema } from "@duitamacrece/contracts";
+import { ListarCultivosQuerySchema, MCP_TOOLS, ObtenerCultivoParamsSchema } from "@agrocore/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 export function registrarCultivosTools(gateway: ToolGateway): void {

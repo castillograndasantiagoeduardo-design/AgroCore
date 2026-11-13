@@ -1,7 +1,7 @@
 /**
- * Puerto de persistencia de Finca. Lo implementa MySqlFincaRepository en @duitamacrece/database.
+ * Puerto de persistencia de Finca. Lo implementa MySqlFincaRepository en @agrocore/database.
  */
-import type { Paginated, PaginationParams } from "@duitamacrece/shared-kernel";
+import type { Paginated, PaginationParams } from "@agrocore/shared-kernel";
 import type { Finca } from "../entities/finca.entity.ts";
 
 export interface IFincaRepository {

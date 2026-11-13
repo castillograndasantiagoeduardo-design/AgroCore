@@ -4,7 +4,7 @@
  * Estado, paginación y mutaciones del módulo fincas.
  */
 import { useCallback, useEffect, useState } from "react";
-import { CrearFincaSchema, type CrearFincaInput } from "@duitamacrece/contracts";
+import { CrearFincaSchema, type CrearFincaInput } from "@agrocore/contracts";
 import { fincasApi } from "../api/fincas.api";
 import type { PaginaFincas } from "../types/fincas.types";
 

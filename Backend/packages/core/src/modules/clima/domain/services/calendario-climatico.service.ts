@@ -4,7 +4,7 @@
  * Convierte ~30 años de datos diarios en 12 filas (enero..diciembre) con:
  * lluvia, temperaturas corregidas por altitud, riesgo de helada, lluvias fuertes y temporada.
  */
-import type { ClimaMensualDto } from "@duitamacrece/contracts";
+import type { ClimaMensualDto } from "@agrocore/contracts";
 import type { RegistroClimaDiario } from "../value-objects/registro-clima-diario.vo.ts";
 
 /**

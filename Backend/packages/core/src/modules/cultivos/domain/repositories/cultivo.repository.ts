@@ -1,6 +1,6 @@
 /**
  * Puerto de lectura del catálogo de cultivos.
- * Hoy lo implementa CatalogoCultivosEnMemoria (@duitamacrece/database, datos versionados en código);
+ * Hoy lo implementa CatalogoCultivosEnMemoria (@agrocore/database, datos versionados en código);
  * mañana puede implementarlo un MySqlCultivoRepository sin tocar core.
  */
 import type { Cultivo } from "../entities/cultivo.entity.ts";

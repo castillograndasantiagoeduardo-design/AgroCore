@@ -1,7 +1,7 @@
 /**
- * Servicio HTTP de fincas, tipado con @duitamacrece/contracts.
+ * Servicio HTTP de fincas, tipado con @agrocore/contracts.
  */
-import type { CrearFincaInput, FincaDto } from "@duitamacrece/contracts";
+import type { CrearFincaInput, FincaDto } from "@agrocore/contracts";
 import { httpClient } from "@/lib/http-client";
 import type { PaginaFincas } from "../types/fincas.types";
 

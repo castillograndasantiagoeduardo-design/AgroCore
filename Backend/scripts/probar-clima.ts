@@ -4,9 +4,9 @@
  *
  * Uso (desde Backend/):  deno run -A scripts/probar-clima.ts [altitudM] [latitud] [longitud]
  */
-import { type ContextoSolicitud, Finca, type IFincaRepository, type INormalesClimatologicasProvider, ObtenerPerfilClimaticoUseCase } from "@duitamacrece/core";
-import { IdeamNormalesClient, NasaPowerClient, SistemaReloj } from "@duitamacrece/platform";
-import { Result } from "@duitamacrece/shared-kernel";
+import { type ContextoSolicitud, Finca, type IFincaRepository, type INormalesClimatologicasProvider, ObtenerPerfilClimaticoUseCase } from "@agrocore/core";
+import { IdeamNormalesClient, NasaPowerClient, SistemaReloj } from "@agrocore/platform";
+import { Result } from "@agrocore/shared-kernel";
 
 const altitud = Deno.args[0] ? Number(Deno.args[0]) : 2530;
 const latitud = Deno.args[1] ? Number(Deno.args[1]) : 5.8269;

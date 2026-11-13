@@ -1,7 +1,7 @@
 /**
  * Tipos de vista del módulo rotaciones.
  */
-import type { PrioridadRotacion, ReglaRotacion } from "@duitamacrece/contracts";
+import type { PrioridadRotacion, ReglaRotacion } from "@agrocore/contracts";
 
 export const ETIQUETA_PRIORIDAD: Record<PrioridadRotacion, string> = {
   agua: "Ahorrar agua",

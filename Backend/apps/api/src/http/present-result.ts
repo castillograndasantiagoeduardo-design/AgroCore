@@ -3,7 +3,7 @@
  */
 import type { Context } from "hono";
 import type { ZodError } from "zod";
-import type { DomainError, Result } from "@duitamacrece/shared-kernel";
+import type { DomainError, Result } from "@agrocore/shared-kernel";
 
 export type HttpStatus = 200 | 201 | 400 | 404 | 409 | 422;
 

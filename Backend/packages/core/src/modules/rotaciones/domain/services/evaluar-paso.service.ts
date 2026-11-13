@@ -2,7 +2,7 @@
  * Evaluación de UN paso de la rotación: un cultivo en un semestre (servicio de dominio puro).
  * Calcula meses del ciclo, lluvia, déficit de agua, helada y si el ciclo cabe antes de la siguiente siembra.
  */
-import type { PasoRotacionDto, PerfilClimaticoDto, RiesgoHelada, VentanaSiembraDto } from "@duitamacrece/contracts";
+import type { PasoRotacionDto, PerfilClimaticoDto, RiesgoHelada, VentanaSiembraDto } from "@agrocore/contracts";
 import { NOMBRES_MES } from "../../../clima/domain/services/calendario-climatico.service.ts";
 import type { Cultivo } from "../../../cultivos/domain/entities/cultivo.entity.ts";
 import { mesesDelCiclo, mesesEntreSiembras } from "./ventanas-siembra.service.ts";

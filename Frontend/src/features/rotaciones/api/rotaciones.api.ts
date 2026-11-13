@@ -1,7 +1,7 @@
 /**
- * Servicio HTTP de rotaciones, tipado con @duitamacrece/contracts.
+ * Servicio HTTP de rotaciones, tipado con @agrocore/contracts.
  */
-import type { ComparacionRotacionesDto, CompararRotacionesInput } from "@duitamacrece/contracts";
+import type { ComparacionRotacionesDto, CompararRotacionesInput } from "@agrocore/contracts";
 import { httpClient } from "@/lib/http-client";
 
 /** Cuerpo del POST: la entrada completa sin el fincaId (que va en la URL). */

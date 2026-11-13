@@ -2,7 +2,7 @@
  * Evaluación de las 7 reglas agronómicas sobre una secuencia de 4 semestres (servicio de dominio puro).
  * Siempre devuelve las 7, en el orden de REGLAS_ROTACION, con un detalle que nombra los semestres afectados.
  */
-import { type EvaluacionReglaDto, REGLAS_ROTACION, type ReglaRotacion } from "@duitamacrece/contracts";
+import { type EvaluacionReglaDto, REGLAS_ROTACION, type ReglaRotacion } from "@agrocore/contracts";
 import type { Cultivo } from "../../../cultivos/domain/entities/cultivo.entity.ts";
 import type { ContextoMotor, PasoEvaluado } from "./evaluar-paso.service.ts";
 

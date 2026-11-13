@@ -9,7 +9,7 @@
 ## 🎯 Objetivo
 
 0. **Simplificar el backend:** quitar el login, JWT, usuarios y roles/permisos, sin romper la Clean Architecture.
-1. Renombrar internamente el proyecto de **DuitamaCrece / duitamacrece** a **AgroCore / agrocore**.
+1. Renombrar internamente el proyecto de **Duitama-Crece** (nombre anterior) a **AgroCore / agrocore**.
 2. Que en el mapa se pueda seleccionar **cualquier lugar del mundo** (punto o área) y, con datos de la
    NASA más fuentes abiertas complementarias, obtener:
    - información local del **suelo**, del **terreno** y del **clima**;
@@ -118,18 +118,18 @@ Nota: sin login, cualquiera que alcance el puerto 8001 puede usar la API. Es ace
 
 ### Fase 1 — Renombre a AgroCore
 
-- **Scope de paquetes:** `@duitamacrece/*` → `@agrocore/*` en:
+- **Scope de paquetes:** scope anterior → `@agrocore/*` en:
   - todos los `deno.json`, el `package.json` del Frontend y de `Shared/contracts`;
   - los imports y los `LAYER.md`.
 - **Textos:**
-  - `DuitamaCrece` → `AgroCore` en `CLAUDE.md`, `GEMINI.md`, `context/*`, `Docs/*`, el Frontend y los mensajes;
+  - nombre anterior → `AgroCore` en `CLAUDE.md`, `GEMINI.md`, `context/*`, `Docs/*`, el Frontend y los mensajes;
   - el nombre del servidor MCP.
 - **Base de datos:**
-  - `duitama_crece` → `agrocore` y `duitama_app` → `agrocore_app` en `ddl.sql`, `.env.example` y la documentación;
+  - base anterior → `agrocore` y usuario anterior → `agrocore_app` en `ddl.sql`, `.env.example` y la documentación;
   - **no** tocar el `.env` real ni ejecutar SQL. Entregar al usuario los pasos en PowerShell/MySQL para crear la base nueva (o seguir usando la actual cambiando solo `.env`).
 - **Lo que NO se renombra en esta fase:** las menciones geográficas a Duitama que son datos (estación IDEAM, ejemplos, tests). Esas cambian en la Fase 2.
 - **Regenerar los lockfiles:** `npm install` en Frontend y en contracts.
-- **Verificar que no quede rastro:** `grep -ri "duitamacrece\|duitama_crece"` debe quedar vacío.
+- **Verificar que no quede rastro:** el grep del nombre anterior (scope, base y nombre pegado) debe quedar vacío.
 
 ### Fase 2 — Ubicación global
 
@@ -344,7 +344,7 @@ Web Serial/WebUSB no se usan: en Windows la Xprinter USB aparece como impresora 
 ## ❓ Decisiones abiertas (para el usuario)
 
 1. **Impresora:** confirmar el modelo exacto (etiqueta inferior), si es solo USB y si tiene cortador. Ancho ya definido: 58 mm.
-2. **Base de datos:** ¿crear una base nueva `agrocore` o seguir con `duitama_crece` cambiando solo el `.env`? ¿Borrar la tabla `usuarios`?
+2. **Base de datos:** ¿crear una base nueva `agrocore` o seguir con la base anterior cambiando solo el `.env`? ¿Borrar la tabla `usuarios`?
 3. **Área máxima** que se permite seleccionar (propuesta: 100 ha).
 4. ¿Se mantiene la caché persistente en MySQL para los proveedores externos?
 

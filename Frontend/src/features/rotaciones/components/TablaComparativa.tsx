@@ -6,7 +6,7 @@ import {
   REGLAS_ROTACION,
   type ComparacionRotacionesDto,
   type PasoRotacionDto,
-} from "@duitamacrece/contracts";
+} from "@agrocore/contracts";
 import { ETIQUETA_PRIORIDAD, ETIQUETA_REGLA, nombreMes } from "../types/rotaciones.types";
 
 function PasoCelda({ paso }: { paso: PasoRotacionDto }) {
