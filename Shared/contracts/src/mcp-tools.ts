@@ -9,6 +9,7 @@ export const MCP_TOOLS = {
   CULTIVOS_LISTAR: "cultivos_listar",
   CULTIVOS_OBTENER: "cultivos_obtener",
   ROTACIONES_COMPARAR: "rotaciones_comparar",
+  TERRENO_ANALIZAR: "terreno_analizar",
   // @scaffold:mcp-tools
 } as const;
 

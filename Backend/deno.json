@@ -22,7 +22,7 @@
   "tasks": {
     "dev:api": "cd apps/api && deno task dev",
     "dev:mcp": "cd apps/mcp-server && deno task dev",
-    "test": "deno test packages/core/tests packages/database/tests",
+    "test": "deno test packages/core/tests packages/database/tests packages/platform/tests",
     "check": "deno check apps/api/main.ts apps/mcp-server/main.ts"
   },
   "compilerOptions": {

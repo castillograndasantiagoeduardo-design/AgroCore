@@ -1,4 +1,4 @@
--- DDL MySQL 8 — AgroCore
+-- DDL MySQL 8 — AgroCore (esquema FINAL para crear la base desde cero)
 CREATE DATABASE IF NOT EXISTS `agrocore` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `agrocore`;
 
@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS logs_auditoria (
   entidad VARCHAR(100) NOT NULL,
   entidad_id VARCHAR(64) NOT NULL,
   detalles JSON NOT NULL,
-  usuario_id INT NOT NULL,
+  usuario_id INT NULL,
+  origen VARCHAR(16) NOT NULL DEFAULT 'api',
   ip VARCHAR(64) NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -29,7 +30,8 @@ DELIMITER ;
 CREATE TABLE IF NOT EXISTS logs_mcp_tools (
   id INT AUTO_INCREMENT PRIMARY KEY,
   herramienta VARCHAR(100) NOT NULL,
-  usuario_id INT NOT NULL,
+  usuario_id INT NULL,
+  origen VARCHAR(16) NOT NULL DEFAULT 'api',
   argumentos JSON NULL,
   exito BOOLEAN NOT NULL,
   error TEXT NULL,
@@ -45,19 +47,33 @@ CREATE TABLE IF NOT EXISTS fincas (
   latitud DOUBLE NOT NULL,
   longitud DOUBLE NOT NULL,
   altitud_m INT NULL,
-  vereda VARCHAR(80) NULL,
+  area_geojson JSON NULL,
+  pais VARCHAR(80) NULL,
+  region VARCHAR(80) NULL,
+  localidad VARCHAR(80) NULL,
   tiene_riego BOOLEAN NOT NULL DEFAULT FALSE,
   cultivo_actual VARCHAR(40) NULL COMMENT 'Clave del catalogo de cultivos (ej. papa, avena_vicia)',
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS usuarios (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(191) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  rol VARCHAR(32) NOT NULL DEFAULT 'admin',
-  activo BOOLEAN NOT NULL DEFAULT TRUE,
-  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- cache_proveedores: caché de respuestas de proveedores externos
+CREATE TABLE IF NOT EXISTS cache_proveedores (
+  clave VARCHAR(191) NOT NULL PRIMARY KEY,
+  proveedor VARCHAR(40) NOT NULL,
+  valor JSON NOT NULL,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expira_en DATETIME NOT NULL,
+  INDEX idx_cache_proveedores_expira_en (expira_en)
+);
+
+-- migraciones_aplicadas: la usa scripts/aplicar-migraciones.ts
+CREATE TABLE IF NOT EXISTS migraciones_aplicadas (
+  archivo VARCHAR(191) NOT NULL PRIMARY KEY,
+  aplicada_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  avisos TEXT NULL
 );
 -- @scaffold:tables
+
+-- Si creas la base con este archivo, registra las migraciones como aplicadas corriendo
+-- scripts/aplicar-migraciones.ts (detecta lo que ya existe).

@@ -1,5 +1,6 @@
 // Puertos y servicios transversales
 export type { IUnitOfWork } from "./shared/application/ports/unit-of-work.port.ts";
+export type { ICacheProveedores } from "./shared/application/ports/cache-proveedores.port.ts";
 export {
   type ContextoSolicitud,
   type DetallesAuditoria,
@@ -18,4 +19,5 @@ export * from "./modules/fincas/index.ts";
 export * from "./modules/clima/index.ts";
 export * from "./modules/cultivos/index.ts";
 export * from "./modules/rotaciones/index.ts";
+export * from "./modules/terreno/index.ts";
 // @scaffold:modules
