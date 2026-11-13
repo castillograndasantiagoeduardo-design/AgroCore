@@ -59,6 +59,7 @@ SoilGrids, OpenStreetMap e IDEAM (Colombia) para dar aptitud del sitio, terreno,
 - [ ] Si existía `Frontend/.env.local` con un token de la época del login, bórralo (ya no se usa).
 - [ ] Validar con un agrónomo local los rangos del catálogo, los pesos de los puntajes y la referencia de ingreso.
 - [ ] Revisar `npm audit` del Frontend (1 vulnerabilidad alta reportada antes, sin revisar).
+- [ ] **Overpass:** el timeout se bajó a 8 s / 1 ronda; con los espejos públicos lentos (~21 s) la detección de carreteras no alcanza a responder. Recomendado 30 s y 2–3 rondas; luego repetir `scripts/smoke-e2e.ts` (4/5 PASS el 2026-11-13, falla solo la autopista por Overpass). Ver `Docs/VERIFICACION_FINAL.md`.
 
 ## 🗺️ Siguientes pasos sugeridos
 
