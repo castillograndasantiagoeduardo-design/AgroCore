@@ -1,13 +1,15 @@
 /**
- * Caso de uso: perfil climático de una finca.
+ * Caso de uso: perfil climático de una finca o de CUALQUIER ubicación del mundo.
  *
- * 1. Busca la finca (necesitamos sus coordenadas y altitud).
+ * 1. Ubicación: la de la finca (execute) o la que llega directa (porUbicacion).
  * 2. Define el periodo: los últimos 30 años completos (normal climatológica).
- * 3. Pide la serie diaria de la finca al proveedor satelital (puerto IClimaProvider).
- * 4. Calibra esa serie con la estación IDEAM más cercana (puerto INormalesClimatologicasProvider).
- *    Si no hay estación cercana o el IDEAM no responde, sigue SIN calibrar y lo advierte.
- * 5. Corrige la temperatura por la altitud de la finca.
- * 6. Calcula el calendario de 12 meses y un resumen.
+ * 3. Pide la serie diaria al proveedor satelital (puerto IClimaProvider, NASA POWER).
+ * 4. Calibra con la estación IDEAM más cercana (solo aplica en Colombia, ≤ 25 km). Si no hay estación
+ *    o el IDEAM no responde, sigue SIN calibrar y lo advierte.
+ * 5. Corrige la temperatura por la altitud del sitio.
+ * 6. Calcula el calendario de 12 meses (lluvia, temperaturas, helada, calor, ET0 y balance hídrico),
+ *    el resumen (régimen de lluvias, aridez, meses críticos, clasificación climática), las
+ *    temporadas de cultivo derivadas y el calendario de vulnerabilidad.
  *
  * Solo lectura: no muta estado, así que no audita (Regla 6).
  */
@@ -20,6 +22,7 @@ import { calcularAjusteTemperatura, DIFERENCIA_ALTITUD_GRANDE_M } from "../../do
 import {
   calcularCalendarioMensual,
   PROBABILIDAD_RIESGO_HELADA,
+  UMBRAL_CALOR_C,
   UMBRAL_HELADA_C,
   UMBRAL_LLUVIA_FUERTE_MM,
 } from "../../domain/services/calendario-climatico.service.ts";
@@ -30,11 +33,21 @@ import {
 } from "../../domain/services/calibracion.service.ts";
 import { ClimaSinDatosError } from "../../domain/errors/clima.errors.ts";
 import { clasificarClima } from "../../domain/services/clasificacion-climatica.service.ts";
+import { calcularTemporadasCultivo } from "../../domain/services/temporadas-cultivo.service.ts";
+import { calcularCalendarioVulnerabilidad } from "../../domain/services/vulnerabilidad-climatica.service.ts";
+import { indiceAridez, mesesCriticos, regimenLluvias } from "../../domain/services/resumen-climatico.service.ts";
 import type { ContextoSolicitud, IClimaProvider, INormalesClimatologicasProvider, IReloj } from "../ports/index.ts";
 
 export const ANIOS_NORMAL_CLIMATOLOGICA = 30;
 
 const redondear1 = (v: number) => Math.round(v * 10) / 10;
+
+/** Ubicación para la que se calcula el perfil. altitudM null = se usa la altitud de la celda del proveedor. */
+export interface UbicacionClima {
+  latitud: number;
+  longitud: number;
+  altitudM: number | null;
+}
 
 export class ObtenerPerfilClimaticoUseCase {
   constructor(
@@ -44,11 +57,21 @@ export class ObtenerPerfilClimaticoUseCase {
     private readonly reloj: IReloj,
   ) {}
 
-  async execute(input: PerfilClimaticoParams, _contexto: ContextoSolicitud): Promise<Result<PerfilClimaticoDto, DomainError>> {
-    // 1. Finca
+  /** Perfil de una finca guardada. */
+  async execute(input: PerfilClimaticoParams, contexto: ContextoSolicitud): Promise<Result<PerfilClimaticoDto, DomainError>> {
     const finca = await this.fincas.buscarPorId(input.fincaId);
     if (!finca) return Result.err(new FincaNoEncontradoError(input.fincaId));
     const { latitud, longitud, altitudM } = finca.ubicacion;
+    return await this.porUbicacion({ latitud, longitud, altitudM }, contexto, input.fincaId);
+  }
+
+  /** Perfil de cualquier punto del mundo (sin finca guardada). */
+  async porUbicacion(
+    ubicacion: UbicacionClima,
+    _contexto: ContextoSolicitud,
+    fincaId: number | null = null,
+  ): Promise<Result<PerfilClimaticoDto, DomainError>> {
+    const { latitud, longitud, altitudM } = ubicacion;
 
     // 2. Periodo: 30 años completos que terminan el año pasado
     const anioFin = this.reloj.hoy().getUTCFullYear() - 1;
@@ -56,7 +79,7 @@ export class ObtenerPerfilClimaticoUseCase {
     const desde = anioInicio + "-01-01";
     const hasta = anioFin + "-12-31";
 
-    // 3. Datos satelitales de la finca
+    // 3. Datos satelitales del sitio
     const consulta = await this.clima.obtenerSerieDiaria({ latitud, longitud, desde, hasta });
     if (!consulta.ok) return consulta;
     const serie = consulta.value;
@@ -70,12 +93,12 @@ export class ObtenerPerfilClimaticoUseCase {
     const ajuste = calcularAjusteTemperatura(serie.altitudCeldaM, altitudReferenciaM);
     if (altitudM === null) {
       advertencias.push(
-        "La finca no tiene altitud registrada: se usó la altitud de la celda de " + serie.fuente + " (" +
-          Math.round(serie.altitudCeldaM) + " m) sin corrección. Registra la altitud para un cálculo más preciso.",
+        "No se conoce la altitud del sitio: se usó la altitud de la celda de " + serie.fuente + " (" +
+          Math.round(serie.altitudCeldaM) + " m) sin corrección. Indica la altitud para un cálculo más preciso.",
       );
     } else if (Math.abs(serie.altitudCeldaM - altitudM) > DIFERENCIA_ALTITUD_GRANDE_M) {
       advertencias.push(
-        "La finca está a " + Math.abs(Math.round(serie.altitudCeldaM - altitudM)) +
+        "El sitio está a " + Math.abs(Math.round(serie.altitudCeldaM - altitudM)) +
           " m de diferencia con la celda de " + serie.fuente + ": la corrección por altitud es aproximada.",
       );
     }
@@ -89,14 +112,14 @@ export class ObtenerPerfilClimaticoUseCase {
     );
 
     // 6. Calendario y resumen
-    const meses = calcularCalendarioMensual(registros, ajuste);
+    const meses = calcularCalendarioMensual(registros, ajuste, latitud);
     if (meses.length !== 12) return Result.err(new ClimaSinDatosError(latitud, longitud));
 
     const lluviaAnualMm = redondear1(meses.reduce((s, m) => s + m.lluviaMm, 0));
     const tempMediaAnualC = redondear1(meses.reduce((s, m) => s + m.tempMediaC, 0) / 12);
 
     return Result.ok({
-      fincaId: input.fincaId,
+      fincaId,
       latitud,
       longitud,
       altitudReferenciaM: Math.round(altitudReferenciaM),
@@ -105,16 +128,22 @@ export class ObtenerPerfilClimaticoUseCase {
       periodo: { desde, hasta, anios: ANIOS_NORMAL_CLIMATOLOGICA },
       fuente: calibracion ? serie.fuente + " calibrado con IDEAM" : serie.fuente,
       calibracion,
-      umbrales: { heladaC: UMBRAL_HELADA_C, lluviaFuerteMm: UMBRAL_LLUVIA_FUERTE_MM },
+      umbrales: { heladaC: UMBRAL_HELADA_C, lluviaFuerteMm: UMBRAL_LLUVIA_FUERTE_MM, calorC: UMBRAL_CALOR_C },
       meses,
       resumen: {
         lluviaAnualMm,
         tempMediaAnualC,
+        etoAnualMm: Math.round(meses.reduce((s, m) => s + m.etoMm, 0)),
+        indiceAridez: indiceAridez(meses),
+        regimenLluvias: regimenLluvias(meses),
         mesesLluviosos: meses.filter((m) => m.temporada === "lluviosa").map((m) => m.mes),
         mesesSecos: meses.filter((m) => m.temporada === "seca").map((m) => m.mes),
         mesesRiesgoHelada: meses.filter((m) => m.probabilidadHelada >= PROBABILIDAD_RIESGO_HELADA).map((m) => m.mes),
         clasificacionClimatica: clasificarClima(meses.map((m) => m.tempMediaC), latitud),
+        ...mesesCriticos(meses),
       },
+      temporadasCultivo: calcularTemporadasCultivo(meses),
+      calendarioVulnerabilidad: calcularCalendarioVulnerabilidad(meses),
       advertencias,
     });
   }
@@ -138,7 +167,7 @@ export class ObtenerPerfilClimaticoUseCase {
     }
     if (!busqueda.value || busqueda.value.distanciaKm > DISTANCIA_MAX_CALIBRACION_KM) {
       advertencias.push(
-        "No hay estación IDEAM con normales completas a menos de " + DISTANCIA_MAX_CALIBRACION_KM + " km: datos SIN calibrar.",
+        "No hay estación de calibración IDEAM (solo aplica en Colombia) con normales completas a menos de " + DISTANCIA_MAX_CALIBRACION_KM + " km: datos SIN calibrar.",
       );
       return sinCalibrar;
     }

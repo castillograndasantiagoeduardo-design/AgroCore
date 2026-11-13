@@ -47,6 +47,9 @@ export interface IdeamNormalesConfig {
   timeoutMs?: number;
 }
 
+/** Caja envolvente aproximada de Colombia continental e insular (grados), con margen de ~25 km. */
+const CAJA_COLOMBIA = { sur: -4.5, norte: 13.7, oeste: -82, este: -66.6 } as const;
+
 export class IdeamNormalesClient implements INormalesClimatologicasProvider {
   private readonly departamentos: string[];
   private readonly periodo: string;
@@ -61,9 +64,14 @@ export class IdeamNormalesClient implements INormalesClimatologicasProvider {
     this.timeoutMs = config.timeoutMs ?? 60_000;
   }
 
+
   async estacionMasCercana(latitud: number, longitud: number): Promise<
     Result<{ normal: NormalClimatologica; distanciaKm: number } | null, DomainError>
   > {
+    // El IDEAM solo tiene estaciones en Colombia: fuera de su caja envolvente no hay nada que buscar
+    // (evita descargar el catálogo de estaciones para Iowa, Kenia o España).
+    const c = CAJA_COLOMBIA;
+    if (latitud < c.sur || latitud > c.norte || longitud < c.oeste || longitud > c.este) return Result.ok(null);
     if (!this.estaciones) {
       const cargadas = await this.cargarEstaciones();
       if (!cargadas.ok) return cargadas;

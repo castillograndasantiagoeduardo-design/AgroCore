@@ -112,3 +112,30 @@ Orden de cálculo: serie NASA de la finca → **calibración IDEAM** (si hay est
   la estación del valle puede no representar bien la lluvia del páramo.
 - La temporada "lluviosa/seca" usa el promedio mensual como corte; meses cercanos al corte pueden oscilar.
 - La primera consulta tarda ~30–50 s (dos series de 30 años + IDEAM); las siguientes salen de la caché.
+
+---
+
+## 🌍 Clima global (Fase 4, AgroCore)
+
+`ObtenerPerfilClimaticoUseCase` ahora tiene dos entradas: `execute({ fincaId })` (finca guardada) y
+`porUbicacion({ latitud, longitud, altitudM | null })` (cualquier punto del mundo, lo usa `rotaciones`).
+
+| Servicio puro | Archivo | Qué calcula |
+| :--- | :--- | :--- |
+| ET0 Hargreaves–Samani | `evapotranspiracion.service.ts` | Ra por latitud y día (FAO-56 ec. 21) y ET0 mensual (FAO-56 ec. 52). Error típico ±10–15 %; en el trópico húmedo de montaña tiende a sobreestimar. |
+| Calendario mensual | `calendario-climatico.service.ts` | + `diasCalorPromedio` (Tmáx ≥ 32 °C), `etoMm` y `balanceHidricoMm` (lluvia − ET0). |
+| Clasificación | `clasificacion-climatica.service.ts` | tropical / subtropical / templado / frío / de altura (reemplaza valle-ladera-alta). |
+| Resumen | `resumen-climatico.service.ts` | Índice de aridez (UNESCO), régimen de lluvias (unimodal, bimodal, uniforme, árido), meses de calor, déficit hídrico y lluvia extrema. |
+| Temporadas de cultivo | `temporadas-cultivo.service.ts` | Mes apto = T media ≥ 5 °C, sin helada dura (mínima media ≤ 0 °C o ≥ 15 días de helada) y, en secano, lluvia ≥ 50 % de la ET0. Temporada = tramo circular de ≥ 3 meses aptos; ≥ 10 meses se dividen en dos. Soporta régimen bimodal, hemisferio sur y climas con invierno o verano seco. |
+| Vulnerabilidad | `vulnerabilidad-climatica.service.ts` | Por mes: helada, calor, déficit hídrico y lluvia extrema con severidad baja / media / alta. |
+
+Verificado con datos reales (NASA POWER, 30 años) el 2026-11-12:
+
+| Lugar | Clasificación | Régimen | Temporadas de secano |
+| :--- | :--- | :--- | :--- |
+| Duitama (rural, calibrado IDEAM) | de altura | bimodal | mar–jun y sep–nov |
+| Ames, Iowa | frío | unimodal | abr–oct (invierno fuera) |
+| Nakuru, Kenia | de altura | bimodal | mar–jul y ago–dic |
+| Córdoba, España | templado | unimodal | oct–mar (verano seco con déficit abr–sep) |
+
+**IDEAM:** calibración opcional, solo Colombia (`IdeamNormalesClient` responde `null` sin consultar fuera de la caja de Colombia).
