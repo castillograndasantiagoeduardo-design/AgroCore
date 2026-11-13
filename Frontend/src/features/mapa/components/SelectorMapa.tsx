@@ -21,8 +21,22 @@ export interface SelectorMapaProps {
 }
 
 type Modo = "punto" | "area";
+type CapaBase = "satelite" | "calles";
 type Vertice = [number, number]; // [lat, lon]
 type ResultadoBusqueda = { place_id: number; display_name: string; lat: string; lon: string };
+
+const CAPAS_CONFIG: Record<CapaBase, { url: string; attribution: string; maxZoom: number }> = {
+  satelite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+    maxZoom: 19,
+  },
+  calles: {
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  },
+};
 
 /** Área aproximada en ha con proyección plana local (suficiente para lotes de hasta ~100 ha). */
 function areaAproximadaHa(vertices: Vertice[]): number {
@@ -57,14 +71,16 @@ function aPoligono(vertices: Vertice[]): AreaSeleccionadaDto {
 
 const BTN = "rounded border px-2 py-1 text-xs font-medium disabled:opacity-40";
 
-export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "320px", resaltado = null }: SelectorMapaProps) {
+export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "480px", resaltado = null }: SelectorMapaProps) {
   const contenedorRef = useRef<HTMLDivElement | null>(null);
   const mapaRef = useRef<L.Map | null>(null);
   const leafletRef = useRef<typeof L | null>(null);
+  const capaTileRef = useRef<L.TileLayer | null>(null);
   const capaRef = useRef<L.LayerGroup | null>(null);
   const capaResaltadoRef = useRef<L.LayerGroup | null>(null);
   const [listo, setListo] = useState(false);
 
+  const [capaBase, setCapaBase] = useState<CapaBase>("satelite");
   const [modo, setModo] = useState<Modo>("punto");
   const [borrador, setBorrador] = useState<Vertice[]>([]); // vértices en dibujo
   const [dibujando, setDibujando] = useState(false);
@@ -98,10 +114,6 @@ export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "3
       const centro: Vertice | null = punto ?? (poligono.length ? poligono[0] : null);
 
       const map = Lf.map(contenedorRef.current, { worldCopyJump: true }).setView(centro ?? [15, 0], centro ? 15 : 2);
-      Lf.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
       capaRef.current = Lf.layerGroup().addTo(map);
       capaResaltadoRef.current = Lf.layerGroup().addTo(map);
       mapaRef.current = map;
@@ -136,12 +148,30 @@ export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "3
       cancelado = true;
       mapaRef.current?.remove();
       mapaRef.current = null;
+      capaTileRef.current = null;
       capaRef.current = null;
       capaResaltadoRef.current = null;
       setListo(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Alternar capa base (Satélite / Calles)
+  useEffect(() => {
+    const Lf = leafletRef.current;
+    const map = mapaRef.current;
+    if (!listo || !Lf || !map) return;
+    if (capaTileRef.current) {
+      map.removeLayer(capaTileRef.current);
+    }
+    const cfg = CAPAS_CONFIG[capaBase];
+    const nuevaCapa = Lf.tileLayer(cfg.url, {
+      attribution: cfg.attribution,
+      maxZoom: cfg.maxZoom,
+    }).addTo(map);
+    nuevaCapa.bringToBack();
+    capaTileRef.current = nuevaCapa;
+  }, [listo, capaBase]);
 
   // Redibujar punto / polígono
   useEffect(() => {
@@ -153,18 +183,26 @@ export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "3
     const vertices = dibujando || valor?.tipo !== "poligono" ? borrador : aVertices(valor);
     const exceso = areaAproximadaHa(vertices) > AREA_MAXIMA_HA;
     if (!dibujando && valor?.tipo === "punto") {
-      Lf.circleMarker([valor.latitud, valor.longitud], { radius: 8, color: "#fff", weight: 2, fillColor: "#0f172a", fillOpacity: 1 })
-        .bindPopup(`<b>Punto</b><br/>Lat: ${valor.latitud}<br/>Lon: ${valor.longitud}`)
+      Lf.circleMarker([valor.latitud, valor.longitud], {
+        radius: 8,
+        color: "#ffffff",
+        weight: 3,
+        fillColor: "#059669",
+        fillOpacity: 1,
+      })
+        .bindPopup(`<b>Punto seleccionado</b><br/>Lat: ${valor.latitud}<br/>Lon: ${valor.longitud}`)
         .addTo(capa);
     }
     const color = exceso ? "#dc2626" : "#059669";
     if (vertices.length >= 3 && !dibujando) {
-      Lf.polygon(vertices, { color, weight: 2, fillColor: color, fillOpacity: 0.2 }).addTo(capa);
+      Lf.polygon(vertices, { color, weight: 2.5, fillColor: color, fillOpacity: 0.25 }).addTo(capa);
     } else if (vertices.length >= 2) {
-      Lf.polyline(vertices, { color, weight: 2, dashArray: "5,5" }).addTo(capa);
+      Lf.polyline(vertices, { color, weight: 2.5, dashArray: "5,5" }).addTo(capa);
     }
     if (dibujando) {
-      vertices.forEach((v) => Lf.circleMarker(v, { radius: 4, color, fillColor: "#fff", fillOpacity: 1, weight: 2 }).addTo(capa));
+      vertices.forEach((v) =>
+        Lf.circleMarker(v, { radius: 5, color: "#ffffff", fillColor: color, fillOpacity: 1, weight: 2 }).addTo(capa),
+      );
     }
   }, [listo, valor, borrador, dibujando]);
 
@@ -262,22 +300,39 @@ export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "3
         : "Dibuja con «Área» o «Rectángulo»";
 
   return (
-    <div className="space-y-1.5">
-      {!soloLectura && (
-        <div className="space-y-1.5">
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        {!soloLectura ? (
           <div className="flex flex-wrap items-center gap-1.5">
-            <button type="button" onClick={() => cambiarModo("punto")} className={`${BTN} inline-flex items-center gap-1.5 ${modo === "punto" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}>
+            <button
+              type="button"
+              onClick={() => cambiarModo("punto")}
+              className={`${BTN} inline-flex items-center gap-1.5 ${modo === "punto" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+            >
               <IconoPin width={14} height={14} /> Punto
             </button>
-            <button type="button" onClick={() => iniciarArea(false)} className={`${BTN} inline-flex items-center gap-1.5 ${modo === "area" && !esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}>
+            <button
+              type="button"
+              onClick={() => iniciarArea(false)}
+              className={`${BTN} inline-flex items-center gap-1.5 ${modo === "area" && !esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+            >
               <IconoPoligono width={14} height={14} /> Polígono
             </button>
             {modo === "area" && (
               <>
-                <button type="button" onClick={terminarArea} disabled={!dibujando || esRectangulo || borrador.length < 3} className={`${BTN} border-emerald-600 text-emerald-700`}>
+                <button
+                  type="button"
+                  onClick={terminarArea}
+                  disabled={!dibujando || esRectangulo || borrador.length < 3}
+                  className={`${BTN} border-emerald-600 text-emerald-700 font-semibold`}
+                >
                   Cerrar polígono
                 </button>
-                <button type="button" onClick={() => iniciarArea(true)} className={`${BTN} ${esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}>
+                <button
+                  type="button"
+                  onClick={() => iniciarArea(true)}
+                  className={`${BTN} ${esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}
+                >
                   Rectángulo
                 </button>
               </>
@@ -286,25 +341,65 @@ export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "3
               Limpiar
             </button>
           </div>
+        ) : (
+          <div />
+        )}
+
+        {/* Selector de capa Satélite / Calles */}
+        <div className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setCapaBase("satelite")}
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-all ${
+              capaBase === "satelite"
+                ? "bg-white text-emerald-900 shadow-xs ring-1 ring-slate-900/5 font-semibold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <span>🛰️</span> Satélite
+          </button>
+          <button
+            type="button"
+            onClick={() => setCapaBase("calles")}
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-all ${
+              capaBase === "calles"
+                ? "bg-white text-emerald-900 shadow-xs ring-1 ring-slate-900/5 font-semibold"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <span>🗺️</span> Calles
+          </button>
+        </div>
+      </div>
+
+      {!soloLectura && (
+        <div className="space-y-1.5">
           <form onSubmit={buscar} className="flex gap-1.5">
-            <input value={consulta} onChange={(e) => setConsulta(e.target.value)} placeholder="Buscar un lugar (opcional)" className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs" />
+            <input
+              value={consulta}
+              onChange={(e) => setConsulta(e.target.value)}
+              placeholder="Buscar un lugar o municipio (opcional)"
+              className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-600 focus:outline-none"
+            />
             <button type="submit" disabled={buscando} className={`${BTN} border-slate-300 bg-white`}>
               {buscando ? "Buscando…" : "Buscar"}
             </button>
           </form>
           {errorBusqueda && <p className="text-xs text-amber-700">{errorBusqueda}</p>}
           {resultados.length > 0 && (
-            <ul className="max-h-32 overflow-y-auto rounded border border-slate-200 bg-white text-xs">
+            <ul className="max-h-32 overflow-y-auto rounded-lg border border-slate-200 bg-white text-xs shadow-xs">
               {resultados.map((r) => (
                 <li key={r.place_id}>
-                  <button type="button" onClick={() => elegirResultado(r)} className="w-full px-2 py-1 text-left hover:bg-slate-100">
+                  <button type="button" onClick={() => elegirResultado(r)} className="w-full px-2.5 py-1.5 text-left hover:bg-slate-100">
                     {r.display_name}
                   </button>
                 </li>
               ))}
             </ul>
           )}
-          <p className="text-[10px] text-slate-500">Búsqueda © OpenStreetMap (Nominatim)</p>
+          <p className="text-[10px] text-slate-500">
+            {capaBase === "satelite" ? "Imágenes © Esri, Maxar, Earthstar Geographics" : "Mosaicos © OpenStreetMap (Nominatim)"}
+          </p>
         </div>
       )}
 

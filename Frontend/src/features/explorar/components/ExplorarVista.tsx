@@ -66,27 +66,31 @@ export function ExplorarVista() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Paso 1</span>
-            <h2 className="text-lg font-bold text-slate-900">Selecciona la ubicación del lote</h2>
-            <p className="text-xs text-slate-500">Haz clic sobre tu terreno o dibuja un polígono de hasta 100 ha</p>
+      <div className="grid gap-5 lg:grid-cols-12">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-7 xl:col-span-7">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Paso 1</span>
+              <h2 className="text-lg font-bold text-slate-900">Selecciona la ubicación del lote</h2>
+              <p className="text-xs text-slate-500">Haz clic sobre tu terreno o dibuja un polígono de hasta 100 ha</p>
+            </div>
           </div>
-          <SelectorMapa valor={x.area} onCambio={x.setArea} altura="360px" resaltado={resaltado} />
+          <SelectorMapa valor={x.area} onCambio={x.setArea} altura="500px" resaltado={resaltado} />
         </div>
 
-        <FormularioSitio
-          cultivos={x.cultivos}
-          errorCultivos={x.errorCultivos}
-          cargando={x.cargando}
-          puedeAnalizar={x.area !== null}
-          objetivo={x.objetivo}
-          epoca={x.epoca}
-          onCambioObjetivo={x.setObjetivo}
-          onCambioEpoca={x.setEpoca}
-          onAnalizar={x.analizar}
-        />
+        <div className="lg:col-span-5 xl:col-span-5">
+          <FormularioSitio
+            cultivos={x.cultivos}
+            errorCultivos={x.errorCultivos}
+            cargando={x.cargando}
+            puedeAnalizar={x.area !== null}
+            objetivo={x.objetivo}
+            epoca={x.epoca}
+            onCambioObjetivo={x.setObjetivo}
+            onCambioEpoca={x.setEpoca}
+            onAnalizar={x.analizar}
+          />
+        </div>
       </div>
 
       {/* Estado de carga con Skeleton limpio (sin barras de progreso ni emojis) */}
