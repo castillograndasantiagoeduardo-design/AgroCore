@@ -44,6 +44,8 @@ export async function normalizarClave(clave: string): Promise<string> {
   return clave.slice(0, 40) + ":" + hex;
 }
 
+const enVuelo = new Map<string, Promise<Result<unknown, DomainError>>>();
+
 export async function obtenerConCache<T>(
   clave: string,
   proveedor: string,
@@ -56,24 +58,36 @@ export async function obtenerConCache<T>(
   const enMemoria = memoria.obtener<T>(k);
   if (enMemoria !== null) return Result.ok(enMemoria);
 
-  if (persistente) {
-    try {
-      const guardado = await persistente.obtener<T>(k);
-      if (guardado !== null && guardado !== undefined) {
-        memoria.guardar(k, guardado, ttlDias);
-        return Result.ok(guardado);
-      }
-    } catch { /* una caché caída no tumba la consulta */ }
-  }
+  const existente = enVuelo.get(k);
+  if (existente) return (await existente) as Result<T, DomainError>;
 
-  const resultado = await cargar();
-  if (resultado.ok) {
-    memoria.guardar(k, resultado.value, ttlDias);
+  const tarea = (async (): Promise<Result<T, DomainError>> => {
     if (persistente) {
       try {
-        await persistente.guardar(k, proveedor, resultado.value, ttlDias);
-      } catch { /* ignorar */ }
+        const guardado = await persistente.obtener<T>(k);
+        if (guardado !== null && guardado !== undefined) {
+          memoria.guardar(k, guardado, ttlDias);
+          return Result.ok(guardado);
+        }
+      } catch { /* una caché caída no tumba la consulta */ }
     }
+
+    const resultado = await cargar();
+    if (resultado.ok) {
+      memoria.guardar(k, resultado.value, ttlDias);
+      if (persistente) {
+        try {
+          await persistente.guardar(k, proveedor, resultado.value, ttlDias);
+        } catch { /* ignorar */ }
+      }
+    }
+    return resultado;
+  })();
+
+  enVuelo.set(k, tarea as Promise<Result<unknown, DomainError>>);
+  try {
+    return await tarea;
+  } finally {
+    enVuelo.delete(k);
   }
-  return resultado;
 }

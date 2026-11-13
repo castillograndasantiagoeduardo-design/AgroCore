@@ -68,8 +68,8 @@ export class OrnlModisClient implements ICoberturaProvider, INdviProvider {
 
   constructor(config: OrnlModisConfig = {}) {
     this.baseUrl = (config.baseUrl ?? "https://modis.ornl.gov/rst/api/v1").replace(/\/$/, "");
-    this.timeoutMs = config.timeoutMs ?? 90_000;
-    this.concurrencia = Math.max(1, config.concurrencia ?? 3);
+    this.timeoutMs = config.timeoutMs ?? 20_000;
+    this.concurrencia = Math.max(1, config.concurrencia ?? 6);
     this.cache = config.cache;
     this.anioReferencia = config.anioReferencia;
   }

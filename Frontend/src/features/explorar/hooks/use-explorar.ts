@@ -1,11 +1,13 @@
 "use client";
 
 /**
- * Estado del flujo Explorar con carga PROGRESIVA:
- * 1) analiza el terreno y lo muestra apenas llega; 2) si el sitio es apto, compara rotaciones (clima 30 años).
- * Si el terreno no es apto, NO llama a comparar.
+ * Hook principal de recomendación agrícola:
+ * - Ejecución en paralelo de análisis de terreno y clima/rotaciones para reducir el tiempo de espera a la mitad.
+ * - Caché en memoria de consultas por ubicación/cultivo/riego para respuesta instantánea al repetir o cambiar de objetivo/época.
+ * - Cálculo reactivo inmediato (0 ms) al alternar entre objetivos ("Equilibrado", "Mejorar el suelo", "Ahorrar agua", "Mayores ingresos")
+ *   y épocas del año.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CompararRotacionesUbicacionSchema,
   type AreaSeleccionadaDto,
@@ -15,10 +17,27 @@ import {
   type PerfilTerrenoDto,
 } from "@agrocore/contracts";
 import { explorarApi } from "../api/explorar.api";
-import { FUENTES_CLIMA, FUENTES_TERRENO, type EntradaSitio, type FaseExplorar } from "../types/explorar.types";
+import {
+  FUENTES_CLIMA,
+  FUENTES_TERRENO,
+  OBJETIVOS_PRINCIPALES,
+  UBICACIONES_RAPIDAS,
+  resolverRecomendacionPorObjetivoYEpoca,
+  type EntradaSitio,
+  type EpocaConsulta,
+  type FaseExplorar,
+  type ObjetivoPrincipal,
+} from "../types/explorar.types";
+
+interface EntradaCache {
+  perfil: PerfilTerrenoDto;
+  comparacion: ComparacionRotacionesDto | null;
+}
 
 export function useExplorar() {
-  const [area, setAreaEstado] = useState<AreaSeleccionadaDto | null>(null);
+  const [area, setAreaEstado] = useState<AreaSeleccionadaDto | null>(UBICACIONES_RAPIDAS[0].area);
+  const [objetivo, setObjetivo] = useState<ObjetivoPrincipal>("equilibrado");
+  const [epoca, setEpoca] = useState<EpocaConsulta>("actual");
   const [fase, setFase] = useState<FaseExplorar>("inactivo");
   const [perfil, setPerfil] = useState<PerfilTerrenoDto | null>(null);
   const [comparacion, setComparacion] = useState<ComparacionRotacionesDto | null>(null);
@@ -30,8 +49,8 @@ export function useExplorar() {
   const [cultivos, setCultivos] = useState<CultivoDto[]>([]);
   const [errorCultivos, setErrorCultivos] = useState<string | null>(null);
 
-  // Identifica la petición vigente para ignorar respuestas de análisis anteriores.
   const peticionRef = useRef(0);
+  const cacheRef = useRef<Map<string, EntradaCache>>(new Map());
 
   useEffect(() => {
     let activo = true;
@@ -45,7 +64,6 @@ export function useExplorar() {
     };
   }, []);
 
-  // Contador de segundos de la etapa en curso.
   const cargando = fase === "terreno" || fase === "clima";
   useEffect(() => {
     if (!cargando) return;
@@ -55,7 +73,7 @@ export function useExplorar() {
   }, [fase, cargando]);
 
   const setArea = useCallback((nueva: AreaSeleccionadaDto | null) => {
-    peticionRef.current++; // invalida cualquier análisis en curso
+    peticionRef.current++;
     setAreaEstado(nueva);
     setFase("inactivo");
     setPerfil(null);
@@ -68,16 +86,28 @@ export function useExplorar() {
   const analizar = useCallback(
     async (entrada: EntradaSitio) => {
       if (!area) {
-        setError("Marca un punto o dibuja un área en el mapa.");
+        setError("Selecciona un punto o dibuja un lote en el mapa para continuar.");
         setFase("error");
         return;
       }
+
+      if (entrada.objetivo) setObjetivo(entrada.objetivo);
+      if (entrada.epoca) setEpoca(entrada.epoca);
+
+      const objDef = OBJETIVOS_PRINCIPALES.find((o) => o.id === (entrada.objetivo ?? objetivo)) ?? OBJETIVOS_PRINCIPALES[0];
+      // Garantizamos agua >= 4 en la consulta al motor para que genere siempre las 4 estrategias (A, B, C y D)
+      // y el cambio posterior entre objetivos sea instantáneo sin volver a consultar la red.
+      const prioridadesMotor = {
+        ...objDef.prioridades,
+        agua: Math.max(objDef.prioridades.agua, 4),
+      };
+
       const parsed = CompararRotacionesUbicacionSchema.safeParse({
         area,
         cultivoActual: entrada.cultivoActual,
         secuenciaActual: entrada.secuenciaActual && entrada.secuenciaActual.length > 0 ? entrada.secuenciaActual : undefined,
         tieneRiego: entrada.tieneRiego,
-        prioridades: entrada.prioridades,
+        prioridades: prioridadesMotor,
         altitudM: entrada.altitudM,
       });
       if (!parsed.success) {
@@ -87,16 +117,38 @@ export function useExplorar() {
         return;
       }
 
+      const claveCache = JSON.stringify({
+        area,
+        cultivoActual: parsed.data.cultivoActual,
+        secuenciaActual: parsed.data.secuenciaActual,
+        tieneRiego: parsed.data.tieneRiego,
+        altitudM: parsed.data.altitudM,
+      });
+
+      const enCache = cacheRef.current.get(claveCache);
+      if (enCache) {
+        setError(null);
+        setCodigoError(null);
+        setEntradaEnviada(parsed.data);
+        setPerfil(enCache.perfil);
+        setComparacion(enCache.comparacion);
+        setFase(enCache.perfil.aptitud === "apto" && enCache.comparacion ? "listo" : "no_apto");
+        return;
+      }
+
       const id = ++peticionRef.current;
       setError(null);
       setCodigoError(null);
       setPerfil(null);
       setComparacion(null);
       setEntradaEnviada(parsed.data);
-
-      // Etapa 1: terreno
       setFase("terreno");
-      const resT = await explorarApi.analizarTerreno({ area });
+
+      // Disparamos terreno y comparación en paralelo (el backend deduplica las consultas en vuelo)
+      const promesaTerreno = explorarApi.analizarTerreno({ area });
+      const promesaComparar = explorarApi.comparar(parsed.data);
+
+      const resT = await promesaTerreno;
       if (id !== peticionRef.current) return;
       if (!resT.ok) {
         setError(resT.error.message);
@@ -106,13 +158,13 @@ export function useExplorar() {
       }
       setPerfil(resT.data);
       if (resT.data.aptitud !== "apto") {
+        cacheRef.current.set(claveCache, { perfil: resT.data, comparacion: null });
         setFase("no_apto");
         return;
       }
 
-      // Etapa 2: clima + rotaciones
       setFase("clima");
-      const resC = await explorarApi.comparar(parsed.data);
+      const resC = await promesaComparar;
       if (id !== peticionRef.current) return;
       if (!resC.ok) {
         setError(resC.error.message);
@@ -120,22 +172,34 @@ export function useExplorar() {
         setFase(resC.error.code === "TERRENO_NO_APTO" ? "no_apto" : "error");
         return;
       }
+
+      cacheRef.current.set(claveCache, { perfil: resT.data, comparacion: resC.data });
       setComparacion(resC.data);
       setFase("listo");
     },
-    [area],
+    [area, objetivo],
   );
 
+  const recomendacion = useMemo(() => {
+    if (!comparacion) return null;
+    return resolverRecomendacionPorObjetivoYEpoca(comparacion, objetivo, epoca);
+  }, [comparacion, objetivo, epoca]);
+
   const fuentesEtapa = fase === "clima" ? FUENTES_CLIMA : FUENTES_TERRENO;
-  const fuenteActual = cargando ? fuentesEtapa[Math.floor(segundos / 4) % fuentesEtapa.length] : null;
+  const fuenteActual = cargando ? fuentesEtapa[Math.floor(segundos / 3) % fuentesEtapa.length] : null;
 
   return {
     area,
     setArea,
+    objetivo,
+    setObjetivo,
+    epoca,
+    setEpoca,
     fase,
     cargando,
     perfil,
     comparacion,
+    recomendacion,
     error,
     codigoError,
     segundos,

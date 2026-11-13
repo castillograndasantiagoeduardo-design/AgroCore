@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type * as L from "leaflet";
 import { AREA_MAXIMA_HA, MAX_VERTICES_AREA, type AreaSeleccionadaDto } from "@agrocore/contracts";
+import { IconoPin, IconoPoligono } from "@/components/ui/Iconos";
 
 export interface SelectorMapaProps {
   valor?: AreaSeleccionadaDto | null;
@@ -265,24 +266,24 @@ export function SelectorMapa({ valor, onCambio, soloLectura = false, altura = "3
       {!soloLectura && (
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
-            <button type="button" onClick={() => cambiarModo("punto")} className={`${BTN} ${modo === "punto" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
-              📍 Punto
+            <button type="button" onClick={() => cambiarModo("punto")} className={`${BTN} inline-flex items-center gap-1.5 ${modo === "punto" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}>
+              <IconoPin width={14} height={14} /> Punto
             </button>
-            <button type="button" onClick={() => iniciarArea(false)} className={`${BTN} ${modo === "area" && !esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
-              ⬛ Área
+            <button type="button" onClick={() => iniciarArea(false)} className={`${BTN} inline-flex items-center gap-1.5 ${modo === "area" && !esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}>
+              <IconoPoligono width={14} height={14} /> Polígono
             </button>
             {modo === "area" && (
               <>
                 <button type="button" onClick={terminarArea} disabled={!dibujando || esRectangulo || borrador.length < 3} className={`${BTN} border-emerald-600 text-emerald-700`}>
-                  Terminar área
+                  Cerrar polígono
                 </button>
-                <button type="button" onClick={() => iniciarArea(true)} className={`${BTN} ${esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+                <button type="button" onClick={() => iniciarArea(true)} className={`${BTN} ${esRectangulo ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"}`}>
                   Rectángulo
                 </button>
               </>
             )}
-            <button type="button" onClick={borrar} className={`${BTN} border-red-300 text-red-700`}>
-              Borrar
+            <button type="button" onClick={borrar} className={`${BTN} border-slate-300 text-slate-600 hover:bg-slate-50`}>
+              Limpiar
             </button>
           </div>
           <form onSubmit={buscar} className="flex gap-1.5">

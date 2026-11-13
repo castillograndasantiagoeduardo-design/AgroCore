@@ -1,5 +1,5 @@
-import { RotacionesVista } from "@/features/rotaciones/components/RotacionesVista";
+import { redirect } from "next/navigation";
 
 export default function RotacionesPage() {
-  return <RotacionesVista />;
+  redirect("/explorar");
 }

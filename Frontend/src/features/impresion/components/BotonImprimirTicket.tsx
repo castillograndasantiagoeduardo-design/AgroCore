@@ -1,8 +1,7 @@
 "use client";
 
 /**
- * Botón "Imprimir ticket": envía el ticket a la impresora térmica por la API o, si no hay impresora,
- * ofrece imprimir desde el navegador (window.print) con el ticket de 58 mm.
+ * Botón "Imprimir resumen" con iconografía vectorial (sin emojis).
  */
 import { useState } from "react";
 import type {
@@ -11,6 +10,7 @@ import type {
   LineaTicketDto,
   PerfilTerrenoDto,
 } from "@agrocore/contracts";
+import { IconoImpresora } from "@/components/ui/Iconos";
 import { impresionApi } from "../api/impresion.api";
 import { TicketImprimible, componerTicketLocal } from "./TicketImprimible";
 
@@ -37,12 +37,12 @@ export function BotonImprimirTicket({ entrada, comparacion, perfil }: Props) {
     setEnviando(false);
     if (res.ok) {
       setLineas(res.data.lineas);
-      setMensaje(`Ticket enviado a ${res.data.impresora ?? "la impresora"}`);
+      setMensaje(`Resumen enviado a ${res.data.impresora ?? "la impresora"}`);
       return;
     }
     if (res.error.code === "IMPRESORA_NO_DISPONIBLE") {
       setSinImpresora(true);
-      setError("No hay impresora térmica disponible.");
+      setError("Impresora térmica no detectada.");
     } else {
       setError(res.error.message);
     }
@@ -54,7 +54,6 @@ export function BotonImprimirTicket({ entrada, comparacion, perfil }: Props) {
     const res = await impresionApi.imprimirTerreno({ ...entrada, soloVistaPrevia: true });
     setEnviando(false);
     setLineas(res.ok ? res.data.lineas : componerTicketLocal(comparacion, perfil));
-    // Espera a que React pinte el ticket antes de abrir el diálogo de impresión.
     setTimeout(() => window.print(), 100);
   }
 
@@ -65,23 +64,24 @@ export function BotonImprimirTicket({ entrada, comparacion, perfil }: Props) {
           type="button"
           onClick={imprimir}
           disabled={enviando || !entrada}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-100 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
         >
-          {enviando ? "Enviando…" : "🖨️ Imprimir ticket"}
+          <IconoImpresora width={15} height={15} />
+          <span>{enviando ? "Enviando..." : "Imprimir ticket"}</span>
         </button>
         {sinImpresora && (
           <button
             type="button"
             onClick={imprimirDesdeNavegador}
             disabled={enviando}
-            className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
+            className="rounded-xl bg-slate-800 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
           >
-            Imprimir desde el navegador
+            Imprimir desde navegador
           </button>
         )}
-        <span aria-live="polite" className="text-sm">
+        <span aria-live="polite" className="text-xs">
           {mensaje && <span className="font-medium text-emerald-800">{mensaje}</span>}
-          {error && <span className="text-red-600">{error}</span>}
+          {error && <span className="text-amber-800">{error}</span>}
         </span>
       </div>
       {lineas && (

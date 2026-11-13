@@ -79,14 +79,17 @@ export class ObtenerPerfilClimaticoUseCase {
     const desde = anioInicio + "-01-01";
     const hasta = anioFin + "-12-31";
 
-    // 3. Datos satelitales del sitio
-    const consulta = await this.clima.obtenerSerieDiaria({ latitud, longitud, desde, hasta });
+    // 3 y 4. Datos satelitales del sitio y búsqueda de estación IDEAM en paralelo
+    const [consulta, busquedaEstacion] = await Promise.all([
+      this.clima.obtenerSerieDiaria({ latitud, longitud, desde, hasta }),
+      this.normales.estacionMasCercana(latitud, longitud),
+    ]);
     if (!consulta.ok) return consulta;
     const serie = consulta.value;
     const advertencias: string[] = [];
 
     // 4. Calibración con IDEAM
-    const { registros, calibracion } = await this.calibrar(latitud, longitud, serie.registros, advertencias);
+    const { registros, calibracion } = await this.calibrarConBusqueda(busquedaEstacion, serie.registros, advertencias);
 
     // 5. Corrección por altitud
     const altitudReferenciaM = altitudM ?? serie.altitudCeldaM;
@@ -149,18 +152,16 @@ export class ObtenerPerfilClimaticoUseCase {
   }
 
   /**
-   * Intenta calibrar la serie de la finca. Nunca falla: si algo no está disponible devuelve la serie
-   * original, calibracion = null y deja una advertencia explicando por qué.
+   * Intenta calibrar la serie de la finca usando el resultado ya consultado de la estación IDEAM.
+   * Nunca falla: si algo no está disponible devuelve la serie original, calibracion = null y deja una advertencia.
    */
-  private async calibrar(
-    latitud: number,
-    longitud: number,
+  private async calibrarConBusqueda(
+    busqueda: Awaited<ReturnType<INormalesClimatologicasProvider["estacionMasCercana"]>>,
     registros: RegistroClimaDiario[],
     advertencias: string[],
   ): Promise<{ registros: RegistroClimaDiario[]; calibracion: CalibracionDto | null }> {
     const sinCalibrar = { registros, calibracion: null };
 
-    const busqueda = await this.normales.estacionMasCercana(latitud, longitud);
     if (!busqueda.ok) {
       advertencias.push("No se pudo consultar el IDEAM (" + busqueda.error.message + "): datos SIN calibrar.");
       return sinCalibrar;
