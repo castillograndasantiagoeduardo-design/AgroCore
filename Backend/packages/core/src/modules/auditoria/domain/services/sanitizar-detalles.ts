@@ -1,6 +1,6 @@
 /**
  * Servicio de dominio puro: elimina campos sensibles antes de auditar.
- * Jamás se registran password_hash, totp_secret, tokens JWT ni códigos de recuperación.
+ * Jamás se registran contraseñas, secretos, tokens de acceso ni códigos de recuperación.
  */
 
 const CAMPOS_SENSIBLES = new Set([

@@ -1,18 +1,13 @@
 /**
- * Rutas de rotaciones: JWT + permiso RBAC por ruta.
- *   POST /api/rotaciones/fincas/:fincaId/comparar  → compara 3 estrategias de rotación de 2 años
+ * Rutas de rotaciones (API abierta).
+ *   POST /api/rotaciones/comparar                  → cualquier punto o área del mundo
+ * Si el sitio no es apto (ej. "No se puede sembrar: es carretera") responde 422 TERRENO_NO_APTO.
  */
 import { Hono } from "hono";
-import { PERMISSIONS } from "@duitamacrece/contracts";
 import type { AppEnv } from "../types.ts";
-import { requireAuth, requirePermission } from "../middlewares/auth.ts";
+import { limiteProveedoresExternos } from "../middlewares/proteccion.ts";
 import { rotacionesController } from "../controllers/rotaciones.controller.ts";
 
 export const rotacionesRoutes = new Hono<AppEnv>();
 
-rotacionesRoutes.use("*", requireAuth);
-rotacionesRoutes.post(
-  "/fincas/:fincaId/comparar",
-  requirePermission(PERMISSIONS.ROTACIONES_COMPARAR),
-  rotacionesController.comparar,
-);
+rotacionesRoutes.post("/comparar", limiteProveedoresExternos, rotacionesController.compararUbicacion);

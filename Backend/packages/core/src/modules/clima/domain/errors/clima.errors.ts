@@ -1,7 +1,7 @@
 /**
  * Errores de dominio del módulo clima (extienden DomainError, nunca se lanzan).
  */
-import { DomainError } from "@duitamacrece/shared-kernel";
+import { DomainError } from "@agrocore/shared-kernel";
 
 /** El servicio externo de clima (NASA POWER) no respondió o respondió mal. HTTP 422. */
 export class ClimaProveedorNoDisponibleError extends DomainError {

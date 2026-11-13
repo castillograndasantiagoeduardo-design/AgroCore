@@ -1,9 +1,10 @@
-import type { AppContainer } from "@duitamacrece/composition";
-import type { ContextoActor } from "@duitamacrece/core";
+import type { AppContainer } from "@agrocore/composition";
+import type { ContextoSolicitud } from "@agrocore/core";
 
 export type AppEnv = {
   Variables: {
     container: AppContainer;
-    actor: ContextoActor;
+    /** Origen de la solicitud ("api") e IP del cliente, para la auditoría (Regla 6). */
+    contexto: ContextoSolicitud;
   };
 };

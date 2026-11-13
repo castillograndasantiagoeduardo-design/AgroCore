@@ -8,8 +8,8 @@
 
 ## 🎯 Propósito
 
-Construir el **perfil climático de una finca de Duitama**: 12 meses con lluvia, temperaturas
-**corregidas por la altitud de la finca**, probabilidad de helada, días de lluvia fuerte y temporada
+Construir el **perfil climático de cualquier ubicación** (punto o área): 12 meses con lluvia, temperaturas
+**corregidas por la altitud del sitio**, probabilidad de helada, días de lluvia fuerte y temporada
 (lluviosa/seca), a partir de 30 años de datos diarios de **NASA POWER**, **calibrados con las normales climatológicas 1991-2020 de la estación IDEAM más cercana** (en Duitama: Surbatá-Bonza [24035120], 2.485 m).
 
 ---
@@ -19,14 +19,14 @@ Construir el **perfil climático de una finca de Duitama**: 12 meses con lluvia,
 | Elemento | Nombre | Descripción |
 | :--- | :--- | :--- |
 | Tipo | `RegistroClimaDiario` / `SerieClimatica` | Un día de datos (null = faltante) y la serie con la altitud de la celda del proveedor. |
-| Servicio | `calcularAjusteTemperatura` | `(altitudCelda − altitudFinca) × 0,0065 °C/m`. |
+| Servicio | `calcularAjusteTemperatura` | `(altitudCelda − altitudSitio) × 0,0065 °C/m`. |
 | Servicio | `calcularCalendarioMensual` | Agrupa por mes-año, descarta meses con < 20 días válidos y promedia entre años. |
 | Constantes | `UMBRAL_HELADA_C = 2`, `UMBRAL_LLUVIA_FUERTE_MM = 20`, `PROBABILIDAD_RIESGO_HELADA = 0.25` | Umbrales agronómicos (revisar con agrónomo local). |
 | Puerto | `IClimaProvider` | `obtenerSerieDiaria({ latitud, longitud, desde, hasta })` → `Result<SerieClimatica>`. |
 | Tipo | `NormalClimatologica` | Normal IDEAM de 30 años: 12 meses de lluvia, Tmín, Tmedia y Tmáx de una estación. |
 | Servicio | `calcularFactoresCalibracion` | Compara NASA POWER en el punto de la estación (mismos años, llevada a su altitud) con la normal: `deltaT = IDEAM − NASA`, `factorLluvia = IDEAM ÷ NASA` (limitado a 0,2–5). |
-| Servicio | `aplicarCalibracion` | Aplica el delta y el factor de cada mes a cada día de la serie de la finca. |
-| Constante | `DISTANCIA_MAX_CALIBRACION_KM = 25` | Más lejos, la estación no representa la finca y no se calibra. |
+| Servicio | `aplicarCalibracion` | Aplica el delta y el factor de cada mes a cada día de la serie del sitio. |
+| Constante | `DISTANCIA_MAX_CALIBRACION_KM = 25` | Más lejos, la estación no representa el sitio y no se calibra. |
 | Puerto | `INormalesClimatologicasProvider` | `estacionMasCercana(lat, lon)` → `Result<{ normal, distanciaKm }` o `null`. |
 | Puerto | `IReloj` | `hoy()`; permite fijar la fecha en los tests. |
 
@@ -34,27 +34,26 @@ Construir el **perfil climático de una finca de Duitama**: 12 meses con lluvia,
 
 | Código | Clase | HTTP |
 | :--- | :--- | :--- |
-| `FINCA_NO_ENCONTRADO` | `FincaNoEncontradoError` (módulo fincas) | 404 |
 | `CLIMA_SIN_DATOS` | `ClimaSinDatosError` | 422 |
 | `CLIMA_PROVEEDOR_NO_DISPONIBLE` | `ClimaProveedorNoDisponibleError` | 422 |
 
 ## ⚙️ Casos de Uso
 
-| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Permiso | Audita |
-| :--- | :--- | :--- | :--- | :--- |
-| `ObtenerPerfilClimaticoUseCase` | `obtenerPerfilClimatico` | `IFincaRepository`, `IClimaProvider`, `INormalesClimatologicasProvider`, `IReloj` | `PERMISSIONS.CLIMA_LEER` | ❌ (solo lectura) |
+| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Audita |
+| :--- | :--- | :--- | :--- |
+| `ObtenerPerfilClimaticoUseCase` | `obtenerPerfilClimatico` | `IClimaProvider`, `INormalesClimatologicasProvider`, `IReloj` | ❌ (solo lectura) |
 
 Periodo consultado: los **30 años completos** anteriores al año actual (normal climatológica).
 
-Orden de cálculo: serie NASA de la finca → **calibración IDEAM** (si hay estación a ≤ 25 km) → **corrección por altitud** de la finca → calendario. Si el IDEAM no responde o no hay estación cerca, el perfil sale igual, con `calibracion: null` y una advertencia.
+Orden de cálculo: serie NASA del sitio → **calibración IDEAM** (si hay estación a ≤ 25 km) → **corrección por altitud** del sitio → calendario. Si el IDEAM no responde o no hay estación cerca, el perfil sale igual, con `calibracion: null` y una advertencia.
 
 ---
 
 ## 📁 Archivos por Capa
 
 ### 1. Contrato — Shared/contracts
-- `Shared/contracts/src/clima.schema.ts` (`PerfilClimaticoParamsSchema`, `ClimaMensualSchema`, `PerfilClimaticoSchema`)
-- `permissions.ts` → `CLIMA_LEER` · `mcp-tools.ts` → `CLIMA_PERFIL_FINCA`
+- `Shared/contracts/src/clima.schema.ts` (`PerfilClimaticoUbicacionSchema`, `ClimaMensualSchema`, `PerfilClimaticoSchema`)
+- `mcp-tools.ts` → `CLIMA_PERFIL_UBICACION`
 
 ### 2. Dominio — core/domain
 - `domain/value-objects/registro-clima-diario.vo.ts`
@@ -79,13 +78,13 @@ Orden de cálculo: serie NASA de la finca → **calibración IDEAM** (si hay est
 
 ### 6. Entrada — apps/api y apps/mcp-server
 - `Backend/apps/api/src/controllers/clima.controller.ts`
-- `Backend/apps/api/src/routes/clima.routes.ts` → `GET /api/clima/fincas/:fincaId`
-- `Backend/apps/mcp-server/src/tools/clima.tools.ts` → tool `clima_perfil_finca`
+- `Backend/apps/api/src/routes/clima.routes.ts` → `POST /api/clima/perfil` `{ latitud, longitud, altitudM? }`
+- `Backend/apps/mcp-server/src/tools/clima.tools.ts` → tool `clima_perfil_ubicacion`
 - `Http/clima.http`
 - `Backend/scripts/probar-clima.ts` (prueba real sin MySQL)
 
 ### 7. Interfaz — Frontend
-- Pendiente: calendario climático en la vista de la finca.
+- Pendiente: calendario climático en la vista del área seleccionada.
 
 ---
 
@@ -95,7 +94,7 @@ Orden de cálculo: serie NASA de la finca → **calibración IDEAM** (si hay est
 - `NasaPowerClient` no lanza excepciones al caso de uso: devuelve `Result.err(ClimaProveedorNoDisponibleError)`.
 - Los valores `-999` de NASA POWER se convierten en `null` en el adaptador; el dominio nunca ve `-999`.
 
-## 🔬 Resultado de la calibración en Duitama (finca a 2.530 m, centro)
+## 🔬 Resultado de la calibración en Duitama (sitio a 2.530 m, centro)
 
 | | NASA POWER sin calibrar | Calibrado con Surbatá-Bonza | IDEAM medido |
 | :--- | :--- | :--- | :--- |
@@ -108,7 +107,34 @@ Orden de cálculo: serie NASA de la finca → **calibración IDEAM** (si hay est
 
 - La calibración corrige **promedios mensuales**; NASA POWER varía menos de un día a otro que la realidad,
   así que las heladas de noches puntuales (hondonadas) pueden seguir subestimadas.
-- Se supone que el error de la NASA es igual en la estación y en la finca; para fincas altas (> 3.000 m)
+- Se supone que el error de la NASA es igual en la estación y en el sitio; para sitios altos (> 3.000 m)
   la estación del valle puede no representar bien la lluvia del páramo.
 - La temporada "lluviosa/seca" usa el promedio mensual como corte; meses cercanos al corte pueden oscilar.
 - La primera consulta tarda ~30–50 s (dos series de 30 años + IDEAM); las siguientes salen de la caché.
+
+---
+
+## 🌍 Clima global (Fase 4, AgroCore)
+
+`ObtenerPerfilClimaticoUseCase` tiene dos entradas: `porUbicacion({ latitud, longitud, altitudM | null }, contexto)`
+(cualquier punto del mundo; lo usan `rotaciones` y `recomendacion`) y `porUbicacionRapida(...)` (etapa rápida con climatología mensual si la serie diaria tarda).
+
+| Servicio puro | Archivo | Qué calcula |
+| :--- | :--- | :--- |
+| ET0 Hargreaves–Samani | `evapotranspiracion.service.ts` | Ra por latitud y día (FAO-56 ec. 21) y ET0 mensual (FAO-56 ec. 52). Error típico ±10–15 %; en el trópico húmedo de montaña tiende a sobreestimar. |
+| Calendario mensual | `calendario-climatico.service.ts` | + `diasCalorPromedio` (Tmáx ≥ 32 °C), `etoMm` y `balanceHidricoMm` (lluvia − ET0). |
+| Clasificación | `clasificacion-climatica.service.ts` | tropical / subtropical / templado / frío / de altura (reemplaza valle-ladera-alta). |
+| Resumen | `resumen-climatico.service.ts` | Índice de aridez (UNESCO), régimen de lluvias (unimodal, bimodal, uniforme, árido), meses de calor, déficit hídrico y lluvia extrema. |
+| Temporadas de cultivo | `temporadas-cultivo.service.ts` | Mes apto = T media ≥ 5 °C, sin helada dura (mínima media ≤ 0 °C o ≥ 15 días de helada) y, en secano, lluvia ≥ 50 % de la ET0. Temporada = tramo circular de ≥ 3 meses aptos; ≥ 10 meses se dividen en dos. Soporta régimen bimodal, hemisferio sur y climas con invierno o verano seco. |
+| Vulnerabilidad | `vulnerabilidad-climatica.service.ts` | Por mes: helada, calor, déficit hídrico y lluvia extrema con severidad baja / media / alta. |
+
+Verificado con datos reales (NASA POWER, 30 años) el 2026-11-12:
+
+| Lugar | Clasificación | Régimen | Temporadas de secano |
+| :--- | :--- | :--- | :--- |
+| Duitama (rural, calibrado IDEAM) | de altura | bimodal | mar–jun y sep–nov |
+| Ames, Iowa | frío | unimodal | abr–oct (invierno fuera) |
+| Nakuru, Kenia | de altura | bimodal | mar–jul y ago–dic |
+| Córdoba, España | templado | unimodal | oct–mar (verano seco con déficit abr–sep) |
+
+**IDEAM:** calibración opcional, solo Colombia (`IdeamNormalesClient` responde `null` sin consultar fuera de la caja de Colombia).

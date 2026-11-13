@@ -1,5 +1,5 @@
 {
-  "name": "@duitamacrece/platform",
+  "name": "@agrocore/platform",
   "version": "0.1.0",
   "exports": "./src/index.ts"
 }

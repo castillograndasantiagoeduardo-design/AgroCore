@@ -1,0 +1,44 @@
+@baseUrl = http://localhost:8001/api
+
+### Punto en un lote rural de Duitama, Colombia (200, aptitud "apto")
+POST {{baseUrl}}/terreno/analizar
+Content-Type: application/json
+
+{ "area": { "tipo": "punto", "latitud": 5.8040, "longitud": -73.0700 } }
+
+### Punto en el casco urbano de Duitama, sobre la Carrera 19 (200, aptitud "no_apto_carretera": "No se puede sembrar: es carretera")
+POST {{baseUrl}}/terreno/analizar
+Content-Type: application/json
+
+{ "area": { "tipo": "punto", "latitud": 5.8269, "longitud": -73.0297 } }
+
+### Área (≈ 4 ha) en un campo de Ames, Iowa (200)
+POST {{baseUrl}}/terreno/analizar
+Content-Type: application/json
+
+{
+  "area": {
+    "tipo": "poligono",
+    "geojson": {
+      "type": "Polygon",
+      "coordinates": [[[-93.7, 42.008], [-93.6976, 42.008], [-93.6976, 42.0098], [-93.7, 42.0098], [-93.7, 42.008]]]
+    }
+  }
+}
+
+### Área de más de 100 ha (422 AREA_DEMASIADO_GRANDE)
+POST {{baseUrl}}/terreno/analizar
+Content-Type: application/json
+
+{
+  "area": {
+    "tipo": "poligono",
+    "geojson": { "type": "Polygon", "coordinates": [[[36.08, -0.3], [36.10, -0.3], [36.10, -0.28], [36.08, -0.28], [36.08, -0.3]]] }
+  }
+}
+
+### Polígono con menos de 3 vértices (400 VALIDATION_ERROR)
+POST {{baseUrl}}/terreno/analizar
+Content-Type: application/json
+
+{ "area": { "tipo": "poligono", "geojson": { "type": "Polygon", "coordinates": [[[0, 0], [0.001, 0]]] } } }

@@ -7,14 +7,14 @@
 
 ## 🎯 Propósito
 
-Completamente desacoplado del Backend: solo se comunica por HTTP y comparte esquemas vía `@duitamacrece/contracts`.
+Completamente desacoplado del Backend: solo se comunica por HTTP y comparte esquemas vía `@agrocore/contracts`.
 
 ## 📦 ¿Qué contiene?
 
-- `src/app/`: Solo define las páginas del App Router (`(autenticacion)`, `(panel)`, `(punto-de-venta)`) y delega el renderizado a `src/features/`.
+- `src/app/`: Solo define las páginas del App Router (`(panel)`) y delega el renderizado a `src/features/`.
 - `src/features/<modulo>/`: `api/` (llamadas a `http-client.ts` tipadas con contracts), `hooks/` (estado, paginación, mutaciones), `components/` (tablas, modales, vistas), `types/` (tipos de vista).
 - `src/components/ui/`: Sistema de diseño reutilizable.
-- `src/lib/`: `http-client.ts` (con renovación automática de `refresh_token`) y formateadores.
+- `src/lib/`: `http-client.ts` (API abierta, sin cabeceras de sesión) y formateadores.
 
 ---
 

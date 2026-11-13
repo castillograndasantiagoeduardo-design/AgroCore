@@ -1,0 +1,84 @@
+clave	EcoPortCode	ScientificName	LIFO	TOPMN	TOPMX	TMIN	TMAX	ROPMN	ROPMX	RMIN	RMAX	PHOPMN	PHOPMX	PHMIN	PHMAX	DEP	TEXT	KTMPR	KTMP	GMIN	GMAX
+[0m[32mDownload[0m https://jsr.io/@std/csv/meta.json
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6_meta.json
+[0m[32mDownload[0m https://jsr.io/@std/streams/meta.json
+[0m[32mDownload[0m https://jsr.io/@std/streams/1.2.0_meta.json
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6/mod.ts
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6/parse.ts
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6/parse_stream.ts
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6/stringify.ts
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6/stringify_stream.ts
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6/_io.ts
+[0m[32mDownload[0m https://jsr.io/@std/csv/1.0.6/_shared.ts
+[0m[32mDownload[0m https://jsr.io/@std/streams/1.2.0/text_delimiter_stream.ts
+[0m[32mDownload[0m https://jsr.io/@std/streams/1.2.0/_common.ts
+maiz	2175	Zea mays		18	33	10	47	600	1200	400	1800	5	7	4.5	8.5	medium (50-150 cm)		NA	NA	65	365
+maiz	10981	Zea mays ssp. saccharata	grass	16	24	12	38	800	1500	600	1800	5.5	6.8	4.5	7.5	medium (50-150 cm)	medium, organic	NA	NA	65	100
+maiz	238663	Zea mays ssp. mays	grass	18	33	10	47	600	1200	400	1800	5	7	4.5	8.5	medium (50-150 cm)	medium, organic	NA	NA	65	365
+trigo	2114	Triticum aestivum	grass	15	23	5	27	750	900	300	1600	6	7	5.5	8.5	medium (50-150 cm)	medium, organic	-20	0	90	250
+cebada	1232	Hordeum vulgare	grass	15	20	2	40	500	1000	200	2000	6.5	7.5	6	8	deep (>>150 cm)	medium	-4	0	90	240
+avena	481	Avena sativa	grass	16	20	5	30	600	1000	250	1500	5	6	4.5	7.5	medium (50-150 cm)	heavy, medium, light	-15	-1	110	270
+centeno	1929	Secale cereale	grass	15	20	3	31	600	1000	400	2000	5.5	6	4.5	8.2	medium (50-150 cm)	heavy, medium, light	-18	-1	110	270
+arroz	1574	Oryza sativa	grass	20	30	10	36	1500	2000	1000	4000	5.5	7	4.5	9	medium (50-150 cm)	wide	NA	NA	80	180
+arroz	8143	Oryza sativa ssp. indica	grass	25	35	16	38	1500	2000	1000	4000	5	8	3.5	9	medium (50-150 cm)	heavy, medium, light	NA	NA	80	200
+arroz	8144	Oryza sativa ssp. javanica	grass	23	35	16	38	1500	2000	800	4000	5.5	7	4.5	9	medium (50-150 cm)	heavy	NA	NA	120	240
+sorgo	1982	Sorghum bicolor var. sweet	grass	27	35	8	40	500	1000	300	3000	6	7	5	8.5	medium (50-150 cm)	heavy, medium	NA	NA	90	300
+sorgo	48747	Sorghum bicolor	grass	22	35	8	40	400	600	300	700	5.5	7.5	5	8	medium (50-150 cm)	heavy, medium	NA	NA	90	300
+mijo_perla	8418	Pennisetum glaucum	grass	25	35	12	40	400	900	200	1700	5	6.5	4.5	8.3	deep (>>150 cm)	medium, light	2	0	60	120
+amaranto	2187	Amaranthus caudatus	herb	21	28	7	40	800	2300	250	4200	5.5	7.5	4.3	8.5	medium (50-150 cm)	light, organic	4	0	30	300
+quinua	2509	Chenopodium quinoa	herb	14	18	2	35	500	1000	250	2600	5.5	8	4.5	9.5	medium (50-150 cm)	heavy, medium, light	-8	-8	90	240
+trigo_sarraceno	2285	Fagopyrum esculentum	herb	17	27	7	40	700	1000	400	1300	5	6.5	4.4	7.5	medium (50-150 cm)	medium, light	NA	NA	55	85
+frijol	1668	Phaseolus vulgaris	herb	16	25	7	32	500	2000	300	4300	5.5	7.5	4	9	medium (50-150 cm)	medium, organic	NA	NA	50	270
+arveja	1721	Pisum sativum	herb	10	24	4	30	800	1200	350	2500	5.5	7	4.5	8.3	medium (50-150 cm)	heavy, medium, light	-2	0	60	140
+haba	2146	Vicia faba	herb	18	28	5	32	650	1000	250	2600	6	7	4.5	8.6	medium (50-150 cm)	medium, organic	NA	NA	100	150
+garbanzo	2479	Cicer arietinum	herb	15	29	7	35	600	1000	300	1800	6	8.5	4.7	9.5	medium (50-150 cm)	heavy, medium	-9	0	90	180
+lenteja	7209	Lens culinaris	herb	15	29	5	32	600	1000	250	2500	5.5	7.5	4.5	8.2	medium (50-150 cm)	heavy, medium	NA	NA	70	240
+soya	1150	Glycine max	herb	20	33	10	38	600	1500	450	1800	5.5	6.5	4.5	8.4	medium (50-150 cm)	medium, organic	NA	NA	75	180
+mani	2199	Arachis hypogaea	herb	22	32	10	45	600	1500	400	4000	5.5	6.5	4.5	8.5	medium (50-150 cm)	medium	NA	NA	90	150
+caupi	2153	Vigna unguiculata	herb	25	35	15	40	500	1500	300	4100	5.5	7.5	4	8.8	medium (50-150 cm)	medium, light	-1	-1	30	240
+caupi	10833	Vigna unguiculata ssp. dekindtiana	herb	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA			NA	NA	0	0
+caupi	10834	Vigna unguiculata ssp. sesquipedalis	herb	20	35	14	38	1500	2000	650	4100	5.5	7	4.3	7.5	medium (50-150 cm)	heavy, medium	4	4	50	150
+gandul	576	Cajanus cajan	shrub	18	38	10	45	600	1500	400	4000	5	7	4.5	8.4	deep (>>150 cm)	medium, light	NA	NA	90	365
+tarwi	7435	Lupinus mutabilis	herb	18	24	6	30	500	1000	350	1700	5	6.5	4.5	7	shallow (20-50 cm)	medium, light	-5	-5	150	330
+vicia_villosa	10816	Vicia villosa ssp. dasycarpa	herb	10	24	4	32	500	700	300	1000	6	7	4.9	8	medium (50-150 cm)	medium, light	NA	NA	90	150
+vicia_villosa	238008	Vicia villosa sp. varia	herb	18	24	14	30	600	1400	400	1500	6	7	5.5	8	medium (50-150 cm)	heavy, medium, light, wide	-5	0	0	0
+vicia_villosa	238009	Vicia villosa ssp. villosa	herb	12	22	2	28	700	900	300	1700	6	7	4.9	8.2	medium (50-150 cm)	medium, light	-5	-1	135	255
+mucuna	2350	Mucuna pruriens var utilis	herb	20	30	10	35	1200	1500	1000	3000	5	6.5	4	7.5	medium (50-150 cm)	medium, light	NA	NA	0	0
+mucuna	7832	Mucuna pruriens	herb, sub-shrub	20	30	10	34	1000	2000	400	3100	5	7	4	8	medium (50-150 cm)	medium, light	5	5	90	270
+crotalaria	801	Crotalaria juncea	herb	20	30	4	40	500	1500	200	4300	6	7	5	8.4	medium (50-150 cm)	medium	-2	-1	60	160
+canavalia	609	Canavalia ensiformis	herb, vine, sub-shrub	20	28	14	36	800	2000	600	4300	5	6	4.3	8	medium (50-150 cm)	heavy, medium, light, organic	NA	NA	80	300
+papa	1971	Solanum tuberosum	herb	15	25	7	30	500	800	250	2000	5	6.2	4.2	8.5	medium (50-150 cm)	medium, organic	-1	0	90	160
+yuca	1420	Manihot esculenta	shrub	20	29	10	35	1000	1500	500	5000	5.5	8	4	9	medium (50-150 cm)	medium, light	7	0	180	365
+batata	1265	Ipomoea batatas		18	28	10	38	750	2000	350	5000	5	7	4	8.7	medium (50-150 cm)		1	5	80	170
+oca	2371	Oxalis tuberosa	herb	12	24	5	28	800	1300	570	2150	6	7	5.3	7.8	medium (50-150 cm)	medium, light	NA	NA	180	270
+remolacha	514	Beta vulgaris	herb	15	25	4	35	600	800	500	1000	6	7	5.5	7.5	medium (50-150 cm)	heavy, medium	-3	0	160	240
+remolacha	2474	Beta vulgaris var. cicla	herb	15	25	5	35	800	800	500	1000	6	6.5	5.5	8.3	medium (50-150 cm)	medium	NA	NA	50	150
+remolacha	3712	Beta vulgaris var. crassa	herb	15	25	5	30	800	1500	500	2500	6	6.8	5	8.3	medium (50-150 cm)	medium, light	-6	-3	55	90
+zanahoria	871	Daucus carota	herb	15	24	3	30	600	1200	400	4000	5.8	6.8	4.2	8.7	medium (50-150 cm)	medium, organic	-1	0	40	150
+cebolla_bulbo	364	Allium cepa	herb	12	25	4	30	350	600	300	2800	6	7	4.3	8.3	medium (50-150 cm)	medium, organic	NA	NA	85	175
+cebolla_bulbo	551	Allium cepa var. cepa	herb	12	25	4	30	350	600	300	2800	6	7	4.3	8.3	medium (50-150 cm)	medium, organic	NA	NA	85	175
+cebolla_bulbo	1096	Allium cepa var. aggregatum	herb	20	25	10	30	450	600	300	1000	6	7	5.5	7.5	medium (50-150 cm)	light, organic	-5	-5	60	100
+ajo	367	Allium sativum	herb	18	30	7	35	750	1600	500	2700	6	6.6	5	8.5	medium (50-150 cm)	medium, light	-5	-5	90	120
+tomate	1379	Lycopersicon esculentum	herb	20	27	7	35	600	1300	400	1800	5.5	6.8	5	7.5	shallow (20-50 cm)	medium, organic	NA	NA	70	150
+repollo	553	Brassica oleracea var. botrytis	herb	10	25	5	30	600	1100	450	1900	6	7	5.5	8.5	deep (>>150 cm)	medium	-5	-5	60	120
+repollo	554	Brassica oleracea var. capitata	herb	15	24	7	32	500	1000	300	2500	6	7.5	5	8.3	shallow (20-50 cm)	medium, organic	-10	-1	60	200
+repollo	555	Brassica oleracea var. gemmifera	herb	12	20	7	25	900	1600	500	3000	6	7	4.5	7.8	medium (50-150 cm)	medium, organic	-5	-5	100	130
+lechuga	1313	Lactuca sativa var. capitata	herb	12	21	5	30	1100	1400	900	4100	6	7	4.2	7.5	shallow (20-50 cm)	medium, light	-1	0	35	85
+calabaza	819	Cucurbita maxima	vine	20	30	9	38	600	1000	450	2700	5.5	7.5	5	8.5	deep (>>150 cm)	heavy, medium, light, organic	NA	NA	80	140
+pepino	817	Cucumis sativus	herb	18	32	6	38	1000	1200	400	4300	6	7.5	4.5	8.7	medium (50-150 cm)	medium, organic	NA	NA	40	180
+pimiento	618	Capsicum annuum	herb	17	30	8	35	600	1250	500	1700	5.5	6.8	4.5	7	medium (50-150 cm)	medium, organic	NA	NA	60	180
+girasol	1191	Helianthus annuus	herb	17	34	5	45	600	1000	300	1600	6	7.5	5.5	8	medium (50-150 cm)	medium, light	-10	0	70	200
+colza	549	Brassica napus	herb	15	25	5	41	500	1000	400	2800	6.5	7.6	5.5	8	medium (50-150 cm)	medium, light	-15	-6	85	340
+colza	3861	Brassica napus var. napobrassica	herb	14	24	5	35	700	1000	300	1700	5.5	7	4.8	7.8	medium (50-150 cm)	medium, light	-1	-1	180	180
+sesamo	1937	Sesamum indicum	herb	20	30	10	40	500	1000	300	1500	5.5	7.5	4.5	8	deep (>>150 cm)	medium	NA	NA	40	180
+algodon	1160	Gossypium hirsutum	shrub	22	36	15	42	750	1200	450	1500	6	7.5	5	9.5	deep (>>150 cm)	heavy, medium	NA	NA	150	200
+lino	7336	Linum usitatissimum	herb	16	24	5	30	500	800	250	1300	6	6.5	5.5	7	shallow (20-50 cm)	heavy, medium	-6	-1	80	180
+alfalfa	1428	Medicago sativa	herb	21	27	5	45	600	1200	350	2700	6.5	7.5	4.3	8.7	deep (>>150 cm)	medium, light	-25	0	100	210
+raigras	1362	Lolium perenne	grass	14	25	4	35	700	1750	500	2300	5	7	4.5	8.4	medium (50-150 cm)	heavy, medium	-2	0	90	270
+trebol	2105	Trifolium repens	herb	14	22	4	26	700	1200	300	2100	5.5	7	4.5	8.2	shallow (20-50 cm)	heavy, medium	-2	0	90	240
+vicia_sativa	238002	Vicia sativa ssp. nigra	herb	11	23	4	28	600	800	350	1160	6	7	4.9	8.2	medium (50-150 cm)	medium	-5	-1	80	170
+vicia_sativa	238003	Vicia sativa ssp. sativa	herb	14	23	3	28	700	900	350	1600	6	7	4.5	8.2	medium (50-150 cm)	heavy, medium	-1	-1	80	170
+mostaza	9787	Sinapis alba	herb	10	25	5	30	700	1100	500	1300	6.5	7.5	5.5	8.5	medium (50-150 cm)	medium	NA	NA	110	180
+rabano	1839	Raphanus sativus	herb	12	26	10	37	1000	1500	800	2800	6	7	4.3	8.3	deep (>>150 cm)	medium, light	NA	NA	50	80
+rabano	11291	Raphanus sativus var. radicula	herb	12	25	3	30	800	1000	500	2800	6	7	5.2	8.3	medium (50-150 cm)	medium, light	NA	NA	21	135
+rabano	83541	Raphanus sativus var. oleiferus	herb	12	25	5	30	800	1000	500	1500	6	6.5	5	7.5	deep (>>150 cm)	medium, light	NA	NA	70	150

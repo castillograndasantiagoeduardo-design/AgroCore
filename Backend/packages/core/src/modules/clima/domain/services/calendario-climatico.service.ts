@@ -4,8 +4,9 @@
  * Convierte ~30 años de datos diarios en 12 filas (enero..diciembre) con:
  * lluvia, temperaturas corregidas por altitud, riesgo de helada, lluvias fuertes y temporada.
  */
-import type { ClimaMensualDto } from "@duitamacrece/contracts";
+import type { ClimaMensualDto } from "@agrocore/contracts";
 import type { RegistroClimaDiario } from "../value-objects/registro-clima-diario.vo.ts";
+import { et0MensualMm } from "./evapotranspiracion.service.ts";
 
 /**
  * Umbral de helada: temperatura mínima del aire a 2 m ≤ 2 °C.
@@ -16,6 +17,9 @@ export const UMBRAL_HELADA_C = 2;
 
 /** Día de lluvia fuerte: ≥ 20 mm en 24 h (genera escorrentía y erosión en ladera). */
 export const UMBRAL_LLUVIA_FUERTE_MM = 20;
+
+/** Golpe de calor: temperatura máxima del aire a 2 m ≥ 32 °C (umbral de estrés en floración para la mayoría de cultivos). */
+export const UMBRAL_CALOR_C = 32;
 
 /** Un mes-año solo cuenta si tiene al menos estos días con datos válidos. */
 export const DIAS_MINIMOS_POR_MES = 20;
@@ -33,6 +37,7 @@ interface AcumuladoMesAnio {
   lluviaTotal: number;
   diasHelada: number;
   diasLluviaFuerte: number;
+  diasCalor: number;
   sumaMedia: number;
   sumaMin: number;
   sumaMax: number;
@@ -49,11 +54,13 @@ const promedio = (valores: number[]) => (valores.length === 0 ? 0 : valores.redu
 /**
  * @param registros datos diarios del proveedor (valores faltantes = null)
  * @param ajusteTemperaturaC grados a sumar a cada temperatura (ver correccion-altitud.service.ts)
+ * @param latitud del sitio (para la radiación extraterrestre de la ET0)
  * @returns 12 meses; vacío si no hay ningún mes con datos suficientes
  */
 export function calcularCalendarioMensual(
   registros: RegistroClimaDiario[],
   ajusteTemperaturaC: number,
+  latitud: number,
 ): ClimaMensualDto[] {
   // 1. Acumular por (año, mes)
   const porMesAnio = new Map<string, AcumuladoMesAnio>();
@@ -61,7 +68,7 @@ export function calcularCalendarioMensual(
     if (r.lluviaMm === null && r.tempMinC === null) continue;
     const clave = r.fecha.slice(0, 7); // "YYYY-MM"
     const acc = porMesAnio.get(clave) ??
-      { diasValidos: 0, lluviaTotal: 0, diasHelada: 0, diasLluviaFuerte: 0, sumaMedia: 0, sumaMin: 0, sumaMax: 0, diasTemp: 0 };
+      { diasValidos: 0, lluviaTotal: 0, diasHelada: 0, diasLluviaFuerte: 0, diasCalor: 0, sumaMedia: 0, sumaMin: 0, sumaMax: 0, diasTemp: 0 };
 
     acc.diasValidos++;
     if (r.lluviaMm !== null) {
@@ -75,6 +82,7 @@ export function calcularCalendarioMensual(
       acc.sumaMax += r.tempMaxC + ajusteTemperaturaC;
       acc.diasTemp++;
       if (min <= UMBRAL_HELADA_C) acc.diasHelada++;
+      if (r.tempMaxC + ajusteTemperaturaC >= UMBRAL_CALOR_C) acc.diasCalor++;
     }
     porMesAnio.set(clave, acc);
   }
@@ -101,6 +109,7 @@ export function calcularCalendarioMensual(
       diasHeladaPromedio: promedio(anios.map((a) => a.diasHelada)),
       probabilidadHelada: anios.filter((a) => a.diasHelada > 0).length / anios.length,
       diasLluviaFuertePromedio: promedio(anios.map((a) => a.diasLluviaFuerte)),
+      diasCalorPromedio: promedio(anios.map((a) => a.diasCalor)),
     };
   });
 
@@ -117,6 +126,9 @@ export function calcularCalendarioMensual(
     diasHeladaPromedio: redondear(m.diasHeladaPromedio),
     probabilidadHelada: redondear(m.probabilidadHelada, 2),
     diasLluviaFuertePromedio: redondear(m.diasLluviaFuertePromedio),
+    diasCalorPromedio: redondear(m.diasCalorPromedio),
+    etoMm: redondear(et0MensualMm(latitud, m.mes, m.tempMediaC, m.tempMinC, m.tempMaxC)),
+    balanceHidricoMm: redondear(m.lluviaMm - et0MensualMm(latitud, m.mes, m.tempMediaC, m.tempMinC, m.tempMaxC)),
     temporada: m.lluviaMm >= promedioMensual ? "lluviosa" : "seca",
   }));
 }

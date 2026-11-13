@@ -1,26 +1,24 @@
 /**
- * Herramientas MCP del módulo cultivos. ToolGateway valida, autoriza, ejecuta y registra.
+ * Herramientas MCP del módulo cultivos. ToolGateway valida, ejecuta y registra.
  */
-import { ListarCultivosQuerySchema, MCP_TOOLS, ObtenerCultivoParamsSchema, PERMISSIONS } from "@duitamacrece/contracts";
+import { ListarCultivosQuerySchema, MCP_TOOLS, ObtenerCultivoParamsSchema } from "@agrocore/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 export function registrarCultivosTools(gateway: ToolGateway): void {
   gateway.register({
     name: MCP_TOOLS.CULTIVOS_LISTAR,
     description:
-      "Catálogo de cultivos de clima frío de Duitama (papa, leguminosas, cereales, forrajes...) con ciclo, " +
-      "altitud, tolerancia a helada, agua, fijación de nitrógeno, cobertura y valor forrajero. " +
-      "Con altitudM devuelve solo los aptos a esa altitud, primero los óptimos.",
+      "Catálogo GLOBAL de 51 cultivos (cereales, leguminosas, tubérculos, hortalizas, oleaginosas, forrajes, coberturas) con ciclo, " +
+      "temperatura óptima y absoluta (FAO ECOCROP), tolerancias a helada, calor y sequía, pH, textura, fijación de N, plagas clave y fuentes. " +
+      "Con tempMediaC (temperatura media del sitio) devuelve solo los aptos, primero los óptimos; filtros: lluviaAnualMm, ph, textura, familia, uso, grupo.",
     schema: ListarCultivosQuerySchema,
-    permission: PERMISSIONS.CULTIVOS_LEER,
-    execute: (input, container, actor) => container.listarCultivos.execute(input, actor),
+    execute: (input, container, contexto) => container.listarCultivos.execute(input, contexto),
   });
 
   gateway.register({
     name: MCP_TOOLS.CULTIVOS_OBTENER,
     description: "Ficha completa de un cultivo por su clave (ej. 'papa', 'avena_vicia'), con notas y fuentes.",
     schema: ObtenerCultivoParamsSchema,
-    permission: PERMISSIONS.CULTIVOS_LEER,
-    execute: (input, container, actor) => container.obtenerCultivo.execute(input, actor),
+    execute: (input, container, contexto) => container.obtenerCultivo.execute(input, contexto),
   });
 }

@@ -1,471 +1,406 @@
 /**
- * Tests del motor de rotaciones con un catálogo sintético y un perfil climático fijo "tipo Duitama"
- * (sin internet ni MySQL).
- *
- * Perfil: lluviosos 3,4,5,10,11 · helada en enero y febrero · 880 mm/año.
- * Ventanas resultantes: marzo (semestre 1) y octubre (semestre 2).
+ * Tests del motor de rotaciones generalizado (temporadas reales, 12 reglas, estrategias A–D, calendario y
+ * oportunidades) con perfiles climáticos sintéticos, terreno falso y un catálogo pequeño (sin red ni MySQL).
  */
-import { assert, assertAlmostEquals, assertEquals, assertNotEquals } from "@std/assert";
-import { ComparacionRotacionesSchema, type PerfilClimaticoDto } from "@duitamacrece/contracts";
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import { ComparacionRotacionesSchema, type PerfilClimaticoDto, type PerfilTerrenoDto } from "@agrocore/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import {
-  calcularPuntajes,
-  calcularPuntajeTotal,
-  calcularVentanasSiembra,
+  AreaSeleccionada,
+  calcularCalendarioVulnerabilidad,
+  calcularTemporadasCultivo,
+  CompararRotacionesUbicacionUseCase,
+  construirVentanas,
   type ContextoMotor,
-  CompararRotacionesUseCase,
-  type CrearCultivoDatos,
-  Cultivo,
+  type ContextoSolicitud,
+  type Cultivo,
+  et0MensualMm,
   evaluarPaso,
-  evaluarReglas,
   evaluarSecuencia,
-  Finca,
+  type IAnalisisTerrenoQuery,
   type ICultivoRepository,
-  type IFincaRepository,
   type IPerfilClimaticoQuery,
-  mesesDelCiclo,
-  mesesEntreSiembras,
-  NombreFinca,
-  puntajeIngresoReferencia,
-  UbicacionFinca,
+  MotorRotaciones,
 } from "../../src/index.ts";
+import { cultivoDePrueba } from "../_fixtures/cultivos.ts";
 
 // ---------------------------------------------------------------------------
-// Datos sintéticos
+// Perfiles climáticos sintéticos
 // ---------------------------------------------------------------------------
-const LLUVIA_MES = [30, 40, 80, 120, 110, 50, 35, 40, 60, 120, 120, 75]; // 880 mm/año
-const LLUVIOSOS = [3, 4, 5, 10, 11];
-const HELADA = [1, 2];
 const NOMBRES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-function perfil(cambios: { lluviosos?: number[]; helada?: number[] } = {}): PerfilClimaticoDto {
-  const lluviosos = cambios.lluviosos ?? LLUVIOSOS;
-  const helada = cambios.helada ?? HELADA;
+interface OpcionesPerfil {
+  latitud: number;
+  temp: number[];
+  lluvia: number[];
+  heladas?: number[];
+  calor?: number[];
+}
+
+function perfil(o: OpcionesPerfil): PerfilClimaticoDto {
+  const promedio = o.lluvia.reduce((a, b) => a + b, 0) / 12;
+  const meses = o.temp.map((t, i) => {
+    const etoMm = Math.round(et0MensualMm(o.latitud, i + 1, t, t - 5, t + 5));
+    const helada = o.heladas?.includes(i + 1) ?? false;
+    return {
+      mes: i + 1,
+      nombreMes: NOMBRES[i],
+      lluviaMm: o.lluvia[i],
+      tempMediaC: t,
+      tempMinC: t - 5,
+      tempMaxC: t + 5,
+      diasHeladaPromedio: helada ? 6 : 0,
+      probabilidadHelada: helada ? 0.6 : 0,
+      diasLluviaFuertePromedio: o.lluvia[i] > 150 ? 2 : 0,
+      diasCalorPromedio: o.calor?.includes(i + 1) ? 8 : 0,
+      etoMm,
+      balanceHidricoMm: o.lluvia[i] - etoMm,
+      temporada: (o.lluvia[i] >= promedio ? "lluviosa" : "seca") as "lluviosa" | "seca",
+    };
+  });
+  const lluviaAnual = o.lluvia.reduce((a, b) => a + b, 0);
   return {
-    fincaId: 1,
-    latitud: 5.8269,
-    longitud: -73.0297,
-    altitudReferenciaM: 2400,
+    latitud: o.latitud,
+    longitud: 0,
+    altitudReferenciaM: 2500,
     altitudCeldaM: 2500,
-    ajusteTemperaturaC: 0.6,
+    ajusteTemperaturaC: 0,
     periodo: { desde: "1996-01-01", hasta: "2025-12-31", anios: 30 },
     fuente: "NASA POWER (sintético)",
     calibracion: null,
-    umbrales: { heladaC: 2, lluviaFuerteMm: 20 },
-    meses: LLUVIA_MES.map((lluviaMm, i) => ({
-      mes: i + 1,
-      nombreMes: NOMBRES[i],
-      lluviaMm,
-      tempMediaC: 14,
-      tempMinC: 7,
-      tempMaxC: 20,
-      diasHeladaPromedio: helada.includes(i + 1) ? 3 : 0,
-      probabilidadHelada: helada.includes(i + 1) ? 0.6 : 0,
-      diasLluviaFuertePromedio: 0,
-      temporada: lluviosos.includes(i + 1) ? "lluviosa" : "seca",
-    })),
+    umbrales: { heladaC: 2, lluviaFuerteMm: 20, calorC: 32 },
+    meses,
     resumen: {
-      lluviaAnualMm: LLUVIA_MES.reduce((a, b) => a + b, 0),
-      tempMediaAnualC: 14,
-      mesesLluviosos: lluviosos,
-      mesesSecos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter((m) => !lluviosos.includes(m)),
-      mesesRiesgoHelada: helada,
+      lluviaAnualMm: lluviaAnual,
+      tempMediaAnualC: o.temp.reduce((a, b) => a + b, 0) / 12,
+      etoAnualMm: meses.reduce((s, m) => s + m.etoMm, 0),
+      indiceAridez: 0.8,
+      regimenLluvias: "bimodal",
+      mesesLluviosos: meses.filter((m) => m.temporada === "lluviosa").map((m) => m.mes),
+      mesesSecos: meses.filter((m) => m.temporada === "seca").map((m) => m.mes),
+      mesesRiesgoHelada: o.heladas ?? [],
+      mesesCalor: o.calor ?? [],
+      mesesDeficitHidrico: meses.filter((m) => m.lluviaMm < 0.5 * m.etoMm).map((m) => m.mes),
+      mesesLluviaExtrema: [],
+      clasificacionClimatica: "de_altura",
     },
+    temporadasCultivo: calcularTemporadasCultivo(meses),
+    calendarioVulnerabilidad: calcularCalendarioVulnerabilidad(meses),
     advertencias: ["Advertencia del clima de prueba."],
   };
 }
 
-function datos(cambios: Partial<CrearCultivoDatos>): CrearCultivoDatos {
-  return {
-    clave: "papa",
-    nombre: "Papa",
-    nombreCientifico: "Solanum tuberosum",
-    familias: ["solanaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [120, 180],
-    altitudM: [2000, 3500],
-    altitudOptimaM: [2300, 3000],
-    toleranciaHelada: "baja",
-    necesidadAgua: "alta",
-    aguaCicloMm: [500, 750],
-    fijaNitrogeno: false,
-    coberturaSuelo: "media",
-    valorForrajero: "bajo",
-    notas: [],
-    fuentes: ["Fuente de prueba"],
-    ...cambios,
-  };
-}
-
-function cultivo(cambios: Partial<CrearCultivoDatos>): Cultivo {
-  const r = Cultivo.crear(datos(cambios));
-  if (!r.ok) throw new Error("Datos de prueba inválidos: " + r.error.message);
-  return r.value;
-}
-
-const papa = cultivo({});
-const arveja = cultivo({
-  clave: "arveja", nombre: "Arveja", familias: ["fabaceas"], fijaNitrogeno: true, cicloDias: [90, 120],
-  toleranciaHelada: "media", necesidadAgua: "media", aguaCicloMm: [250, 400], coberturaSuelo: "media",
+/** Trópico de altura bimodal (tipo Duitama): 14 °C todo el año, lluvias mar–jun y sep–nov, helada en enero. */
+const ALTIPLANO = perfil({
+  latitud: 5.8,
+  temp: Array(12).fill(14),
+  lluvia: [30, 40, 110, 130, 120, 80, 40, 40, 90, 130, 120, 50],
+  heladas: [1],
 });
-const cebada = cultivo({
-  clave: "cebada", nombre: "Cebada", familias: ["poaceas"], cicloDias: [120, 150], toleranciaHelada: "alta",
-  necesidadAgua: "baja", aguaCicloMm: [300, 450], coberturaSuelo: "media", uso: "doble_proposito",
-});
-const avenaVicia = cultivo({
-  clave: "avena_vicia", nombre: "Avena + vicia", familias: ["poaceas", "fabaceas"], fijaNitrogeno: true, uso: "forraje",
-  cicloDias: [90, 120], toleranciaHelada: "alta", necesidadAgua: "media", aguaCicloMm: [250, 350],
-  coberturaSuelo: "alta", valorForrajero: "medio",
-});
-const raigras = cultivo({
-  clave: "raigras_trebol", nombre: "Raigrás + trébol", familias: ["poaceas", "fabaceas"], fijaNitrogeno: true, uso: "forraje",
-  perenne: true, cicloDias: [60, 90], toleranciaHelada: "alta", necesidadAgua: "alta", aguaCicloMm: [700, 1000],
-  coberturaSuelo: "alta", valorForrajero: "alto",
-});
-const maizLargo = cultivo({
-  clave: "maiz", nombre: "Maíz", familias: ["poaceas"], cicloDias: [240, 300], altitudM: [1800, 2900],
-  altitudOptimaM: [2200, 2700], toleranciaHelada: "baja", necesidadAgua: "media", aguaCicloMm: [400, 600],
-  coberturaSuelo: "media", valorForrajero: "medio",
+/** Clima con invierno (tipo Iowa): temporada abr–oct, invierno muy frío. */
+const CON_INVIERNO = perfil({
+  latitud: 42,
+  temp: [-7, -4, 3, 10, 16, 21, 24, 23, 18, 11, 3, -4],
+  lluvia: [25, 25, 55, 90, 120, 120, 100, 100, 85, 65, 45, 30],
+  heladas: [1, 2, 3, 11, 12],
 });
 
-const CATALOGO = [papa, arveja, cebada, avenaVicia, raigras, maizLargo];
+// ---------------------------------------------------------------------------
+// Catálogo pequeño
+// ---------------------------------------------------------------------------
+const papa = cultivoDePrueba({ cicloDias: [100, 120] });
+const haba = cultivoDePrueba({
+  clave: "haba", nombre: "Haba", familias: ["fabaceas"], grupo: "leguminosa", fijaNitrogeno: true, cicloDias: [100, 120],
+  temperaturaOptimaC: [10, 18], temperaturaAbsolutaC: [4, 26], toleranciaHelada: "media", necesidadAgua: "media",
+  aguaCicloMm: [300, 450], coberturaSuelo: "alta", profundidadRaiz: "profunda", texturas: ["franca", "arcillosa"],
+});
+const cebada = cultivoDePrueba({
+  clave: "cebada", nombre: "Cebada", familias: ["poaceas"], grupo: "cereal", uso: "doble_proposito", cicloDias: [100, 120],
+  temperaturaOptimaC: [10, 20], temperaturaAbsolutaC: [4, 28], toleranciaHelada: "alta", necesidadAgua: "baja",
+  toleranciaSequia: "alta", aguaCicloMm: [250, 400], valorForrajero: "medio", texturas: ["franca", "arcillosa"],
+});
+const avenaVicia = cultivoDePrueba({
+  clave: "avena_vicia", nombre: "Avena + vicia", familias: ["poaceas", "fabaceas"], grupo: "forraje", uso: "forraje",
+  fijaNitrogeno: true, cicloDias: [90, 110], temperaturaOptimaC: [10, 20], temperaturaAbsolutaC: [4, 28],
+  toleranciaHelada: "alta", necesidadAgua: "media", aguaCicloMm: [250, 350], coberturaSuelo: "alta", valorForrajero: "alto",
+});
+const maiz = cultivoDePrueba({
+  clave: "maiz", nombre: "Maíz", familias: ["poaceas"], grupo: "cereal", uso: "doble_proposito", cicloDias: [120, 150],
+  temperaturaOptimaC: [18, 30], temperaturaAbsolutaC: [10, 40], toleranciaHelada: "baja", necesidadAgua: "media",
+  aguaCicloMm: [400, 600], valorForrajero: "alto", profundidadRaiz: "profunda",
+});
+const soya = cultivoDePrueba({
+  clave: "soya", nombre: "Soya", familias: ["fabaceas"], grupo: "oleaginosa", fijaNitrogeno: true, cicloDias: [100, 130],
+  temperaturaOptimaC: [18, 28], temperaturaAbsolutaC: [10, 36], toleranciaHelada: "baja", necesidadAgua: "media",
+  aguaCicloMm: [350, 500],
+});
+const centeno = cultivoDePrueba({
+  clave: "centeno", nombre: "Centeno", familias: ["poaceas"], grupo: "cereal", uso: "cobertura", cicloDias: [60, 90],
+  temperaturaOptimaC: [8, 18], temperaturaAbsolutaC: [-6, 26], toleranciaHelada: "alta", necesidadAgua: "baja",
+  aguaCicloMm: [80, 200], coberturaSuelo: "alta",
+});
+const CATALOGO: Cultivo[] = [papa, haba, cebada, avenaVicia, maiz, soya, centeno];
 
-function repoCultivos(cultivos: Cultivo[]): ICultivoRepository {
-  return {
-    listar: () => Promise.resolve(cultivos),
-    buscarPorClave: (clave) => Promise.resolve(cultivos.find((c) => c.clave === clave) ?? null),
-  };
-}
-
-function finca(opts: { altitudM?: number | null; riego?: boolean; cultivoActual?: string | null } = {}): Finca {
-  return Finca.reconstruir({
-    id: 1,
-    nombre: NombreFinca.reconstruir("Finca de prueba"),
-    descripcion: null,
-    ubicacion: UbicacionFinca.reconstruir(5.8269, -73.0297, opts.altitudM === undefined ? 2530 : opts.altitudM),
-    vereda: null,
-    tieneRiego: opts.riego ?? false,
-    cultivoActual: opts.cultivoActual === undefined ? "papa" : opts.cultivoActual,
-    activo: true,
-    creadoEn: new Date(),
-  });
-}
-
-function repoFincas(f: Finca | null): IFincaRepository {
-  return {
-    buscarPorId: () => Promise.resolve(f),
-    buscarPorNombre: () => Promise.resolve(null),
-    listar: () => Promise.resolve({ items: f ? [f] : [], total: f ? 1 : 0, page: 1, pageSize: 1 }),
-    guardar: (x) => Promise.resolve(x),
-  };
-}
-
-function clima(p: PerfilClimaticoDto): IPerfilClimaticoQuery {
-  return { execute: () => Promise.resolve(Result.ok(p)) };
-}
-
-const actor = { usuarioId: 1, rol: "admin", ip: null };
+// ---------------------------------------------------------------------------
+// Puertos falsos
+// ---------------------------------------------------------------------------
+const contexto: ContextoSolicitud = { origen: "script", ip: null };
 const PRIORIDADES = { agua: 3, suelo: 3, plagas: 3, forraje: 3, ingreso: 3 };
 
-function caso(f: Finca | null = finca(), p: PerfilClimaticoDto = perfil(), cultivos: Cultivo[] = CATALOGO) {
-  return new CompararRotacionesUseCase(repoFincas(f), repoCultivos(cultivos), clima(p));
+function terrenoFalso(cambios: Partial<PerfilTerrenoDto> = {}): IAnalisisTerrenoQuery {
+  return {
+    analizar: (area: AreaSeleccionada) =>
+      Promise.resolve({
+        ubicacion: area.resumen(),
+        aptitud: "apto",
+        mensajeAptitud: "Apto para sembrar",
+        afectacion: { carreteraPct: 0, edificacionPct: 0, aguaPct: 0, excluidoPct: 0, puntosMuestreados: 1 },
+        viasCercanas: [],
+        elevacionM: 2500,
+        pendientePct: 5,
+        suelo: null,
+        humedadSuelo: null,
+        ndvi: null,
+        cobertura: null,
+        fuentes: ["Terreno falso"],
+        vaciosInformacion: [],
+        advertencias: [],
+        ...cambios,
+      }),
+  };
 }
 
-async function comparar(entrada: Partial<{ secuenciaActual: string[]; prioridades: typeof PRIORIDADES }> = {}, c = caso()) {
-  const r = await c.execute({ fincaId: 1, prioridades: PRIORIDADES, ...entrada }, actor);
+const clima = (p: PerfilClimaticoDto): IPerfilClimaticoQuery => ({ porUbicacion: () => Promise.resolve(Result.ok(p)) });
+const repoCultivos = (cs: Cultivo[] = CATALOGO): ICultivoRepository => ({
+  listar: () => Promise.resolve(cs),
+  buscarPorClave: (k) => Promise.resolve(cs.find((c) => c.clave === k) ?? null),
+});
+
+function motor(p = ALTIPLANO, t = terrenoFalso(), cs = CATALOGO) {
+  return new MotorRotaciones(repoCultivos(cs), clima(p), t);
+}
+
+async function comparar(entrada: { cultivoActual?: string; secuenciaActual?: string[]; tieneRiego?: boolean; prioridades?: typeof PRIORIDADES } = {}, m = motor()) {
+  const r = await new CompararRotacionesUbicacionUseCase(m).execute(
+    {
+      area: { tipo: "punto", latitud: 5.8, longitud: -73 },
+      cultivoActual: entrada.cultivoActual ?? "papa",
+      secuenciaActual: entrada.secuenciaActual,
+      tieneRiego: entrada.tieneRiego ?? false,
+      prioridades: entrada.prioridades ?? PRIORIDADES,
+    },
+    contexto,
+  );
   if (!r.ok) throw new Error("Se esperaba éxito: " + r.error.code + " " + r.error.message);
   return r.value;
 }
 
-function ctxMotor(opts: { riego?: boolean; p?: PerfilClimaticoDto; altitudM?: number } = {}): ContextoMotor {
-  const p = opts.p ?? perfil();
-  return { perfil: p, ventanas: calcularVentanasSiembra(p.meses).ventanas, altitudM: opts.altitudM ?? 2530, tieneRiego: opts.riego ?? false };
+function ctxMotor(p = ALTIPLANO, cambios: Partial<ContextoMotor> = {}): ContextoMotor {
+  return {
+    perfil: p,
+    ventanas: construirVentanas(p.temporadasCultivo.secano),
+    tieneRiego: false,
+    suelo: { ph: null, textura: null },
+    pendientePct: null,
+    mesesBaldios: [],
+    excluidoPct: 0,
+    ...cambios,
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Ventanas y meses del ciclo
+// Ventanas en temporadas reales
 // ---------------------------------------------------------------------------
-Deno.test("ventanas: marzo y octubre con el perfil tipo Duitama", () => {
-  const { ventanas, advertencias } = calcularVentanasSiembra(perfil().meses);
-  assertEquals(ventanas.map((v) => v.mesSiembra), [3, 10]);
-  assertEquals(ventanas.map((v) => v.nombreMes), ["Marzo", "Octubre"]);
-  assertEquals(ventanas.every((v) => v.coincideConLluvias), true);
-  assertEquals(advertencias.length, 0);
-});
+Deno.test("ventanas: el altiplano bimodal tiene 2 temporadas; el clima con invierno, temporada + intervalo", () => {
+  const altiplano = construirVentanas(ALTIPLANO.temporadasCultivo.secano);
+  assertEquals(altiplano.map((v) => v.tipo), ["temporada", "temporada"]);
+  // Cada ventana dura hasta la siguiente siembra: entre las dos suman 12 meses.
+  assertEquals(altiplano[0].meses.length + altiplano[1].meses.length, 12);
 
-Deno.test("ventanas: si abril es el primer mes lluvioso se usa abril", () => {
-  const { ventanas } = calcularVentanasSiembra(perfil({ lluviosos: [4, 5, 9] }).meses);
-  assertEquals(ventanas.map((v) => v.mesSiembra), [4, 9]);
-});
-
-Deno.test("ventanas: sin meses lluviosos usa marzo y septiembre con advertencia", () => {
-  const { ventanas, advertencias } = calcularVentanasSiembra(perfil({ lluviosos: [] }).meses);
-  assertEquals(ventanas.map((v) => v.mesSiembra), [3, 9]);
-  assertEquals(ventanas.some((v) => v.coincideConLluvias), false);
-  assertEquals(advertencias.length, 2);
-});
-
-Deno.test("meses del ciclo: cruce de año y meses hasta la siguiente siembra", () => {
-  assertEquals(mesesDelCiclo(10, 5), [10, 11, 12, 1, 2]);
-  assertEquals(mesesEntreSiembras(3, 10), 7);
-  assertEquals(mesesEntreSiembras(10, 3), 5);
+  const invierno = construirVentanas(CON_INVIERNO.temporadasCultivo.secano);
+  assertEquals(invierno.map((v) => v.tipo), ["temporada", "intervalo"]);
+  assert(invierno[1].meses.includes(1) && invierno[1].meses.includes(12), "el intervalo es el invierno");
 });
 
 // ---------------------------------------------------------------------------
-// Evaluación de un paso
+// Pasos
 // ---------------------------------------------------------------------------
-Deno.test("paso: papa en el semestre 1 (marzo) no toca heladas y tiene déficit de agua sin riego", () => {
-  const { paso, cabeEnVentana } = evaluarPaso(papa, 1, false, ctxMotor());
-  assertEquals(paso.mesesCiclo, [3, 4, 5, 6, 7]);
-  assertEquals(paso.mesCosecha, 7);
-  assertEquals(paso.lluviaCicloMm, 395);
-  assertEquals(paso.deficitAguaMm, 105);
-  assertEquals(paso.requiereRiego, true);
-  assertEquals(paso.riesgoHelada, "ninguno");
-  assertEquals(cabeEnVentana, true);
+Deno.test("paso: en el intervalo de invierno solo es viable lo que tolera el frío; el barbecho siempre", () => {
+  const ctx = ctxMotor(CON_INVIERNO);
+  const barbecho = evaluarPaso(null, 2, false, ctx);
+  assertEquals(barbecho.paso.cultivoClave, "barbecho");
+  assertEquals(barbecho.paso.tipoVentana, "intervalo");
+  const maizInvierno = evaluarPaso(maiz, 2, false, ctx);
+  assertEquals(maizInvierno.paso.aptitudClima, "no_apta");
 });
 
-Deno.test("paso: el ciclo que cruza el año se parte en diciembre → enero", () => {
-  const { paso } = evaluarPaso(papa, 2, false, ctxMotor());
-  assertEquals(paso.mesesCiclo, [10, 11, 12, 1, 2]);
-  assertEquals(paso.mesesHeladaEnCiclo, [1, 2]);
+Deno.test("paso: el mes de siembra se elige dentro de la ventana para esquivar la helada", () => {
+  // Temporada abr–oct; el maíz (5 meses, sensible a helada) no debería sembrarse en abril si abril hiela.
+  const p = perfil({
+    latitud: 42,
+    temp: [-7, -4, 3, 10, 16, 21, 24, 23, 18, 11, 3, -4],
+    lluvia: [25, 25, 55, 90, 120, 120, 100, 100, 85, 65, 45, 30],
+    heladas: [1, 2, 3, 4, 11, 12],
+  });
+  const ctx = ctxMotor(p, { ventanas: construirVentanas([{ inicioMes: 4, meses: [4, 5, 6, 7, 8, 9, 10] }]) });
+  const ev = evaluarPaso(maiz, 1, false, ctx);
+  assert(ev.paso.mesSiembra >= 5, "siembra en " + ev.paso.mesSiembra);
+  assertEquals(ev.paso.riesgoHelada, "ninguno");
 });
 
-Deno.test("paso: riesgo de helada según tolerancia (baja=alto, media=moderado, alta=tolerado)", () => {
-  const ctx = ctxMotor();
-  assertEquals(evaluarPaso(papa, 2, false, ctx).paso.riesgoHelada, "alto");
-  assertEquals(evaluarPaso(arveja, 2, false, ctx).paso.riesgoHelada, "moderado");
-  assertEquals(evaluarPaso(cebada, 2, false, ctx).paso.riesgoHelada, "tolerado");
-});
-
-Deno.test("paso: sin déficit cuando la lluvia cubre el mínimo del cultivo", () => {
-  const { paso } = evaluarPaso(arveja, 1, false, ctxMotor());
-  assertEquals(paso.deficitAguaMm, 0);
-  assertEquals(paso.requiereRiego, false);
-});
-
-Deno.test("paso: un ciclo largo (maíz, 9 meses) no cabe en la ventana y lo explica en las notas", () => {
-  const { paso, cabeEnVentana } = evaluarPaso(maizLargo, 1, false, ctxMotor());
-  assertEquals(cabeEnVentana, false);
-  assertEquals(paso.notas.some((n) => n.includes("siguiente siembra")), true);
-});
-
-Deno.test("paso: la pradera perenne que continúa evalúa el semestre completo y no se resiembra", () => {
-  const { paso, cabeEnVentana } = evaluarPaso(raigras, 2, true, ctxMotor());
-  assertEquals(paso.continuaPradera, true);
-  assertEquals(paso.mesesCiclo, [10, 11, 12, 1, 2]);
-  assertEquals(paso.deficitAguaMm, 0); // 880 mm anuales ≥ 700
-  assertEquals(cabeEnVentana, true);
+Deno.test("paso: un cultivo largo que no cabe solo ocupa también la ventana siguiente", () => {
+  const largo = cultivoDePrueba({ clave: "tarwi", nombre: "Tarwi", familias: ["fabaceas"], fijaNitrogeno: true, cicloDias: [240, 270], temperaturaOptimaC: [10, 18], temperaturaAbsolutaC: [4, 26] });
+  const ev = evaluarPaso(largo, 1, false, ctxMotor());
+  assert(ev.necesitaSiguiente);
+  assert(ev.cabe);
 });
 
 // ---------------------------------------------------------------------------
 // Reglas
 // ---------------------------------------------------------------------------
-const regla = (rs: ReturnType<typeof evaluarReglas>, nombre: string) => rs.find((r) => r.regla === nombre)!;
+const regla = (s: ReturnType<typeof evaluarSecuencia>, nombre: string) => s.reglas.find((r) => r.regla === nombre)!;
+const sec = (...cs: (Cultivo | null)[]) => cs.map((c) => ({ cultivo: c, continua: false }));
 
-Deno.test("reglas: devuelve siempre las 7 y detecta repetición de familia y falta de leguminosa", () => {
-  const ctx = ctxMotor();
-  const s = evaluarSecuencia([papa, papa, papa, papa], ctx, PRIORIDADES);
-  assertEquals(s.reglas.length, 7);
-  assertEquals(regla(s.reglas, "no_repetir_familia").cumple, false);
-  assertEquals(regla(s.reglas, "no_repetir_familia").detalle.includes("semestre 1"), true);
-  assertEquals(regla(s.reglas, "leguminosa_cada_dos_anios").cumple, false);
-  assertEquals(regla(s.reglas, "evitar_helada").cumple, false);
-  assertEquals(regla(s.reglas, "agua_suficiente").cumple, false);
-  assertEquals(regla(s.reglas, "siembra_inicio_lluvias").cumple, true);
-  assertEquals(regla(s.reglas, "altitud_apta").cumple, true);
-  assertEquals(regla(s.reglas, "ciclo_cabe_en_ventana").cumple, true);
+Deno.test("reglas: devuelve siempre las 12 y detecta repetición de familia y falta de leguminosa", () => {
+  const s = evaluarSecuencia(sec(papa, papa, papa, papa), ctxMotor(), PRIORIDADES);
+  assertEquals(s.reglas.length, 12);
+  assertEquals(regla(s, "no_repetir_familia").cumple, false);
+  assertEquals(regla(s, "leguminosa_cada_dos_anios").cumple, false);
+  assertEquals(regla(s, "no_sembrar_en_carretera").cumple, true);
+  assertEquals(regla(s, "suelo_compatible").cumple, true); // sin datos de suelo no se penaliza
 });
 
-Deno.test("reglas: la pradera perenne continuada no cuenta como repetición de familia", () => {
-  const s = evaluarSecuencia([raigras, raigras, raigras, raigras], ctxMotor(), PRIORIDADES);
-  assertEquals(regla(s.reglas, "no_repetir_familia").cumple, true);
+Deno.test("reglas: el barbecho no rompe la cadena de familias (maíz → barbecho → maíz repite)", () => {
+  const s = evaluarSecuencia(sec(maiz, null, maiz, null), ctxMotor(CON_INVIERNO), PRIORIDADES);
+  assertEquals(regla(s, "no_repetir_familia").cumple, false);
 });
 
-Deno.test("reglas: con riego el déficit de agua no incumple agua_suficiente", () => {
-  const sinRiego = evaluarSecuencia([papa, arveja, papa, arveja], ctxMotor({ riego: false }), PRIORIDADES);
-  const conRiego = evaluarSecuencia([papa, arveja, papa, arveja], ctxMotor({ riego: true }), PRIORIDADES);
-  assertEquals(regla(sinRiego.reglas, "agua_suficiente").cumple, false);
-  assertEquals(regla(conRiego.reglas, "agua_suficiente").cumple, true);
+Deno.test("reglas: pendiente > 25 % con poca cobertura, suelo incompatible, baldío y área excluida", () => {
+  const ctx = ctxMotor(ALTIPLANO, { pendientePct: 32, suelo: { ph: 8.5, textura: "arcillosa" }, mesesBaldios: [1, 2, 3], excluidoPct: 12 });
+  const s = evaluarSecuencia(sec(papa, cebada, papa, cebada), ctx, PRIORIDADES);
+  assertEquals(regla(s, "cobertura_en_pendiente").cumple, false);
+  assertEquals(regla(s, "suelo_compatible").cumple, false);
+  assert(regla(s, "no_sembrar_en_carretera").detalle.includes("12 %"));
+  assertEquals(regla(s, "aprovechar_baldio").regla, "aprovechar_baldio");
 });
 
-Deno.test("reglas: altitud no apta, ciclo que no cabe y siembra fuera de lluvias", () => {
-  const alta = evaluarSecuencia([maizLargo, arveja, maizLargo, arveja], ctxMotor({ altitudM: 3100 }), PRIORIDADES);
-  assertEquals(regla(alta.reglas, "altitud_apta").cumple, false);
-  assertEquals(regla(alta.reglas, "ciclo_cabe_en_ventana").cumple, false);
-  const seco = evaluarSecuencia([papa, arveja, papa, arveja], ctxMotor({ p: perfil({ lluviosos: [] }) }), PRIORIDADES);
-  assertEquals(regla(seco.reglas, "siembra_inicio_lluvias").cumple, false);
-});
-
-// ---------------------------------------------------------------------------
-// Puntajes
-// ---------------------------------------------------------------------------
-Deno.test("puntajes: monocultivo de papa sin riego", () => {
-  const s = evaluarSecuencia([papa, papa, papa, papa], ctxMotor(), PRIORIDADES);
-  assertEquals(s.puntajes, { agua: 0, suelo: 33, plagas: 0, forraje: 25, ingreso: 90 });
-});
-
-Deno.test("puntajes: con riego el agua de la papa no se penaliza", () => {
-  const ctx = ctxMotor({ riego: true });
-  const s = evaluarSecuencia([papa, papa, papa, papa], ctx, PRIORIDADES);
-  assertEquals(s.puntajes.agua, 25);
-});
-
-Deno.test("puntajes: la pradera de raigrás saca forraje 100, suelo y plagas altos", () => {
-  const s = evaluarSecuencia([raigras, raigras, raigras, raigras], ctxMotor(), PRIORIDADES);
-  assertEquals(s.puntajes.forraje, 100);
-  assertEquals(s.puntajes.plagas, 100);
-  assertEquals(s.puntajes.suelo, 94); // 0,6·90 + 0,4·100
-});
-
-Deno.test("puntajes: ingreso de referencia (clave desconocida = media)", () => {
-  assertEquals(puntajeIngresoReferencia("papa"), 90);
-  assertEquals(puntajeIngresoReferencia("trigo"), 30);
-  assertEquals(puntajeIngresoReferencia("quinua"), 60);
-  assertEquals(puntajeIngresoReferencia("algo_raro"), 60);
-});
-
-Deno.test("puntajes: total ponderado y promedio simple si todos los pesos son 0", () => {
-  const p = { agua: 0, suelo: 33, plagas: 0, forraje: 25, ingreso: 90 };
-  assertEquals(calcularPuntajeTotal(p, { agua: 0, suelo: 0, plagas: 0, forraje: 0, ingreso: 5 }), 90);
-  assertEquals(calcularPuntajeTotal(p, { agua: 0, suelo: 0, plagas: 0, forraje: 0, ingreso: 0 }), 30); // (0+33+0+25+90)/5 = 29,6
-  assertEquals(calcularPuntajeTotal(p, { agua: 3, suelo: 3, plagas: 3, forraje: 3, ingreso: 3 }), 30);
-  assertAlmostEquals(calcularPuntajeTotal(p, { agua: 5, suelo: 0, plagas: 5, forraje: 0, ingreso: 0 }), 0);
-  const calculados = calcularPuntajes([papa], [evaluarPaso(papa, 1, false, ctxMotor())], false);
-  assertEquals(calculados.ingreso, 90);
+Deno.test("puntajes: el monocultivo de papa puntúa 0 en plagas y la rotación con leguminosa más en suelo", () => {
+  const mono = evaluarSecuencia(sec(papa, papa, papa, papa), ctxMotor(), PRIORIDADES);
+  const rota = evaluarSecuencia(sec(papa, haba, cebada, haba), ctxMotor(), PRIORIDADES);
+  assertEquals(mono.puntajes.plagas, 0);
+  assert(rota.puntajes.suelo > mono.puntajes.suelo);
+  assertEquals(rota.puntajes.plagas, 85); // sin repeticiones seguidas; −15 porque las fabáceas se siembran 2 veces
 });
 
 // ---------------------------------------------------------------------------
-// Caso de uso: las 3 estrategias
+// Motor completo
 // ---------------------------------------------------------------------------
-Deno.test("estrategia A: monocultivo de papa incumple familia y leguminosa, con plagas bajo", async () => {
-  const r = await comparar();
-  const a = r.estrategias[0];
-  assertEquals(r.estrategias.map((e) => e.id), ["A", "B", "C"]);
+Deno.test("motor: altiplano → ≥ 3 estrategias distintas, A sin corregir, B con la papa, y el contrato se cumple", async () => {
+  const c = await comparar();
+  ComparacionRotacionesSchema.parse(c);
+  assert(c.estrategias.length >= 3);
+  const [a, b, cc] = c.estrategias;
   assertEquals(a.secuencia.map((p) => p.cultivoClave), ["papa", "papa", "papa", "papa"]);
-  assertEquals(regla(a.reglas, "no_repetir_familia").cumple, false);
-  assertEquals(regla(a.reglas, "leguminosa_cada_dos_anios").cumple, false);
-  assert(a.puntajes.plagas <= 10);
-  assertEquals(a.riesgos.some((x) => x.includes("no_repetir_familia")), true);
-  assertEquals(a.vaciosInformacion.some((x) => x.includes("ASUMIÓ")), true);
-});
-
-Deno.test("estrategia A: con secuenciaActual enviada no se agrega el vacío de 'asumido'", async () => {
-  const r = await comparar({ secuenciaActual: ["papa", "arveja"] });
-  const a = r.estrategias[0];
-  assertEquals(a.secuencia.map((p) => p.cultivoClave), ["papa", "arveja", "papa", "arveja"]);
-  assertEquals(a.vaciosInformacion.some((x) => x.includes("ASUMIÓ")), false);
-});
-
-Deno.test("estrategia B: cumple las reglas duras y contiene la papa", async () => {
-  const b = (await comparar()).estrategias[1];
-  assertEquals(b.enfoque, "suelo");
-  assertEquals(b.secuencia.some((p) => p.cultivoClave === "papa"), true);
-  for (const nombre of ["no_repetir_familia", "leguminosa_cada_dos_anios", "altitud_apta", "evitar_helada", "ciclo_cabe_en_ventana"]) {
-    assertEquals(regla(b.reglas, nombre).cumple, true, nombre);
+  assert(b.secuencia.some((p) => p.cultivoClave === "papa"));
+  const claves = c.estrategias.map((e) => e.secuencia.map((p) => p.cultivoClave).join(","));
+  assertEquals(new Set(claves).size, claves.length, "todas distintas");
+  assertNotEquals(b.secuencia.map((p) => p.cultivoClave).join(), cc.secuencia.map((p) => p.cultivoClave).join());
+  for (const e of c.estrategias) {
+    assert(e.porQue && e.evidencia.length && e.beneficios.length && e.vaciosInformacion.length && e.riesgos.length, e.id);
+    assert(e.evidencia.every((x) => x.fuente), "cada evidencia con su fuente");
   }
-  assertEquals(b.secuencia.every((p) => p.riesgoHelada !== "alto"), true);
-  // B es rotación de cultivos de ciclo corto: no usa la pradera perenne (eso es la estrategia C).
-  assertEquals(b.secuencia.some((p) => p.cultivoClave === "raigras_trebol"), false);
+  assertEquals(c.calendario.length, 12);
+  assert(c.oportunidades.length >= 1);
+  assert(c.oportunidades.some((o) => o.tipo === "romper_ciclo_plagas"));
 });
 
-Deno.test("estrategia C: distinta de B y con más forraje que A", async () => {
-  const r = await comparar();
-  const [a, b, c] = r.estrategias;
-  assertNotEquals(c.secuencia.map((p) => p.cultivoClave).join(","), b.secuencia.map((p) => p.cultivoClave).join(","));
-  assert(c.puntajes.forraje > a.puntajes.forraje);
-  assertEquals(c.secuencia.some((p) => p.continuaPradera), true);
-  // C no incluye la papa: debe advertirlo como riesgo de cambio de actividad.
-  assertEquals(c.riesgos.some((x) => x.includes("cambio de actividad productiva")), true);
+Deno.test("motor: clima con invierno → el intervalo queda en barbecho (A) o con cobertura tolerante al frío", async () => {
+  const c = await comparar({ cultivoActual: "maiz" }, motor(CON_INVIERNO));
+  assertEquals(c.ventanas.map((v) => v.tipo), ["temporada", "intervalo"]);
+  const a = c.estrategias[0];
+  assertEquals(a.secuencia.map((p) => p.cultivoClave), ["maiz", "barbecho", "maiz", "barbecho"]);
+  for (const e of c.estrategias.slice(1)) {
+    for (const p of e.secuencia.filter((x) => x.tipoVentana === "intervalo")) {
+      assert(p.cultivoClave === "barbecho" || p.cultivoClave === "centeno", e.id + ": " + p.cultivoClave);
+    }
+  }
 });
 
-Deno.test("salida: textos con evidencia, prefijo de práctica habitual y avisos fijos", async () => {
-  const r = await comparar();
-  const b = r.estrategias[1];
-  assertEquals(b.evidencia.some((x) => x.startsWith("Práctica recomendada (sin estudio local que fije la cifra)")), true);
-  assertEquals(b.evidencia.some((x) => x.includes("NASA POWER")), true);
-  assertEquals(b.vaciosInformacion.length, new Set(b.vaciosInformacion).size);
-  assertEquals(b.beneficios.length > 0, true);
-  assertEquals(r.aviso.includes("no reemplaza el criterio del agricultor"), true);
-  assertEquals(r.advertencias.includes("Advertencia del clima de prueba."), true);
-  assertEquals(r.ventanasSiembra.map((v) => v.mesSiembra), [3, 10]);
+Deno.test("motor: con prioridad de agua ≥ 4 aparece la estrategia D", async () => {
+  const c = await comparar({ prioridades: { ...PRIORIDADES, agua: 5 } });
+  assertEquals(c.estrategias.map((e) => e.id).includes("D"), true);
 });
 
-Deno.test("estrategiaMejorPuntuada: la de mayor puntaje total (empate: B, C, A)", async () => {
-  const r = await comparar();
-  const maximo = Math.max(...r.estrategias.map((e) => e.puntajeTotal));
-  const ganadora = r.estrategias.find((e) => e.id === r.estrategiaMejorPuntuada)!;
-  assertEquals(ganadora.puntajeTotal, maximo);
-  // Todos los pesos en 0 → promedio simple; sigue siendo una salida válida.
-  const cero = await comparar({ prioridades: { agua: 0, suelo: 0, plagas: 0, forraje: 0, ingreso: 0 } });
-  assertEquals(ComparacionRotacionesSchema.safeParse(cero).success, true);
+Deno.test("motor: sobre una carretera → TERRENO_NO_APTO 'No se puede sembrar: es carretera', sin rotaciones", async () => {
+  const t = terrenoFalso({ aptitud: "no_apto_carretera", mensajeAptitud: "No se puede sembrar: es carretera" });
+  const r = await new CompararRotacionesUbicacionUseCase(motor(ALTIPLANO, t)).execute(
+    { area: { tipo: "punto", latitud: 1, longitud: 1 }, cultivoActual: "papa", tieneRiego: false, prioridades: PRIORIDADES },
+    contexto,
+  );
+  assertEquals(r.ok, false);
+  if (!r.ok) {
+    assertEquals(r.error.code, "TERRENO_NO_APTO");
+    assertEquals(r.error.message, "No se puede sembrar: es carretera");
+  }
 });
 
-Deno.test("salida: pasa ComparacionRotacionesSchema.parse", async () => {
-  const r = await comparar();
-  ComparacionRotacionesSchema.parse(r);
-  const sinAltitud = await comparar({}, caso(finca({ altitudM: null })));
-  ComparacionRotacionesSchema.parse(sinAltitud);
-  assertEquals(sinAltitud.finca.altitudConocida, false);
-  assertEquals(sinAltitud.finca.altitudReferenciaM, 2400);
-  assertEquals(sinAltitud.advertencias.some((x) => x.includes("altitud")), true);
-});
-
-Deno.test("sin meses lluviosos: advertencias globales y regla de lluvias incumplida", async () => {
-  const r = await comparar({}, caso(finca(), perfil({ lluviosos: [] })));
-  assertEquals(r.ventanasSiembra.map((v) => v.coincideConLluvias), [false, false]);
-  assertEquals(r.advertencias.some((x) => x.includes("lluvioso")), true);
-  assertEquals(regla(r.estrategias[0].reglas, "siembra_inicio_lluvias").cumple, false);
-});
-
-Deno.test("con riego la estrategia A mejora su puntaje de agua", async () => {
-  const sin = await comparar();
-  const con = await comparar({}, caso(finca({ riego: true })));
-  assert(con.estrategias[0].puntajes.agua > sin.estrategias[0].puntajes.agua);
-});
-
-Deno.test("determinismo: dos ejecuciones dan exactamente la misma salida", async () => {
-  const a = await comparar();
-  const b = await comparar();
-  assertEquals(JSON.stringify(a), JSON.stringify(b));
+Deno.test("motor: los meses baldíos del NDVI generan la oportunidad de cobertura", async () => {
+  const t = terrenoFalso({
+    ndvi: {
+      fuente: "x", desde: "2021-01-01", hasta: "2025-12-31", serie: [],
+      climatologia: Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, ndviMedio: 0.5, muestras: 10 })),
+      mesesBaldios: [7, 8], reglaBaldio: "x", estres: { mesesConEstres: [], anomaliaMedia: null, detalle: "x" },
+    },
+  });
+  const c = await comparar({}, motor(ALTIPLANO, t));
+  assert(c.oportunidades.some((o) => o.tipo === "baldio_cobertura" && o.meses.includes(7)));
+  assert(c.calendario[6].baldio && c.calendario[6].oportunidad);
 });
 
 // ---------------------------------------------------------------------------
 // Errores
 // ---------------------------------------------------------------------------
-Deno.test("error: finca inexistente → FINCA_NO_ENCONTRADO", async () => {
-  const r = await caso(null).execute({ fincaId: 99, prioridades: PRIORIDADES }, actor);
-  assertEquals(r.ok, false);
-  if (!r.ok) assertEquals(r.error.code, "FINCA_NO_ENCONTRADO");
-});
-
-Deno.test("error: sin cultivo actual ni secuenciaActual → ROTACION_CULTIVO_ACTUAL_REQUERIDO", async () => {
-  const r = await caso(finca({ cultivoActual: null })).execute({ fincaId: 1, prioridades: PRIORIDADES }, actor);
-  assertEquals(r.ok, false);
-  if (!r.ok) assertEquals(r.error.code, "ROTACION_CULTIVO_ACTUAL_REQUERIDO");
-});
-
-Deno.test("error: clave desconocida → ROTACION_CULTIVO_DESCONOCIDO", async () => {
-  const r = await caso().execute({ fincaId: 1, prioridades: PRIORIDADES, secuenciaActual: ["papa", "unobtanio"] }, actor);
-  assertEquals(r.ok, false);
-  if (!r.ok) assertEquals(r.error.code, "ROTACION_CULTIVO_DESCONOCIDO");
-});
-
-Deno.test("error: ningún cultivo apto a la altitud → ROTACION_SIN_ALTERNATIVAS", async () => {
-  const r = await caso(finca({ altitudM: 1000 })).execute({ fincaId: 1, prioridades: PRIORIDADES }, actor);
-  assertEquals(r.ok, false);
-  if (!r.ok) assertEquals(r.error.code, "ROTACION_SIN_ALTERNATIVAS");
-});
-
-Deno.test("error: el error del clima se propaga tal cual", async () => {
-  const falla: IPerfilClimaticoQuery = {
-    execute: () => Promise.resolve(Result.err(new DomainError("CLIMA_PROVEEDOR_NO_DISPONIBLE", "NASA caída"))),
-  };
-  const r = await new CompararRotacionesUseCase(repoFincas(finca()), repoCultivos(CATALOGO), falla).execute(
-    { fincaId: 1, prioridades: PRIORIDADES },
-    actor,
+Deno.test("ubicación con altitud del usuario: sitio.tipo ubicacion y fuenteAltitud usuario", async () => {
+  const r = await new CompararRotacionesUbicacionUseCase(motor()).execute(
+    { area: { tipo: "punto", latitud: 5.8, longitud: -73 }, cultivoActual: "papa", altitudM: 2500, tieneRiego: false, prioridades: PRIORIDADES },
+    contexto,
   );
-  assertEquals(r.ok, false);
-  if (!r.ok) assertEquals(r.error.code, "CLIMA_PROVEEDOR_NO_DISPONIBLE");
+  assert(r.ok);
+  assertEquals(r.value.sitio.tipo, "ubicacion");
+  assertEquals(r.value.sitio.fuenteAltitud, "usuario");
+  assertEquals(r.value.sitio.cultivoActual, "papa");
+});
+
+Deno.test("ubicación sin cultivoActual: compara igual, sin estrategia A", async () => {
+  const r = await new CompararRotacionesUbicacionUseCase(motor()).execute(
+    { area: { tipo: "punto", latitud: 5.8, longitud: -73 }, tieneRiego: false, prioridades: PRIORIDADES },
+    contexto,
+  );
+  assert(r.ok);
+  assertEquals(r.value.sitio.cultivoActual, null);
+  assertEquals(r.value.estrategias.some((e) => e.id === "A"), false);
+});
+
+Deno.test("errores: cultivoActual con clave desconocida → ROTACION_CULTIVO_DESCONOCIDO", async () => {
+  const c = await new CompararRotacionesUbicacionUseCase(motor()).execute(
+    { area: { tipo: "punto", latitud: 1, longitud: 1 }, cultivoActual: "unobtanio", tieneRiego: false, prioridades: PRIORIDADES },
+    contexto,
+  );
+  assertEquals(!c.ok && c.error.code, "ROTACION_CULTIVO_DESCONOCIDO");
+});
+
+Deno.test("errores: el error del clima se propaga y un clima sin temporadas → ROTACION_SIN_TEMPORADAS", async () => {
+  const falla: IPerfilClimaticoQuery = { porUbicacion: () => Promise.resolve(Result.err(new DomainError("CLIMA_PROVEEDOR_NO_DISPONIBLE", "caída"))) };
+  const a = await new CompararRotacionesUbicacionUseCase(new MotorRotaciones(repoCultivos(), falla, terrenoFalso())).execute(
+    { area: { tipo: "punto", latitud: 1, longitud: 1 }, cultivoActual: "papa", tieneRiego: false, prioridades: PRIORIDADES },
+    contexto,
+  );
+  assertEquals(!a.ok && a.error.code, "CLIMA_PROVEEDOR_NO_DISPONIBLE");
+
+  const polar = perfil({ latitud: 80, temp: Array(12).fill(-15), lluvia: Array(12).fill(10), heladas: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] });
+  const b = await new CompararRotacionesUbicacionUseCase(motor(polar)).execute(
+    { area: { tipo: "punto", latitud: 80, longitud: 1 }, cultivoActual: "papa", tieneRiego: true, prioridades: PRIORIDADES },
+    contexto,
+  );
+  assertEquals(!b.ok && b.error.code, "ROTACION_SIN_TEMPORADAS");
 });

@@ -1,4 +1,4 @@
--- Migración 002 — Duitama Crece
+-- Migración 002 — AgroCore
 -- fincas.cultivo_actual deja de ser texto libre y pasa a guardar la CLAVE del catálogo de cultivos
 -- (Backend/packages/database/src/catalogos/catalogo-cultivos.datos.ts), para que el motor de
 -- rotaciones pueda aplicar reglas como "no repetir familia botánica".
@@ -7,7 +7,7 @@
 -- Si creas la base desde cero con Docs/ddl.sql NO necesitas esta migración.
 -- Ejecutar en MySQL Workbench. Es segura de repetir (idempotente).
 
-USE `duitama_crece`;
+USE `agrocore`;
 
 -- 1. (Opcional, para revisar) Valores actuales antes de tocar nada.
 SELECT id, nombre, cultivo_actual AS cultivo_actual_antes FROM fincas WHERE cultivo_actual IS NOT NULL;

@@ -1,36 +1,30 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { IconoHoja } from "@/components/ui/Iconos";
 
-/** Layout del contexto (panel): barra de navegación superior y contenedor centrado. */
+/** Layout principal de la aplicación: cabecera limpia sin emojis y contenedor directo. */
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-30 shadow-xs">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🌱</span>
+      <header className="no-imprimir sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xs">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3.5">
+          <Link href="/" className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-white">
+              <IconoHoja width={20} height={20} />
+            </span>
             <div className="leading-tight">
-              <span className="font-bold text-slate-900 tracking-tight text-lg block">AgroCore</span>
-              <span className="text-xs text-slate-500 font-medium">Rotación de Cultivos con datos NASA</span>
+              <span className="block text-lg font-bold tracking-tight text-slate-900">AgroCore</span>
+              <span className="text-xs font-medium text-slate-500">
+                Recomendación agrícola inteligente por época y objetivo
+              </span>
             </div>
-            <span className="hidden sm:inline-block rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ml-2">
-              NASA POWER + IDEAM
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 sm:inline-block">
+              NASA POWER · MODIS · SRTM · OSM
             </span>
           </div>
-          <nav className="flex items-center gap-2 text-sm font-medium">
-            <Link
-              href="/rotaciones"
-              className="rounded-lg px-3.5 py-1.5 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            >
-              🔄 Rotaciones
-            </Link>
-            <Link
-              href="/fincas"
-              className="rounded-lg px-3.5 py-1.5 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            >
-              🗺️ Fincas y Mapa
-            </Link>
-          </nav>
         </div>
       </header>
       <main className="mx-auto max-w-6xl p-6">{children}</main>

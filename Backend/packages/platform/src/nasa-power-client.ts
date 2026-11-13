@@ -16,13 +16,18 @@
  */
 import {
   ClimaProveedorNoDisponibleError,
+  type ICacheProveedores,
   type IClimaProvider,
   type RegistroClimaDiario,
   type SerieClimatica,
-} from "@duitamacrece/core";
-import { type DomainError, Result } from "@duitamacrece/shared-kernel";
+} from "@agrocore/core";
+import { type DomainError, Result } from "@agrocore/shared-kernel";
+import { CacheEnMemoria, obtenerConCache } from "./cache/cache-en-memoria.ts";
+import { celdaPower } from "./cache/celdas.ts";
 
 const FUENTE = "NASA POWER";
+/** Un fallo de POWER se recuerda 2 min para no pagar el timeout en cada consulta seguida. */
+const NEGATIVA_MS = 2 * 60_000;
 const PARAMETROS = ["T2M", "T2M_MIN", "T2M_MAX", "PRECTOTCORR"] as const;
 type Parametro = (typeof PARAMETROS)[number];
 
@@ -36,25 +41,43 @@ interface RespuestaPower {
 export interface NasaPowerConfig {
   baseUrl?: string;
   timeoutMs?: number;
+  /** Caché persistente opcional (tabla cache_proveedores). */
+  cache?: ICacheProveedores;
 }
 
 export class NasaPowerClient implements IClimaProvider {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
-  private readonly cache = new Map<string, SerieClimatica>();
+  private readonly cachePersistente?: ICacheProveedores;
+  private readonly memoria = new CacheEnMemoria();
 
   constructor(config: NasaPowerConfig = {}) {
     this.baseUrl = config.baseUrl ?? "https://power.larc.nasa.gov/api/temporal/daily/point";
-    this.timeoutMs = config.timeoutMs ?? 90_000;
+    this.timeoutMs = config.timeoutMs ?? 20_000;
+    this.cachePersistente = config.cache;
   }
 
   async obtenerSerieDiaria(consulta: { latitud: number; longitud: number; desde: string; hasta: string }): Promise<
     Result<SerieClimatica, DomainError>
   > {
-    const clave = [consulta.latitud.toFixed(3), consulta.longitud.toFixed(3), consulta.desde, consulta.hasta].join("|");
-    const enCache = this.cache.get(clave);
-    if (enCache) return Result.ok(enCache);
+    // POWER entrega la misma serie para todos los puntos de una celda (0,5° x 0,625°): se consulta el centro
+    // de la celda y la caché se comparte entre todos los puntos que caen en ella.
+    const celda = celdaPower(consulta.latitud, consulta.longitud);
+    const clave = ["nasa_power_diario", celda.clave, consulta.desde, consulta.hasta].join(":");
+    return obtenerConCache(
+      clave,
+      "nasa_power",
+      30,
+      this.memoria,
+      this.cachePersistente,
+      () => this.cargar({ ...consulta, latitud: celda.latitud, longitud: celda.longitud }),
+      NEGATIVA_MS,
+    );
+  }
 
+  private async cargar(consulta: { latitud: number; longitud: number; desde: string; hasta: string }): Promise<
+    Result<SerieClimatica, DomainError>
+  > {
     const url = new URL(this.baseUrl);
     url.searchParams.set("parameters", PARAMETROS.join(","));
     url.searchParams.set("community", "AG");
@@ -101,7 +124,6 @@ export class NasaPowerClient implements IClimaProvider {
     }));
 
     const serie: SerieClimatica = { fuente: FUENTE, altitudCeldaM, registros };
-    this.cache.set(clave, serie);
     return Result.ok(serie);
   }
 }

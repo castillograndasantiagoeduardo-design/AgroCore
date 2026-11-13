@@ -1,12 +1,20 @@
 /**
- * Contratos del módulo rotaciones: entrada (finca + prioridades del agricultor) y salida
- * (3 estrategias de 2 años comparadas con evidencia, beneficios, vacíos y riesgos).
+ * Contratos del módulo rotaciones: entrada (sitio + cultivo actual + riego + prioridades) y salida
+ * (≥ 3 estrategias de 2 años, en TEMPORADAS REALES del sitio, comparadas con evidencia, beneficios,
+ * vacíos, riesgos, calendario de 12 meses y oportunidades).
  *
  * El motor SUGIERE Y EXPLICA; no reemplaza el criterio del agricultor ni del agrónomo.
  */
 import { z } from "zod";
-import { ClaveCultivoSchema, FamiliaBotanicaSchema } from "./cultivos.schema.ts";
-import { ZonaAltitudinalSchema } from "./fincas.schema.ts";
+import { AptitudClimaSchema, ClaveCultivoSchema, FamiliaBotanicaSchema } from "./cultivos.schema.ts";
+import {
+  ClasificacionClimaticaSchema,
+  MesVulnerabilidadSchema,
+  RegimenLluviasSchema,
+  TemporadaCultivoSchema,
+} from "./clima.schema.ts";
+import { AreaSeleccionadaSchema, UbicacionResueltaSchema } from "./geo.schema.ts";
+import { AptitudTerrenoSchema, TexturaSueloSchema } from "./terreno.schema.ts";
 
 // ---------------------------------------------------------------------------
 // Vocabulario
@@ -16,35 +24,63 @@ import { ZonaAltitudinalSchema } from "./fincas.schema.ts";
 export const PRIORIDADES_ROTACION = ["agua", "suelo", "plagas", "forraje", "ingreso"] as const;
 export type PrioridadRotacion = (typeof PRIORIDADES_ROTACION)[number];
 
-export const IDS_ESTRATEGIA = ["A", "B", "C"] as const;
+export const IDS_ESTRATEGIA = ["A", "B", "C", "D"] as const;
 export const IdEstrategiaSchema = z.enum(IDS_ESTRATEGIA);
 export type IdEstrategia = z.infer<typeof IdEstrategiaSchema>;
 
-/** A = lo que hace hoy la finca · B = la mejor para el suelo · C = la mejor para lechería/forraje. */
-export const ENFOQUES_ESTRATEGIA = ["actual", "suelo", "forraje"] as const;
+/** A = lo que se siembra hoy · B = suelo · C = forraje / ingreso · D = agua (si la prioridad de agua ≥ 4 o hay déficit). */
+export const ENFOQUES_ESTRATEGIA = ["actual", "suelo", "forraje", "agua"] as const;
 export const EnfoqueEstrategiaSchema = z.enum(ENFOQUES_ESTRATEGIA);
 export type EnfoqueEstrategia = z.infer<typeof EnfoqueEstrategiaSchema>;
 
 /** Reglas agronómicas que el motor evalúa en cada estrategia. */
 export const REGLAS_ROTACION = [
-  "no_repetir_familia", // no sembrar la misma familia botánica dos semestres seguidos
-  "leguminosa_cada_dos_anios", // al menos un cultivo que fije nitrógeno en los 4 semestres
-  "siembra_inicio_lluvias", // las siembras caen en las ventanas de inicio de lluvias
+  "no_sembrar_en_carretera", // bloqueante: viene del módulo terreno
+  "no_repetir_familia", // no sembrar la misma familia botánica en temporadas seguidas
+  "leguminosa_cada_dos_anios", // al menos un cultivo que fije nitrógeno en los 2 años
+  "siembra_en_temporada", // los cultivos se siembran en las temporadas derivadas del clima
+  "temperatura_apta", // la temperatura media del ciclo está en el rango del cultivo (FAO ECOCROP)
   "evitar_helada", // el ciclo no cruza meses de helada si el cultivo no la tolera
-  "altitud_apta", // el cultivo es apto a la altitud de la finca
+  "tolerancia_calor", // el ciclo no cruza meses de calor si el cultivo no lo tolera
   "agua_suficiente", // la lluvia del ciclo (o el riego) cubre el mínimo del cultivo
-  "ciclo_cabe_en_ventana", // el cultivo se cosecha antes de la siguiente siembra
+  "ciclo_cabe_en_ventana", // el cultivo se cosecha antes de la siguiente siembra (o ocupa dos ventanas a propósito)
+  "suelo_compatible", // pH y textura del suelo (si se conocen) dentro de lo que tolera el cultivo
+  "cobertura_en_pendiente", // pendiente > 25 % ⇒ cobertura permanente o curvas de nivel
+  "aprovechar_baldio", // si el NDVI muestra meses baldíos, cubrirlos con cultivo, cobertura o abono verde
 ] as const;
 export const ReglaRotacionSchema = z.enum(REGLAS_ROTACION);
 export type ReglaRotacion = z.infer<typeof ReglaRotacionSchema>;
 
-/**
- * ninguno = el ciclo no toca meses de helada · tolerado = los toca pero el cultivo tiene tolerancia alta ·
- * moderado = tolerancia media (cuidado en floración) · alto = tolerancia baja (no recomendado).
- */
-export const RIESGOS_HELADA = ["ninguno", "tolerado", "moderado", "alto"] as const;
-export const RiesgoHeladaSchema = z.enum(RIESGOS_HELADA);
-export type RiesgoHelada = z.infer<typeof RiesgoHeladaSchema>;
+/** ninguno · tolerado (lo toca pero el cultivo lo tolera) · moderado · alto (no recomendado). */
+export const NIVELES_RIESGO = ["ninguno", "tolerado", "moderado", "alto"] as const;
+export const NivelRiesgoSchema = z.enum(NIVELES_RIESGO);
+export type NivelRiesgo = z.infer<typeof NivelRiesgoSchema>;
+/** Compatibilidad con el nombre anterior. */
+export const RiesgoHeladaSchema = NivelRiesgoSchema;
+export type RiesgoHelada = NivelRiesgo;
+
+export const TIPOS_VENTANA = ["temporada", "intervalo"] as const;
+export const TipoVentanaSchema = z.enum(TIPOS_VENTANA);
+export type TipoVentana = z.infer<typeof TipoVentanaSchema>;
+
+/** Clave especial de un paso sin cultivo (descanso del lote). */
+export const CLAVE_BARBECHO = "barbecho";
+
+/** De dónde salió cada dato de la evidencia. */
+export const FUENTES_EVIDENCIA = ["NASA POWER", "IDEAM", "MODIS", "SoilGrids", "SRTM", "OpenStreetMap", "ECOCROP", "Regla", "Agricultor"] as const;
+export const FuenteEvidenciaSchema = z.enum(FUENTES_EVIDENCIA);
+export type FuenteEvidencia = z.infer<typeof FuenteEvidenciaSchema>;
+
+export const TIPOS_OPORTUNIDAD = [
+  "baldio_cobertura",
+  "temporada_vulnerable",
+  "romper_ciclo_plagas",
+  "menor_demanda_agua",
+  "mejorar_infiltracion",
+  "sumar_ingreso",
+] as const;
+export const TipoOportunidadSchema = z.enum(TIPOS_OPORTUNIDAD);
+export type TipoOportunidad = z.infer<typeof TipoOportunidadSchema>;
 
 // ---------------------------------------------------------------------------
 // Entrada
@@ -62,22 +98,24 @@ export const PrioridadesRotacionSchema = z.object({
 });
 export type PrioridadesRotacion = z.infer<typeof PrioridadesRotacionSchema>;
 
-/** Cuerpo del POST /api/rotaciones/fincas/:fincaId/comparar (el fincaId va en la URL). */
-export const CompararRotacionesBodySchema = z.object({
-  prioridades: PrioridadesRotacionSchema.default({}),
-  /**
-   * Opcional: lo que la finca siembra HOY, semestre a semestre (1 a 4 claves del catálogo).
-   * Si se omite, la estrategia A asume que se repite `cultivoActual` de la finca.
-   * Si tiene menos de 4, se repite en ciclo: ["papa","arveja"] → papa, arveja, papa, arveja.
-   */
-  secuenciaActual: z.array(ClaveCultivoSchema).min(1).max(4).optional(),
-});
+/**
+ * Lo que el lote siembra HOY, temporada a temporada (1 a 4 claves del catálogo). Si tiene menos que
+ * las temporadas de 2 años, se repite en ciclo: ["papa","arveja"] → papa, arveja, papa, arveja.
+ */
+const SecuenciaActualSchema = z.array(ClaveCultivoSchema).min(1).max(4);
 
-/** Entrada completa del caso de uso y de la tool MCP. */
-export const CompararRotacionesSchema = CompararRotacionesBodySchema.extend({
-  fincaId: z.coerce.number().int().min(1),
+/** POST /api/rotaciones/comparar: cualquier punto o área del mundo. */
+export const CompararRotacionesUbicacionSchema = z.object({
+  area: AreaSeleccionadaSchema,
+  /** Clave del cultivo principal de hoy (opcional: sin él no hay estrategia A). */
+  cultivoActual: ClaveCultivoSchema.optional(),
+  secuenciaActual: SecuenciaActualSchema.optional(),
+  tieneRiego: z.boolean().default(false),
+  prioridades: PrioridadesRotacionSchema.default({}),
+  /** Opcional: si el usuario conoce la altitud (si no, SRTM o la celda del clima). */
+  altitudM: z.number().int().min(-500).max(6000).optional(),
 });
-export type CompararRotacionesInput = z.infer<typeof CompararRotacionesSchema>;
+export type CompararRotacionesUbicacionInput = z.infer<typeof CompararRotacionesUbicacionSchema>;
 
 // ---------------------------------------------------------------------------
 // Salida
@@ -86,31 +124,48 @@ export type CompararRotacionesInput = z.infer<typeof CompararRotacionesSchema>;
 const MesSchema = z.number().int().min(1).max(12);
 const PuntajeSchema = z.number().min(0).max(100);
 
-/** Un semestre de la rotación: qué se siembra, cuándo y con qué riesgos. */
+/** Una ventana de siembra del año (se repite en el año 2). */
+export const VentanaRotacionSchema = z.object({
+  /** 1..n dentro del año. */
+  indice: z.number().int().min(1),
+  tipo: TipoVentanaSchema,
+  /** Mes en que se siembra. */
+  mesInicio: MesSchema,
+  /** Meses disponibles desde esta siembra hasta la siguiente. */
+  meses: z.array(MesSchema).min(1),
+  /** Meses que de verdad son temporada de cultivo (en un intervalo: ninguno). */
+  mesesTemporada: z.array(MesSchema),
+  nombre: z.string(),
+});
+export type VentanaRotacionDto = z.infer<typeof VentanaRotacionSchema>;
+
+/** Un paso de la rotación: qué se siembra en una ventana, cuándo y con qué riesgos. */
 export const PasoRotacionSchema = z.object({
-  /** 1 y 2 = año 1 · 3 y 4 = año 2. Impares: siembra del primer semestre; pares: del segundo. */
-  semestre: z.number().int().min(1).max(4),
+  /** 1..N en los 2 años. */
+  orden: z.number().int().min(1),
   anio: z.number().int().min(1).max(2),
+  tipoVentana: TipoVentanaSchema,
+  /** Clave del catálogo o "barbecho". */
   cultivoClave: z.string(),
   cultivoNombre: z.string(),
   familias: z.array(FamiliaBotanicaSchema),
-  /** true = es la misma pradera perenne del semestre anterior (no se vuelve a sembrar). */
-  continuaPradera: z.boolean(),
+  /** true = el mismo cultivo del paso anterior sigue en el lote (pradera o cultivo de ciclo largo). */
+  continua: z.boolean(),
   mesSiembra: MesSchema,
-  /** Mes estimado de cosecha / primer corte, con el ciclo medio del cultivo. */
   mesCosecha: MesSchema,
-  /** Meses calendario que ocupa el ciclo (en orden), ej. [10, 11, 12, 1, 2]. */
   mesesCiclo: z.array(MesSchema),
-  /** Lluvia promedio que cae durante el ciclo (mm) según el perfil climático. */
+  /** Temperatura media de los meses del ciclo (°C) y aptitud del cultivo a esa temperatura (null en barbecho). */
+  tempMediaCicloC: z.number(),
+  aptitudClima: AptitudClimaSchema.nullable(),
+  /** Lluvia promedio que cae durante el ciclo (mm). */
   lluviaCicloMm: z.number(),
   /** Agua que falta para el mínimo del cultivo (0 si alcanza). */
   deficitAguaMm: z.number(),
-  /** true si hay déficit y por eso el cultivo depende del riego. */
   requiereRiego: z.boolean(),
-  /** Meses del ciclo que son de riesgo de helada. */
   mesesHeladaEnCiclo: z.array(MesSchema),
-  riesgoHelada: RiesgoHeladaSchema,
-  /** Observaciones del semestre (ej. "se cosecha después de la siguiente siembra"). */
+  riesgoHelada: NivelRiesgoSchema,
+  mesesCalorEnCiclo: z.array(MesSchema),
+  riesgoCalor: NivelRiesgoSchema,
   notas: z.array(z.string()),
 });
 export type PasoRotacionDto = z.infer<typeof PasoRotacionSchema>;
@@ -118,7 +173,7 @@ export type PasoRotacionDto = z.infer<typeof PasoRotacionSchema>;
 export const EvaluacionReglaSchema = z.object({
   regla: ReglaRotacionSchema,
   cumple: z.boolean(),
-  /** Explicación corta de por qué cumple o no, con los semestres afectados. */
+  /** Explicación corta de por qué cumple o no, con las temporadas afectadas. */
   detalle: z.string(),
 });
 export type EvaluacionReglaDto = z.infer<typeof EvaluacionReglaSchema>;
@@ -132,20 +187,24 @@ export const PuntajesRotacionSchema = z.object({
 });
 export type PuntajesRotacionDto = z.infer<typeof PuntajesRotacionSchema>;
 
+/** Un dato concreto usado, con su fuente. */
+export const EvidenciaSchema = z.object({ texto: z.string(), fuente: FuenteEvidenciaSchema });
+export type EvidenciaDto = z.infer<typeof EvidenciaSchema>;
+
 export const EstrategiaRotacionSchema = z.object({
   id: IdEstrategiaSchema,
   enfoque: EnfoqueEstrategiaSchema,
   nombre: z.string(),
-  secuencia: z.array(PasoRotacionSchema).length(4),
+  secuencia: z.array(PasoRotacionSchema).min(1),
   /** Por qué se sugiere (o, en la A, qué se está evaluando). */
-  porQue: z.string(),
-  /** Datos concretos que se usaron: altitud, lluvia del ciclo, meses de helada, fuentes. */
-  evidencia: z.array(z.string()),
-  beneficios: z.array(z.string()),
-  /** Lo que el sistema NO sabe (historial del lote, precios, análisis de suelo, pendiente...). */
-  vaciosInformacion: z.array(z.string()),
-  /** Riesgos para revisar con un agrónomo antes de decidir. */
-  riesgos: z.array(z.string()),
+  porQue: z.string().min(1),
+  /** Datos concretos que se usaron, cada uno con su fuente. Solo datos calculados: no se inventan cifras. */
+  evidencia: z.array(EvidenciaSchema).min(1),
+  beneficios: z.array(z.string()).min(1),
+  /** Lo que el sistema NO sabe (historial del lote, precios, análisis de suelo...). */
+  vaciosInformacion: z.array(z.string()).min(1),
+  /** Riesgos para revisar con un agrónomo local antes de decidir. */
+  riesgos: z.array(z.string()).min(1),
   reglas: z.array(EvaluacionReglaSchema),
   /** Puntaje 0–100 por prioridad (independiente de los pesos). */
   puntajes: PuntajesRotacionSchema,
@@ -154,40 +213,75 @@ export const EstrategiaRotacionSchema = z.object({
 });
 export type EstrategiaRotacionDto = z.infer<typeof EstrategiaRotacionSchema>;
 
-export const VentanaSiembraSchema = z.object({
-  /** 1 = primer semestre del año · 2 = segundo semestre. */
-  semestreDelAnio: z.number().int().min(1).max(2),
-  mesSiembra: MesSchema,
-  nombreMes: z.string(),
-  /** false si ningún mes candidato es lluvioso según el perfil y se usó el mes por defecto. */
-  coincideConLluvias: z.boolean(),
+export const OportunidadSchema = z.object({
+  tipo: TipoOportunidadSchema,
+  meses: z.array(MesSchema),
+  texto: z.string(),
+  fuentes: z.array(FuenteEvidenciaSchema).min(1),
 });
-export type VentanaSiembraDto = z.infer<typeof VentanaSiembraSchema>;
+export type OportunidadDto = z.infer<typeof OportunidadSchema>;
+
+/** Un mes del calendario del lote: baldío / vulnerable / oportunidad. */
+export const MesCalendarioSchema = z.object({
+  mes: MesSchema,
+  nombreMes: z.string(),
+  /** El NDVI muestra que el lote suele estar sin cultivo este mes. */
+  baldio: z.boolean(),
+  /** El mes cae en una temporada de cultivo del sitio. */
+  enTemporada: z.boolean(),
+  vulnerabilidad: MesVulnerabilidadSchema,
+  /** Cultivos del plan ACTUAL (estrategia A, año 1) expuestos a una amenaza media o alta este mes. */
+  cultivosExpuestos: z.array(z.string()),
+  /** Hay al menos una oportunidad de rotación que toca este mes. */
+  oportunidad: z.boolean(),
+});
+export type MesCalendarioDto = z.infer<typeof MesCalendarioSchema>;
 
 export const ComparacionRotacionesSchema = z.object({
-  finca: z.object({
-    id: z.number().int(),
-    nombre: z.string(),
-    /** Altitud usada para filtrar cultivos (la de la finca o, si no se conoce, la del perfil climático). */
+  sitio: z.object({
+    tipo: z.enum(["ubicacion"]),
+    nombre: z.string().nullable(),
+    ubicacion: UbicacionResueltaSchema,
+    /** Altitud usada (del usuario, de SRTM o de la celda del clima). */
     altitudReferenciaM: z.number(),
-    altitudConocida: z.boolean(),
-    zonaAltitudinal: ZonaAltitudinalSchema.nullable(),
+    fuenteAltitud: z.enum(["usuario", "srtm", "clima"]),
     tieneRiego: z.boolean(),
+    /** null si no se indicó el cultivo actual (no hay estrategia A). */
     cultivoActual: z.string().nullable(),
+    clasificacionClimatica: ClasificacionClimaticaSchema,
+  }),
+  terreno: z.object({
+    aptitud: AptitudTerrenoSchema,
+    mensajeAptitud: z.string(),
+    excluidoPct: z.number(),
+    pendientePct: z.number().nullable(),
+    textura: TexturaSueloSchema.nullable(),
+    ph: z.number().nullable(),
+    mesesBaldios: z.array(MesSchema),
+    fuentes: z.array(z.string()),
   }),
   prioridades: PrioridadesRotacionSchema,
   clima: z.object({
     fuente: z.string(),
     calibrado: z.boolean(),
     lluviaAnualMm: z.number(),
+    etoAnualMm: z.number(),
+    regimenLluvias: RegimenLluviasSchema,
     mesesLluviosos: z.array(MesSchema),
     mesesRiesgoHelada: z.array(MesSchema),
+    mesesCalor: z.array(MesSchema),
+    mesesDeficitHidrico: z.array(MesSchema),
   }),
-  ventanasSiembra: z.array(VentanaSiembraSchema).length(2),
-  /** Siempre 3, en orden A, B, C. */
-  estrategias: z.array(EstrategiaRotacionSchema).length(3),
-  /** La de mayor puntajeTotal con las prioridades enviadas (empate: B, luego C, luego A). */
+  /** Temporadas de cultivo usadas (secano o, si hay riego, con riego). */
+  temporadas: z.array(TemporadaCultivoSchema).min(1),
+  /** Ventanas de un año (se repiten en el año 2). */
+  ventanas: z.array(VentanaRotacionSchema).min(1),
+  calendario: z.array(MesCalendarioSchema).length(12),
+  /** 3 o 4, en orden A, B, C (y D si aplica), siempre distintas. */
+  estrategias: z.array(EstrategiaRotacionSchema).min(3).max(4),
+  /** La de mayor puntajeTotal con las prioridades enviadas (empate: B, C, D, A). */
   estrategiaMejorPuntuada: IdEstrategiaSchema,
+  oportunidades: z.array(OportunidadSchema).min(1),
   advertencias: z.array(z.string()),
   /** Recordatorio fijo: es una sugerencia con datos, no una recomendación técnica definitiva. */
   aviso: z.string(),

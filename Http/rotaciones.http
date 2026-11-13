@@ -1,79 +1,48 @@
 @baseUrl = http://localhost:8001/api
-@token = PEGA_AQUI_UN_ACCESS_TOKEN_JWT
 
-# NOTA: la primera consulta de una finca tarda ~45 s (consulta del clima a NASA POWER);
-# las siguientes responden rápido porque el perfil climático queda guardado.
-# Reemplaza el 1 de /fincas/1 por el id de una finca existente.
-
-### Comparación con prioridades por defecto, body vacío (200: estrategias A, B y C con puntajes)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{}
-
-### Prioridades de suelo y plagas altas (200: B sube en el ranking)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
+### Cualquier lugar: lote rural de Duitama, papa, sin riego (200; la 1.ª vez tarda ~1–2 min por 30 años de clima)
+POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
 {
-  "prioridades": { "suelo": 5, "plagas": 5 }
+  "area": { "tipo": "punto", "latitud": 5.785, "longitud": -73.03 },
+  "cultivoActual": "papa",
+  "tieneRiego": false,
+  "prioridades": { "agua": 3, "suelo": 4, "plagas": 4, "forraje": 2, "ingreso": 3 }
 }
 
-### Prioridad de forraje alta, lechería (200: C sube en el ranking)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
+### Campo de maíz en Ames, Iowa (temporada abr–oct + invierno en barbecho o cobertura)
+POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
-{
-  "prioridades": { "forraje": 5, "ingreso": 4 }
-}
+{ "area": { "tipo": "punto", "latitud": 42.008, "longitud": -93.7 }, "cultivoActual": "maiz", "tieneRiego": false }
 
-### Con secuencia actual indicada (200: A parte de papa -> arveja)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
+### Lanet, Nakuru, Kenia (régimen bimodal), secuencia actual maíz → frijol
+POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
-{
-  "secuenciaActual": ["papa", "arveja"]
-}
+{ "area": { "tipo": "punto", "latitud": -0.27, "longitud": 36.15 }, "cultivoActual": "maiz", "secuenciaActual": ["maiz", "frijol"], "tieneRiego": false }
 
-### Finca inexistente (404 FINCA_NO_ENCONTRADO)
-POST {{baseUrl}}/rotaciones/fincas/999999/comparar
-Authorization: Bearer {{token}}
+### Córdoba, Andalucía: trigo de secano, prioridad agua 5 (aparece la estrategia D)
+POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
-{}
+{ "area": { "tipo": "punto", "latitud": 37.85, "longitud": -4.85 }, "cultivoActual": "trigo", "prioridades": { "agua": 5 } }
 
-### Prioridad fuera de rango (400 VALIDATION_ERROR)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
+### Punto sobre la calzada (casco urbano de Duitama, Carrera 19) → 422 TERRENO_NO_APTO "No se puede sembrar: es carretera"
+POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
-{
-  "prioridades": { "agua": 9 }
-}
+{ "area": { "tipo": "punto", "latitud": 5.8269, "longitud": -73.0297 }, "cultivoActual": "papa" }
 
-### Clave de cultivo desconocida en secuenciaActual (422 ROTACION_CULTIVO_DESCONOCIDO)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
+### Cultivo desconocido (422 ROTACION_CULTIVO_DESCONOCIDO)
+POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
-{
-  "secuenciaActual": ["yuca"]
-}
+{ "area": { "tipo": "punto", "latitud": 37.85, "longitud": -4.85 }, "cultivoActual": "unobtanio" }
 
-### Finca sin cultivo actual y sin secuenciaActual (422 ROTACION_CULTIVO_ACTUAL_REQUERIDO)
-# Usa una finca que no tenga cultivo actual registrado.
-POST {{baseUrl}}/rotaciones/fincas/2/comparar
-Authorization: Bearer {{token}}
+### Sin cultivoActual (200): compara sin estrategia A
+POST {{baseUrl}}/rotaciones/comparar
 Content-Type: application/json
 
-{}
-
-### Sin token (401 NO_AUTENTICADO)
-POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Content-Type: application/json
-
-{}
+{ "area": { "tipo": "punto", "latitud": 37.85, "longitud": -4.85 } }

@@ -1,20 +1,30 @@
 /**
- * Puertos que usa el caso de uso de rotaciones.
- * Solo lectura: no necesita IAuditor ni IUnitOfWork (no muta estado).
+ * Puertos que usan los casos de uso de rotaciones.
+ * Solo lectura: no necesitan IAuditor ni IUnitOfWork (no mutan estado).
  */
-import type { PerfilClimaticoDto, PerfilClimaticoParams } from "@duitamacrece/contracts";
-import type { DomainError, Result } from "@duitamacrece/shared-kernel";
-import type { ContextoActor } from "../../../auditoria/application/ports/auditor.port.ts";
+import type { PerfilClimaticoDto, PerfilTerrenoDto } from "@agrocore/contracts";
+import type { DomainError, Result } from "@agrocore/shared-kernel";
+import type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
+import type { AreaSeleccionada } from "../../../../shared/domain/geo/area-seleccionada.vo.ts";
 
-export type { ContextoActor } from "../../../auditoria/application/ports/auditor.port.ts";
-export type { IFincaRepository } from "../../../fincas/domain/repositories/finca.repository.ts";
+export type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
 export type { ICultivoRepository } from "../../../cultivos/domain/repositories/cultivo.repository.ts";
 
 /**
- * Consulta del perfil climático calibrado de una finca.
- * ObtenerPerfilClimaticoUseCase (módulo clima) ya cumple esta forma, así que en createContainer
- * se inyecta directamente; en los tests se reemplaza por un perfil fijo.
+ * Perfil climático de cualquier ubicación. ObtenerPerfilClimaticoUseCase (módulo clima) cumple esta forma,
+ * así que en createContainer se inyecta directamente; en los tests se reemplaza por un perfil fijo.
  */
 export interface IPerfilClimaticoQuery {
-  execute(input: PerfilClimaticoParams, contexto: ContextoActor): Promise<Result<PerfilClimaticoDto, DomainError>>;
+  porUbicacion(
+    ubicacion: { latitud: number; longitud: number; altitudM: number | null },
+    contexto: ContextoSolicitud,
+  ): Promise<Result<PerfilClimaticoDto, DomainError>>;
+}
+
+/**
+ * Análisis del terreno de un área ya validada. AnalizarTerrenoUseCase (módulo terreno) cumple esta forma.
+ * Nunca falla: si un proveedor externo cae, el perfil sale con advertencias.
+ */
+export interface IAnalisisTerrenoQuery {
+  analizar(area: AreaSeleccionada): Promise<PerfilTerrenoDto>;
 }

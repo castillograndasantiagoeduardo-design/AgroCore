@@ -1,10 +1,10 @@
--- Migración 001 — Duitama Crece
+-- Migración 001 — AgroCore
 -- Agrega ubicación y datos agrícolas a la tabla fincas.
 -- Ejecútala SOLO si ya habías corrido Docs/ddl.sql ANTES de este cambio
 -- (si creas la base desde cero, Docs/ddl.sql ya incluye estas columnas).
 -- Ejecutar en MySQL Workbench con el usuario root.
 
-USE `duitama_crece`;
+USE `agrocore`;
 
 ALTER TABLE fincas
   ADD COLUMN latitud DOUBLE NOT NULL AFTER descripcion,

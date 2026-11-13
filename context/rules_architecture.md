@@ -1,13 +1,13 @@
-# 🏛️ Reglas de Arquitectura Limpia — DuitamaCrece
+# 🏛️ Reglas de Arquitectura Limpia — AgroCore
 
 > **Documento de Referencia Arquitectónica (Clean Architecture + Domain-Driven Design)**
-> Describe cómo está organizado el monorepo de **DuitamaCrece**, cómo interactúa cada capa en tiempo de ejecución y cuáles son las reglas obligatorias que preservan la pureza del dominio.
+> Describe cómo está organizado el monorepo de **AgroCore**, cómo interactúa cada capa en tiempo de ejecución y cuáles son las reglas obligatorias que preservan la pureza del dominio.
 
 ---
 
 ## 1. Filosofía Arquitectónica
 
-**DuitamaCrece** está diseñado bajo los principios de **Clean Architecture (Arquitectura Limpia)**, **Arquitectura Hexagonal (Puertos y Adaptadores)** y **Domain-Driven Design (DDD) táctico**.
+**AgroCore** está diseñado bajo los principios de **Clean Architecture (Arquitectura Limpia)**, **Arquitectura Hexagonal (Puertos y Adaptadores)** y **Domain-Driven Design (DDD) táctico**.
 
 El objetivo central es **aislar las reglas de negocio** de cualquier detalle técnico externo (base de datos MySQL, framework HTTP Hono, protocolo MCP de IA o interfaz Next.js).
 
@@ -20,22 +20,22 @@ flowchart TB
     end
 
     subgraph Wiring ["Capa de Ensamblaje (Inyección de Dependencias)"]
-        COMP["Composition Root (@duitamacrece/composition)"]
+        COMP["Composition Root (@agrocore/composition)"]
     end
 
     subgraph Infra ["Capa de Infraestructura (Adaptadores Secundarios)"]
-        DB["Persistencia (@duitamacrece/database - Drizzle + MySQL 8)"]
-        PLAT["Servicios Técnicos (@duitamacrece/platform - JWT, Argon2, TOTP, SMTP)"]
+        DB["Persistencia (@agrocore/database - Drizzle + MySQL 8)"]
+        PLAT["Servicios Técnicos (@agrocore/platform - NASA POWER, ORNL, Overpass, ESC/POS)"]
     end
 
     subgraph CoreDomain ["Núcleo del Sistema (Dominio y Aplicación)"]
-        APP["Casos de Uso y Puertos (@duitamacrece/core - Application)"]
-        DOM["Entidades, Value Objects y Reglas (@duitamacrece/core - Domain)"]
-        SK["Primitivas Base (@duitamacrece/shared-kernel - Result, DomainError)"]
+        APP["Casos de Uso y Puertos (@agrocore/core - Application)"]
+        DOM["Entidades, Value Objects y Reglas (@agrocore/core - Domain)"]
+        SK["Primitivas Base (@agrocore/shared-kernel - Result, DomainError)"]
     end
 
     subgraph SharedContracts ["Frontera de Datos Compartida"]
-        ZOD["Contratos y Esquemas (@duitamacrece/contracts - Zod)"]
+        ZOD["Contratos y Esquemas (@agrocore/contracts - Zod)"]
     end
 
     UI -->|Peticiones HTTP JSON| HTTP
@@ -63,13 +63,13 @@ sequenceDiagram
     autonumber
     actor Cliente as Cliente (Frontend / Agente IA)
     participant Entry as Adaptador Primario (Hono API / MCP Tool)
-    participant Zod as @duitamacrece/contracts (Zod)
-    participant UC as Caso de Uso (@duitamacrece/core)
-    participant Repo as Repositorio (@duitamacrece/database)
-    participant Audit as IAuditor (@duitamacrece/database)
+    participant Zod as @agrocore/contracts (Zod)
+    participant UC as Caso de Uso (@agrocore/core)
+    participant Repo as Repositorio (@agrocore/database)
+    participant Audit as IAuditor (@agrocore/database)
 
     Cliente->>Entry: Petición (HTTP Request / MCP CallTool)
-    Entry->>Entry: Verifica Autenticación JWT y Permiso RBAC
+    Entry->>Entry: Arma ContextoSolicitud (origen + IP) y aplica límite por IP
     Entry->>Zod: Valida payload en frontera (safeParse)
     alt Validación Zod falla
         Zod-->>Entry: Errores de formato
@@ -98,7 +98,7 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 | :--- | :--- | :--- |
 | **`shared-kernel`** | *(Ninguno — TypeScript puro)* | Cualquier paquete o librería externa |
 | **`Shared/contracts`** | `zod` | `core`, `database`, `platform`, `api`, `Frontend` |
-| **`core`** | `shared-kernel`, `Shared/contracts` | `database` (Drizzle/MySQL), `platform` (JWT/Argon2), `api` (Hono), `composition` |
+| **`core`** | `shared-kernel`, `Shared/contracts` | `database` (Drizzle/MySQL), `platform` (HTTP a proveedores, impresora), `api` (Hono), `composition` |
 | **`database`** | `core`, `shared-kernel`, `drizzle-orm`, `mysql2` | `platform`, `composition`, `api`, `mcp-server` |
 | **`platform`** | `core`, `shared-kernel`, `Shared/contracts` | `database`, `composition`, `api`, `mcp-server` |
 | **`composition`** | `core`, `database`, `platform`, `shared-kernel`, `Shared/contracts` | `api`, `mcp-server`, `Frontend` |
@@ -109,25 +109,25 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 
 ### Regla 2: Pureza Absoluta de `core`
 * En `Backend/packages/core` está **terminantemente prohibido** importar `drizzle-orm`, `mysql2`, `hono`, `jose`, `argon2`, `nodemailer` o usar `Deno.env` directamente.
-* Si un caso de uso necesita enviar un correo, firmar un token, consultar la hora o ejecutar una transacción SQL, debe definir una **interfaz (Puerto)** en `core` e inyectarla por constructor.
+* Si un caso de uso necesita llamar a un proveedor externo, imprimir, consultar la hora o ejecutar una transacción SQL, debe definir una **interfaz (Puerto)** en `core` e inyectarla por constructor.
 
 ---
 
 ### Regla 3: Prohibición de Excepciones para Flujo de Negocio (`Result<T, DomainError>`)
-* Ninguna regla de negocio fallida (ej. usuario inactivo, turno de caja ya abierto, stock insuficiente, factura ya anulada) puede lanzar `throw new Error(...)`.
+* Ninguna regla de negocio fallida (ej. coordenadas inválidas, área demasiado grande) puede lanzar `throw new Error(...)`.
 * Todo fallo de dominio esperado debe devolverse como `Result.err(new DomainError('CODIGO', 'Mensaje'))`.
-* Las excepciones (`try/catch`) solo se usan en los adaptadores de infraestructura (`database`, `platform`, `safeHandler`) para atrapar fallos técnicos catastróficos (caída de red MySQL, timeout SMTP).
+* Las excepciones (`try/catch`) solo se usan en los adaptadores de infraestructura (`database`, `platform`, `safeHandler`) para atrapar fallos técnicos catastróficos (caída de red MySQL, timeout de un proveedor externo).
 
 ---
 
 ### Regla 4: Prohibición de Instanciación Manual fuera de `composition`
-* Ningún controlador de `apps/api` ni herramienta de `apps/mcp-server` puede hacer `new MySqlUsuarioRepository(...)` ni `new CrearUsuarioUseCase(...)`.
+* Ningún controlador de `apps/api` ni herramienta de `apps/mcp-server` puede hacer `new MySqlAuditor(...)` ni `new ObtenerPerfilClimaticoUseCase(...)`.
 * Todo caso de uso se registra en `Backend/packages/composition/src/container.ts` (`createContainer`) y se consume ya ensamblado desde `AppContainer`.
 
 ---
 
 ### Regla 5: Validación Obligatoria en la Frontera con Zod
-* Ningún dato proveniente del exterior (body JSON, query params, parámetros de rutas o argumentos de herramientas MCP) puede entrar a un caso de uso sin pasar primero por un esquema Zod de `@duitamacrece/contracts`.
+* Ningún dato proveniente del exterior (body JSON, query params, parámetros de rutas o argumentos de herramientas MCP) puede entrar a un caso de uso sin pasar primero por un esquema Zod de `@agrocore/contracts`.
 * Tampoco se deben duplicar validaciones de negocio complejas en los controladores: el controlador valida la **estructura** con Zod y el caso de uso valida las **invariantes del negocio**.
 
 ---
@@ -135,7 +135,7 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 ### Regla 6: Auditoría Transversal e Inmutabilidad (`IAuditor`)
 * Todo caso de uso que **cree, actualice, anule o cambie el estado** de una entidad debe inyectar el puerto `IAuditor` y registrar la operación.
 * El detalle de auditoría sigue el contrato `{ antes: {...}, despues: {...} }` registrando únicamente los campos afectados.
-* **Sanitización obligatoria:** Jamás se registran en auditoría `password_hash`, `totp_secret`, tokens JWT ni códigos de recuperación (se filtran mediante `sanitizarDetalles`).
+* **Sanitización obligatoria:** Jamás se registran en auditoría contraseñas, secretos ni tokens de acceso (se filtran mediante `sanitizarDetalles`).
 
 ---
 

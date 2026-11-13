@@ -1,4 +1,4 @@
-# 🤖 Contexto Global del Proyecto - DuitamaCrece
+# 🤖 Contexto Global del Proyecto - AgroCore
 
 > **Documento Maestro de Contexto para Asistentes de IA (Claude)**
 > Punto de entrada para entender la arquitectura, reglas, flujo de trabajo y módulos de este monorepo con **Clean Architecture + Hexagonal + DDD táctico**.
@@ -25,14 +25,14 @@
 
 | Capa | LAYER.md |
 | :--- | :--- |
-| `@duitamacrece/shared-kernel` | [`Backend/packages/shared-kernel/LAYER.md`](./Backend/packages/shared-kernel/LAYER.md) |
-| `@duitamacrece/contracts` | [`Shared/contracts/LAYER.md`](./Shared/contracts/LAYER.md) |
-| `@duitamacrece/core` | [`Backend/packages/core/LAYER.md`](./Backend/packages/core/LAYER.md) |
-| `@duitamacrece/database` | [`Backend/packages/database/LAYER.md`](./Backend/packages/database/LAYER.md) |
-| `@duitamacrece/platform` | [`Backend/packages/platform/LAYER.md`](./Backend/packages/platform/LAYER.md) |
-| `@duitamacrece/composition` | [`Backend/packages/composition/LAYER.md`](./Backend/packages/composition/LAYER.md) |
-| `@duitamacrece/api` | [`Backend/apps/api/LAYER.md`](./Backend/apps/api/LAYER.md) |
-| `@duitamacrece/mcp-server` | [`Backend/apps/mcp-server/LAYER.md`](./Backend/apps/mcp-server/LAYER.md) |
+| `@agrocore/shared-kernel` | [`Backend/packages/shared-kernel/LAYER.md`](./Backend/packages/shared-kernel/LAYER.md) |
+| `@agrocore/contracts` | [`Shared/contracts/LAYER.md`](./Shared/contracts/LAYER.md) |
+| `@agrocore/core` | [`Backend/packages/core/LAYER.md`](./Backend/packages/core/LAYER.md) |
+| `@agrocore/database` | [`Backend/packages/database/LAYER.md`](./Backend/packages/database/LAYER.md) |
+| `@agrocore/platform` | [`Backend/packages/platform/LAYER.md`](./Backend/packages/platform/LAYER.md) |
+| `@agrocore/composition` | [`Backend/packages/composition/LAYER.md`](./Backend/packages/composition/LAYER.md) |
+| `@agrocore/api` | [`Backend/apps/api/LAYER.md`](./Backend/apps/api/LAYER.md) |
+| `@agrocore/mcp-server` | [`Backend/apps/mcp-server/LAYER.md`](./Backend/apps/mcp-server/LAYER.md) |
 | `Frontend` | [`Frontend/LAYER.md`](./Frontend/LAYER.md) |
 
 ---
@@ -46,28 +46,28 @@
 - **Frontend:** **Next.js 16** (App Router + Features) + **Tailwind v4**.
 - **Dependencias:** siempre apuntan hacia adentro (hacia `core` y `shared-kernel`).
 - **Errores de negocio:** `Result<T, DomainError>`, nunca `throw`.
-- **Ensamblaje:** solo en `createContainer` (`@duitamacrece/composition`).
+- **Ensamblaje:** solo en `createContainer` (`@agrocore/composition`).
 
 ---
 
 ## 🌳 3. Mapa de Directorios
 
 ```text
-DuitamaCrece/
+AgroCore/
 ├── CLAUDE.md / GEMINI.md       # 🌟 Orquestadores de contexto para IA
 ├── context/                    # 📜 rules_architecture.md, ai_development_workflow.md
 ├── Shared/
-│   └── contracts/              # @duitamacrece/contracts (Esquemas Zod, Roles, Permisos RBAC)
+│   └── contracts/              # @agrocore/contracts (Esquemas Zod, catálogos de auditoría y tools MCP)
 ├── Backend/                    # Workspace Deno 2.x (deno.json)
 │   ├── packages/
-│   │   ├── shared-kernel/      # @duitamacrece/shared-kernel (Result<T,E>, DomainError, Pagination)
-│   │   ├── core/               # @duitamacrece/core (Entidades, Value Objects, Casos de Uso, Puertos)
-│   │   ├── database/           # @duitamacrece/database (Drizzle ORM, MySQL2, Repositorios, UnitOfWork)
-│   │   ├── platform/           # @duitamacrece/platform (Servicios técnicos: JWT HS256, ...)
-│   │   └── composition/        # @duitamacrece/composition (Contenedor DI: createContainer)
+│   │   ├── shared-kernel/      # @agrocore/shared-kernel (Result<T,E>, DomainError, Pagination)
+│   │   ├── core/               # @agrocore/core (Entidades, Value Objects, Casos de Uso, Puertos)
+│   │   ├── database/           # @agrocore/database (Drizzle ORM, MySQL2, Repositorios, UnitOfWork)
+│   │   ├── platform/           # @agrocore/platform (Proveedores externos NASA/ORNL/OSM, impresora ESC/POS)
+│   │   └── composition/        # @agrocore/composition (Contenedor DI: createContainer)
 │   └── apps/
-│       ├── api/                # @duitamacrece/api (Servidor HTTP REST con Hono)
-│       └── mcp-server/         # @duitamacrece/mcp-server (Servidor MCP para Agentes IA)
+│       ├── api/                # @agrocore/api (Servidor HTTP REST con Hono)
+│       └── mcp-server/         # @agrocore/mcp-server (Servidor MCP para Agentes IA)
 ├── Frontend/                   # Next.js 16 (App Router + Features + Tailwind v4)
 │   └── src/{app, features, components, lib}
 ├── Docs/                       # Documentación técnica (DDL SQL, ADRs, guías)
@@ -80,12 +80,15 @@ DuitamaCrece/
 
 Cada módulo vive en `Backend/packages/core/src/modules/<modulo>/` y tiene su `MODULE.md`:
 
-- **`fincas`** — Entidad `Finca` · [MODULE.md](./Backend/packages/core/src/modules/fincas/MODULE.md)
-- **`clima`** — Perfil climático por finca (NASA POWER, corrección por altitud) · [MODULE.md](./Backend/packages/core/src/modules/clima/MODULE.md)
-- **`cultivos`** — Catálogo de referencia de 11 cultivos de clima frío (solo lectura) · [MODULE.md](./Backend/packages/core/src/modules/cultivos/MODULE.md)
-- **`rotaciones`** — Motor que compara 3 estrategias de rotación de 2 años (A actual, B suelo, C forraje) con evidencia, vacíos y riesgos · [MODULE.md](./Backend/packages/core/src/modules/rotaciones/MODULE.md)
-- **`autenticacion`** — Gestión de credenciales, login y tokens JWT · [MODULE.md](./Backend/packages/core/src/modules/autenticacion/MODULE.md)
+- **`clima`** — Perfil climático de cualquier ubicación (NASA POWER 30 años, altitud, IDEAM en Colombia, ET0, temporadas derivadas, vulnerabilidad) · [MODULE.md](./Backend/packages/core/src/modules/clima/MODULE.md)
+- **`cultivos`** — Catálogo global de referencia de 51 cultivos (temperaturas ECOCROP, tolerancias, pH, textura, plagas; solo lectura) · [MODULE.md](./Backend/packages/core/src/modules/cultivos/MODULE.md)
+- **`rotaciones`** — Motor que compara 3–4 estrategias de 2 años en temporadas reales de cualquier lugar (A actual, B suelo, C forraje/ingreso, D agua) con evidencia y fuente, calendario y oportunidades · [MODULE.md](./Backend/packages/core/src/modules/rotaciones/MODULE.md)
+- **`terreno`** — Análisis del sitio (punto o área ≤ 100 ha): aptitud ("No se puede sembrar: es carretera"), SRTM, SoilGrids, NDVI MODIS (meses baldíos), cobertura MODIS · [MODULE.md](./Backend/packages/core/src/modules/terreno/MODULE.md)
+- **`impresion`** — Ticket térmico ESC/POS de 58 mm con el resumen del terreno (Xprinter compartida en Windows) · [MODULE.md](./Backend/packages/core/src/modules/impresion/MODULE.md)
+- **`recomendacion`** — Qué sembrar en cada época del año (épocas derivadas del clima real del lugar) para 4 objetivos fijos, con presencia local (EVA/FAOSTAT) y cero datos inventados; etapa rápida, detalle y flujo NDJSON; cada dato lleva su fuente (`DatoConFuente`). Sobre un precálculo regional en MySQL (clima, vías, cobertura, elevación) la etapa rápida responde sin proveedores externos · [MODULE.md](./Backend/packages/core/src/modules/recomendacion/MODULE.md)
 <!-- @scaffold:modules -->
+
+**Transversales (sin `MODULE.md` propio, solo puertos):** `auditoria` (`IAuditor`, `ContextoSolicitud { origen, ip }`, `sanitizarDetalles`), `mcp-audit` (`IMcpToolLogger`) y `shared` (`IUnitOfWork`, `ICacheProveedores`, VO `AreaSeleccionada` y geometría). **La API es abierta: no hay login, JWT ni roles.**
 
 ---
 
@@ -107,7 +110,10 @@ Cada módulo vive en `Backend/packages/core/src/modules/<modulo>/` y tiene su `M
 # Backend (desde Backend/)
 deno task dev:api      # API REST Hono
 deno task dev:mcp      # Servidor MCP (stdio)
-deno task test         # Tests unitarios de core
+deno task test         # Tests de core, database y platform
+deno run -A --env-file=../.env scripts/aplicar-migraciones.ts  # Migraciones (idempotente)
+deno run -A --env-file=../.env scripts/smoke-e2e.ts            # E2E con la API encendida (5 lugares)
+deno run -A --env-file=../.env scripts/probar-impresora.ts      # Ticket de prueba
 deno task check        # Verificación de tipos
 
 # Frontend (desde Frontend/)

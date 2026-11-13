@@ -1,0 +1,424 @@
+area_code	item_code	item	valor_bruto_int_usd_por_ha_2018_2022	anios
+44	15	Wheat	606	4
+114	15	Wheat	665	5
+231	15	Wheat	763	5
+5000	15	Wheat	843	5
+44	27	Rice	1767	5
+114	27	Rice	2093	5
+231	27	Rice	3325	5
+5000	27	Rice	1836	5
+44	44	Barley	463	5
+114	44	Barley	674	5
+231	44	Barley	765	5
+5000	44	Barley	605	5
+44	56	Maize (corn)	780	5
+114	56	Maize (corn)	324	5
+231	56	Maize (corn)	2181	5
+5000	56	Maize (corn)	1152	5
+231	71	Rye	577	5
+5000	71	Rye	839	5
+114	75	Oats	166	5
+231	75	Oats	387	5
+5000	75	Oats	420	5
+114	79	Millet	234	5
+231	79	Millet	415	5
+5000	79	Millet	296	5
+44	83	Sorghum	650	5
+114	83	Sorghum	204	5
+231	83	Sorghum	903	5
+5000	83	Sorghum	314	5
+231	89	Buckwheat	335	5
+5000	89	Buckwheat	304	5
+5000	92	Quinoa	1510	5
+5000	94	Fonio	552	5
+5000	97	Triticale	732	5
+5000	101	Canary seed	476	5
+5000	103	Mixed grain	691	5
+44	108	Cereals n.e.c.	582	5
+5000	108	Cereals n.e.c.	493	5
+44	116	Potatoes	5545	5
+114	116	Potatoes	2291	5
+231	116	Potatoes	12558	5
+5000	116	Potatoes	5483	5
+114	122	Sweet potatoes	2781	5
+231	122	Sweet potatoes	4590	5
+5000	122	Sweet potatoes	2581	5
+44	125	Cassava, fresh	1517	5
+114	125	Cassava, fresh	2055	5
+5000	125	Cassava, fresh	1509	5
+5000	135	Yautia	6450	5
+231	136	Taro	3996	5
+5000	136	Taro	2759	5
+44	137	Yams	3214	5
+114	137	Yams	2250	5
+5000	137	Yams	2274	5
+44	149	Edible roots and tubers with high starch or inulin content, n.e.c., fresh	2590	5
+114	149	Edible roots and tubers with high starch or inulin content, n.e.c., fresh	1650	5
+5000	149	Edible roots and tubers with high starch or inulin content, n.e.c., fresh	2711	5
+44	156	Sugar cane	3442	4
+114	156	Sugar cane	3334	5
+231	156	Sugar cane	3699	5
+5000	156	Sugar cane	3259	5
+44	157	Sugar beet	1225	5
+231	157	Sugar beet	3188	5
+5000	157	Sugar beet	2792	5
+5000	161	Other sugar crops n.e.c.	313	5
+44	176	Beans, dry	863	5
+114	176	Beans, dry	486	5
+231	176	Beans, dry	1649	5
+5000	176	Beans, dry	651	5
+44	181	Broad beans and horse beans, dry	1617	5
+5000	181	Broad beans and horse beans, dry	715	5
+44	187	Peas, dry	484	5
+231	187	Peas, dry	697	5
+5000	187	Peas, dry	641	5
+44	191	Chick peas, dry	758	5
+114	191	Chick peas, dry	243	5
+231	191	Chick peas, dry	1032	5
+5000	191	Chick peas, dry	778	5
+114	195	Cow peas, dry	261	5
+231	195	Cow peas, dry	675	5
+5000	195	Cow peas, dry	204	5
+44	197	Pigeon peas, dry	1696	5
+114	197	Pigeon peas, dry	557	5
+5000	197	Pigeon peas, dry	640	5
+44	201	Lentils, dry	198	5
+114	201	Lentils, dry	542	5
+231	201	Lentils, dry	812	5
+5000	201	Lentils, dry	828	5
+5000	203	Bambara beans, dry	265	5
+5000	205	Vetches	713	5
+5000	210	Lupins	424	5
+114	211	Other pulses n.e.c.	491	5
+5000	211	Other pulses n.e.c.	856	5
+44	217	Cashew nuts, in shell	6507	5
+114	217	Cashew nuts, in shell	461	5
+5000	217	Cashew nuts, in shell	581	5
+5000	220	Chestnuts, in shell	6442	5
+231	221	Almonds, in shell	20323	5
+5000	221	Almonds, in shell	8643	5
+231	222	Walnuts, in shell	13534	5
+5000	222	Walnuts, in shell	9581	5
+231	223	Pistachios, in shell	18548	5
+5000	223	Pistachios, in shell	6972	5
+5000	224	Kola nuts	418	5
+231	225	Hazelnuts, in shell	8606	5
+5000	225	Hazelnuts, in shell	3601	5
+5000	226	Areca nuts	5587	5
+44	234	Other nuts (excluding wild edible nuts and groundnuts), in shell, n.e.c.	12191	5
+114	234	Other nuts (excluding wild edible nuts and groundnuts), in shell, n.e.c.	14608	5
+231	234	Other nuts (excluding wild edible nuts and groundnuts), in shell, n.e.c.	2075	5
+5000	234	Other nuts (excluding wild edible nuts and groundnuts), in shell, n.e.c.	3066	5
+44	236	Soya beans	1001	4
+114	236	Soya beans	443	5
+231	236	Soya beans	1289	5
+5000	236	Soya beans	1053	5
+44	242	Groundnuts, excluding shelled	1224	5
+114	242	Groundnuts, excluding shelled	785	5
+231	242	Groundnuts, excluding shelled	3226	5
+5000	242	Groundnuts, excluding shelled	1255	5
+44	249	Coconuts, in shell	1068	5
+114	249	Coconuts, in shell	196	5
+5000	249	Coconuts, in shell	935	5
+44	254	Oil palm fruit	1595	5
+5000	254	Oil palm fruit	1415	5
+231	260	Olives	6039	5
+5000	260	Olives	2195	5
+5000	263	Karite nuts (sheanuts)	432	5
+114	265	Castor oil seeds	261	5
+5000	265	Castor oil seeds	717	5
+114	267	Sunflower seed	506	5
+231	267	Sunflower seed	921	5
+5000	267	Sunflower seed	939	5
+114	270	Rape or colza seed	1583	2
+231	270	Rape or colza seed	906	5
+5000	270	Rape or colza seed	984	5
+5000	275	Tung nuts	858	5
+231	280	Safflower seed	574	5
+5000	280	Safflower seed	344	5
+44	289	Sesame seed	933	5
+114	289	Sesame seed	851	5
+5000	289	Sesame seed	572	5
+231	292	Mustard seed	521	5
+5000	292	Mustard seed	649	5
+5000	296	Poppy seed	1087	5
+5000	299	Melonseed	157	5
+5000	310	Kapok fruit	75	5
+44	328	Seed cotton, unginned	2536	5
+114	328	Seed cotton, unginned	346	5
+231	328	Seed cotton, unginned	2468	5
+5000	328	Seed cotton, unginned	2061	5
+114	333	Linseed	417	5
+231	333	Linseed	458	5
+5000	333	Linseed	375	5
+231	336	Hempseed	921	2
+5000	336	Hempseed	1611	5
+114	339	Other oil seeds, n.e.c.	184	5
+5000	339	Other oil seeds, n.e.c.	391	5
+44	358	Cabbages	8017	5
+114	358	Cabbages	7804	5
+231	358	Cabbages	9838	5
+5000	358	Cabbages	6906	5
+114	366	Artichokes	3760	5
+231	366	Artichokes	11733	5
+5000	366	Artichokes	9130	5
+44	367	Asparagus	5484	5
+114	367	Asparagus	6043	5
+231	367	Asparagus	4553	5
+5000	367	Asparagus	5694	5
+44	372	Lettuce and chicory	10158	5
+114	372	Lettuce and chicory	9664	5
+231	372	Lettuce and chicory	13203	5
+5000	372	Lettuce and chicory	8669	5
+44	373	Spinach	5800	5
+114	373	Spinach	7382	5
+231	373	Spinach	6117	5
+5000	373	Spinach	13595	5
+44	388	Tomatoes	24663	5
+114	388	Tomatoes	11363	5
+231	388	Tomatoes	45718	5
+5000	388	Tomatoes	16889	5
+44	393	Cauliflowers and broccoli	8295	5
+114	393	Cauliflowers and broccoli	5011	5
+231	393	Cauliflowers and broccoli	8555	5
+5000	393	Cauliflowers and broccoli	8800	5
+44	394	Pumpkins, squash and gourds	3190	5
+231	394	Pumpkins, squash and gourds	6597	5
+5000	394	Pumpkins, squash and gourds	4348	5
+44	397	Cucumbers and gherkins	5722	5
+114	397	Cucumbers and gherkins	3414	5
+231	397	Cucumbers and gherkins	6167	5
+5000	397	Cucumbers and gherkins	14668	5
+44	399	Eggplants (aubergines)	3353	5
+231	399	Eggplants (aubergines)	10699	5
+5000	399	Eggplants (aubergines)	8203	5
+44	401	Chillies and peppers, green (Capsicum spp. and Pimenta spp.)	9169	5
+114	401	Chillies and peppers, green (Capsicum spp. and Pimenta spp.)	5389	5
+231	401	Chillies and peppers, green (Capsicum spp. and Pimenta spp.)	21654	5
+5000	401	Chillies and peppers, green (Capsicum spp. and Pimenta spp.)	10430	5
+5000	402	Onions and shallots, green	9701	5
+44	403	Onions and shallots, dry (excluding dehydrated)	9953	5
+114	403	Onions and shallots, dry (excluding dehydrated)	6058	5
+231	403	Onions and shallots, dry (excluding dehydrated)	25005	5
+5000	403	Onions and shallots, dry (excluding dehydrated)	7869	5
+44	406	Green garlic	9696	5
+114	406	Green garlic	10024	5
+231	406	Green garlic	13183	5
+5000	406	Green garlic	12489	5
+114	407	Leeks and other alliaceous vegetables	4310	5
+5000	407	Leeks and other alliaceous vegetables	15261	5
+114	414	Other beans, green	3464	5
+231	414	Other beans, green	1017	5
+5000	414	Other beans, green	5079	5
+114	417	Peas, green	4251	5
+231	417	Peas, green	2729	5
+5000	417	Peas, green	4805	5
+44	420	Broad beans and horse beans, green	1822	5
+114	420	Broad beans and horse beans, green	6975	5
+231	420	Broad beans and horse beans, green	1237	5
+5000	420	Broad beans and horse beans, green	3010	5
+231	423	String beans	12164	5
+5000	423	String beans	12151	5
+44	426	Carrots and turnips	7602	5
+114	426	Carrots and turnips	7620	5
+231	426	Carrots and turnips	13584	5
+5000	426	Carrots and turnips	9555	5
+114	430	Okra	8384	5
+231	430	Okra	7467	5
+5000	430	Okra	4246	5
+231	446	Green corn (maize)	8093	5
+5000	446	Green corn (maize)	4082	5
+5000	459	Chicory roots	6791	5
+5000	461	Locust beans (carobs)	998	5
+44	463	Other vegetables, fresh n.e.c.	3299	5
+114	463	Other vegetables, fresh n.e.c.	2395	5
+231	463	Other vegetables, fresh n.e.c.	18562	5
+5000	463	Other vegetables, fresh n.e.c.	4229	5
+44	486	Bananas	8941	5
+114	486	Bananas	8785	5
+231	486	Bananas	3791	5
+5000	486	Bananas	7965	5
+44	489	Plantains and cooking bananas	3260	5
+114	489	Plantains and cooking bananas	4596	5
+5000	489	Plantains and cooking bananas	2330	5
+44	490	Oranges	5182	5
+114	490	Oranges	3349	5
+231	490	Oranges	6593	5
+5000	490	Oranges	6569	5
+44	495	Tangerines, mandarins, clementines	5566	5
+114	495	Tangerines, mandarins, clementines	4988	5
+231	495	Tangerines, mandarins, clementines	13080	5
+5000	495	Tangerines, mandarins, clementines	5847	5
+44	497	Lemons and limes	7330	5
+114	497	Lemons and limes	6743	5
+231	497	Lemons and limes	22588	5
+5000	497	Lemons and limes	9210	5
+114	507	Pomelos and grapefruits	5335	5
+231	507	Pomelos and grapefruits	9782	5
+5000	507	Pomelos and grapefruits	10074	5
+44	512	Other citrus fruit, n.e.c.	6153	3
+114	512	Other citrus fruit, n.e.c.	2888	5
+231	512	Other citrus fruit, n.e.c.	8212	5
+5000	512	Other citrus fruit, n.e.c.	3854	5
+44	515	Apples	10859	5
+114	515	Apples	1635	5
+231	515	Apples	18428	5
+5000	515	Apples	9170	5
+44	521	Pears	7578	5
+114	521	Pears	2972	5
+231	521	Pears	15679	5
+5000	521	Pears	8047	5
+5000	523	Quinces	4968	5
+114	526	Apricots	3655	5
+231	526	Apricots	8304	5
+5000	526	Apricots	5555	5
+231	530	Sour cherries	5795	5
+5000	530	Sour cherries	5329	5
+231	531	Cherries	14831	5
+5000	531	Cherries	10672	5
+44	534	Peaches and nectarines	8270	5
+114	534	Peaches and nectarines	4038	5
+231	534	Peaches and nectarines	12101	5
+5000	534	Peaches and nectarines	9964	5
+44	536	Plums and sloes	7806	5
+114	536	Plums and sloes	3787	5
+231	536	Plums and sloes	8471	5
+5000	536	Plums and sloes	2988	5
+5000	541	Other stone fruits	28240	5
+5000	542	Other pome fruits	2125	5
+44	544	Strawberries	55580	5
+114	544	Strawberries	12745	5
+231	544	Strawberries	96693	5
+5000	544	Strawberries	37506	5
+231	547	Raspberries	42816	5
+5000	547	Raspberries	23185	5
+5000	549	Gooseberries	13385	5
+5000	550	Currants	7876	5
+231	552	Blueberries	16842	5
+5000	552	Blueberries	16159	5
+231	554	Cranberries	25600	5
+5000	554	Cranberries	25391	5
+114	558	Other berries and fruits of the genus vaccinium n.e.c.	4407	5
+231	558	Other berries and fruits of the genus vaccinium n.e.c.	13315	5
+5000	558	Other berries and fruits of the genus vaccinium n.e.c.	11207	5
+44	560	Grapes	11694	5
+231	560	Grapes	13611	5
+5000	560	Grapes	9805	5
+44	567	Watermelons	4089	5
+114	567	Watermelons	4879	5
+231	567	Watermelons	9153	5
+5000	567	Watermelons	7648	5
+44	568	Cantaloupes and other melons	5799	5
+231	568	Cantaloupes and other melons	11118	5
+5000	568	Cantaloupes and other melons	9829	5
+44	569	Figs	17249	5
+231	569	Figs	7900	5
+5000	569	Figs	3356	5
+44	571	Mangoes, guavas and mangosteens	7249	4
+114	571	Mangoes, guavas and mangosteens	7418	5
+231	571	Mangoes, guavas and mangosteens	12239	5
+5000	571	Mangoes, guavas and mangosteens	6095	5
+44	572	Avocados	8836	5
+114	572	Avocados	13858	5
+231	572	Avocados	6481	5
+5000	572	Avocados	9048	5
+44	574	Pineapples	16553	4
+114	574	Pineapples	13539	5
+231	574	Pineapples	11922	5
+5000	574	Pineapples	10640	5
+44	577	Dates	5333	5
+114	577	Dates	2163	5
+231	577	Dates	8286	5
+5000	577	Dates	7273	5
+5000	587	Persimmons	1562	5
+5000	591	Cashewapple	729	5
+231	592	Kiwi fruit	17604	5
+5000	592	Kiwi fruit	14964	5
+44	600	Papayas	7921	5
+114	600	Papayas	4823	5
+231	600	Papayas	6531	5
+5000	600	Papayas	10434	5
+44	603	Other tropical fruits, n.e.c.	5736	5
+114	603	Other tropical fruits, n.e.c.	5774	5
+5000	603	Other tropical fruits, n.e.c.	3990	5
+44	619	Other fruits, n.e.c.	4815	5
+114	619	Other fruits, n.e.c.	5199	5
+231	619	Other fruits, n.e.c.	8340	5
+5000	619	Other fruits, n.e.c.	3147	5
+44	656	Coffee, green	1843	5
+114	656	Coffee, green	763	5
+231	656	Coffee, green	2204	5
+5000	656	Coffee, green	1854	5
+44	661	Cocoa beans	729	5
+5000	661	Cocoa beans	708	5
+44	667	Tea leaves	4762	5
+114	667	Tea leaves	19040	5
+5000	667	Tea leaves	11205	5
+5000	671	Maté leaves	1741	5
+231	677	Hop cones	10990	5
+5000	677	Hop cones	8737	5
+114	687	Pepper (Piper spp.), raw	5503	5
+5000	687	Pepper (Piper spp.), raw	6330	5
+114	689	Chillies and peppers, dry (Capsicum spp., Pimenta spp.), raw	1784	5
+5000	689	Chillies and peppers, dry (Capsicum spp., Pimenta spp.), raw	3951	5
+114	692	Vanilla, raw	1552	5
+5000	692	Vanilla, raw	162	5
+5000	693	Cinnamon and cinnamon-tree flowers, raw	1936	5
+114	698	Cloves (whole stems), raw	1019	5
+5000	698	Cloves (whole stems), raw	290	5
+114	702	Nutmeg, mace, cardamoms, raw	2547	5
+5000	702	Nutmeg, mace, cardamoms, raw	1258	5
+114	711	Anise, badian, coriander, cumin, caraway, fennel and juniper berries, raw	26444	5
+5000	711	Anise, badian, coriander, cumin, caraway, fennel and juniper berries, raw	2213	5
+114	720	Ginger, raw	12809	5
+231	720	Ginger, raw	31336	5
+5000	720	Ginger, raw	9689	5
+44	723	Other stimulant, spice and aromatic crops, n.e.c.	5947	5
+114	723	Other stimulant, spice and aromatic crops, n.e.c.	1300	5
+5000	723	Other stimulant, spice and aromatic crops, n.e.c.	1913	5
+5000	748	Peppermint, spearmint	66962	5
+114	754	Pyrethrum, dried flowers	291	5
+5000	754	Pyrethrum, dried flowers	518	5
+231	777	True hemp, raw or retted	1561	2
+5000	777	True hemp, raw or retted	1789	5
+5000	780	Jute, raw or retted	1074	5
+5000	782	Kenaf, and other textile bast fibres, raw or retted	916	5
+5000	788	Ramie, raw or retted	1089	5
+114	789	Sisal, raw	361	5
+5000	789	Sisal, raw	420	5
+44	800	Agave fibres, raw, n.e.c.	479	5
+5000	800	Agave fibres, raw, n.e.c.	429	5
+114	809	Abaca, manila hemp, raw	1298	5
+5000	809	Abaca, manila hemp, raw	751	5
+5000	821	Other fibre crops, raw, n.e.c.	489	5
+44	826	Unmanufactured tobacco	4699	5
+114	826	Unmanufactured tobacco	1464	5
+231	826	Unmanufactured tobacco	5095	5
+5000	826	Unmanufactured tobacco	4163	5
+44	836	Natural rubber in primary forms	831	5
+5000	836	Natural rubber in primary forms	1419	5
+44	1717	Cereals, primary	1373	5
+114	1717	Cereals, primary	348	5
+203	1717	Cereals, primary	846	5
+231	1717	Cereals, primary	1700	5
+5000	1717	Cereals, primary	1073	5
+44	1720	Roots and Tubers, Total	3661	5
+114	1720	Roots and Tubers, Total	2327	5
+203	1720	Roots and Tubers, Total	7972	5
+231	1720	Roots and Tubers, Total	11470	5
+5000	1720	Roots and Tubers, Total	2794	5
+44	1723	Sugar Crops Primary	3408	5
+114	1723	Sugar Crops Primary	3334	5
+203	1723	Sugar Crops Primary	4016	5
+231	1723	Sugar Crops Primary	3422	5
+5000	1723	Sugar Crops Primary	3180	5
+44	1735	Vegetables Primary	9001	5
+114	1735	Vegetables Primary	5476	5
+203	1735	Vegetables Primary	18662	5
+231	1735	Vegetables Primary	15561	5
+5000	1735	Vegetables Primary	8312	5
+44	1738	Fruit Primary	6200	5
+114	1738	Fruit Primary	7783	5
+203	1738	Fruit Primary	7446	5
+231	1738	Fruit Primary	14358	5
+5000	1738	Fruit Primary	6742	5

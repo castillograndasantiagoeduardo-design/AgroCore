@@ -1,4 +1,4 @@
-# 📚 Documentación Técnica — DuitamaCrece
+# 📚 Documentación Técnica — AgroCore
 
 | Documento | Contenido |
 | :--- | :--- |
