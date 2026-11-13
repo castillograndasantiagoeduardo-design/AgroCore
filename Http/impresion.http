@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:8001/api
+
+### Vista previa del ticket (no imprime): lote rural de Duitama
+POST {{baseUrl}}/impresion/terreno
+Content-Type: application/json
+
+{ "area": { "tipo": "punto", "latitud": 5.785, "longitud": -73.03 }, "cultivoActual": "papa", "nombre": "La Esperanza", "soloVistaPrevia": true }
+
+### Imprimir en la Xprinter compartida como XP58 (200 ok, o 503 IMPRESORA_NO_DISPONIBLE si no está compartida/encendida)
+POST {{baseUrl}}/impresion/terreno
+Content-Type: application/json
+
+{ "area": { "tipo": "punto", "latitud": 5.785, "longitud": -73.03 }, "cultivoActual": "papa", "nombre": "La Esperanza" }
+
+### Sitio sobre la calzada: el ticket dice "No se puede sembrar: es carretera" y no lista rotaciones
+POST {{baseUrl}}/impresion/terreno
+Content-Type: application/json
+
+{ "area": { "tipo": "punto", "latitud": 5.8269, "longitud": -73.0297 }, "cultivoActual": "papa", "soloVistaPrevia": true }

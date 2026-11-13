@@ -5,10 +5,11 @@ import type { Context } from "hono";
 import type { ZodError } from "zod";
 import type { DomainError, Result } from "@agrocore/shared-kernel";
 
-export type HttpStatus = 200 | 201 | 400 | 404 | 409 | 422;
+export type HttpStatus = 200 | 201 | 400 | 404 | 409 | 422 | 503;
 
 export function statusFromCode(code: string): HttpStatus {
   if (code === "VALIDATION_ERROR") return 400;
+  if (code === "IMPRESORA_NO_DISPONIBLE") return 503;
   if (code.endsWith("_NO_ENCONTRADO")) return 404;
   if (code.endsWith("_DUPLICADO") || code.endsWith("_YA_EXISTE")) return 409;
   return 422;
