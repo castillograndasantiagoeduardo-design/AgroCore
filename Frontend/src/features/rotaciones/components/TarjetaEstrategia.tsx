@@ -1,7 +1,7 @@
 /**
  * Tarjeta con la explicación de una estrategia: por qué, evidencia, beneficios, vacíos y riesgos.
  */
-import type { EstrategiaRotacionDto } from "@duitamacrece/contracts";
+import type { EstrategiaRotacionDto } from "@agrocore/contracts";
 
 function Lista({ titulo, items }: { titulo: string; items: string[] }) {
   if (items.length === 0) return null;

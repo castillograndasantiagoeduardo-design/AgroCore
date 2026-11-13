@@ -1,7 +1,7 @@
 /**
  * Servicio de dominio puro del módulo fincas.
  */
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import type { Finca } from "../entities/finca.entity.ts";
 import { FincaDuplicadoError } from "../errors/finca.errors.ts";
 

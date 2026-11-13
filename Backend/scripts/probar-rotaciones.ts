@@ -5,9 +5,9 @@
  * Uso (desde Backend/):  deno run -A scripts/probar-rotaciones.ts [altitudM] [cultivoActual]
  * Por defecto: 2530 y "papa".
  */
-import { CompararRotacionesUseCase, type ContextoSolicitud, Finca, type IFincaRepository, ObtenerPerfilClimaticoUseCase } from "@duitamacrece/core";
-import { CatalogoCultivosEnMemoria } from "@duitamacrece/database";
-import { IdeamNormalesClient, NasaPowerClient, SistemaReloj } from "@duitamacrece/platform";
+import { CompararRotacionesUseCase, type ContextoSolicitud, Finca, type IFincaRepository, ObtenerPerfilClimaticoUseCase } from "@agrocore/core";
+import { CatalogoCultivosEnMemoria } from "@agrocore/database";
+import { IdeamNormalesClient, NasaPowerClient, SistemaReloj } from "@agrocore/platform";
 
 const altitudM = Deno.args[0] ? Number(Deno.args[0]) : 2530;
 const cultivoActual = Deno.args[1] ?? "papa";

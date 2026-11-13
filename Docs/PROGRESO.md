@@ -1,4 +1,4 @@
-# 📈 Progreso de Duitama Crece
+# 📈 Progreso de AgroCore
 
 > Documento de traspaso entre sesiones de trabajo con IA. Léelo junto con `CLAUDE.md` antes de continuar.
 > Última actualización: 2026-11-12.
@@ -22,7 +22,7 @@ para comparar **3 estrategias de rotación** (actual + 2 alternativas) con evide
 
 | Paso | Qué | Dónde |
 | :--- | :--- | :--- |
-| 1 | Monorepo generado (scope `@duitamacrece`, módulo inicial `fincas`) | todo el repo |
+| 1 | Monorepo generado (scope `@agrocore`, módulo inicial `fincas`) | todo el repo |
 | 2A | `fincas` con `latitud`, `longitud`, `altitudM`, `vereda`, `tieneRiego`, `cultivoActual`; VO `UbicacionFinca` valida área de Duitama (2.300–4.000 m) y deriva zona `valle` (<2.600) / `ladera` (2.600–2.999) / `alta` (≥3.000) | `core/src/modules/fincas` |
 | 2B | Módulo `clima`: NASA POWER diario 30 años, corrección por altitud (0,0065 °C/m), calendario de 12 meses (helada = Tmín ≤ 2 °C, lluvia fuerte ≥ 20 mm) | `core/src/modules/clima`, `platform/src/nasa-power-client.ts` |
 | 2C | Calibración con **normales IDEAM 1991-2020** (datos.gov.co `nsz2-kzcq`), estación más cercana ≤ 25 km (Surbatá-Bonza 24035120). Resultado: lluvia 1.599 → 880 mm (IDEAM 895), aparecen heladas ene–feb | `calibracion.service.ts`, `platform/src/ideam-normales-client.ts` |

@@ -8,7 +8,7 @@
  * (solo si la finca no tiene riego), no repetir familia (salvo continuar una pradera perenne) y
  * al menos una leguminosa que fije nitrógeno.
  */
-import type { PasoRotacionDto, PrioridadesRotacion, PuntajesRotacionDto, EvaluacionReglaDto } from "@duitamacrece/contracts";
+import type { PasoRotacionDto, PrioridadesRotacion, PuntajesRotacionDto, EvaluacionReglaDto } from "@agrocore/contracts";
 import type { Cultivo } from "../../../cultivos/domain/entities/cultivo.entity.ts";
 import { type ContextoMotor, continuaPradera, evaluarPaso, type PasoEvaluado } from "./evaluar-paso.service.ts";
 import { calcularPuntajes, calcularPuntajeTotal } from "./puntajes-rotacion.service.ts";

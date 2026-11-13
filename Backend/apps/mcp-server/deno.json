@@ -1,5 +1,5 @@
 {
-  "name": "@duitamacrece/mcp-server",
+  "name": "@agrocore/mcp-server",
   "version": "0.1.0",
   "exports": "./main.ts",
   "tasks": {

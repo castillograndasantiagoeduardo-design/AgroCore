@@ -1,7 +1,7 @@
 /**
  * Herramientas MCP del módulo fincas. ToolGateway valida, ejecuta y registra.
  */
-import { CrearFincaSchema, ListarFincasQuerySchema, MCP_TOOLS } from "@duitamacrece/contracts";
+import { CrearFincaSchema, ListarFincasQuerySchema, MCP_TOOLS } from "@agrocore/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 export function registrarFincasTools(gateway: ToolGateway): void {

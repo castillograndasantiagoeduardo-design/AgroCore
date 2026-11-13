@@ -2,7 +2,7 @@
  * Tests del módulo clima con datos sintéticos (sin internet ni MySQL).
  */
 import { assertAlmostEquals, assertEquals } from "@std/assert";
-import { type DomainError, type Paginated, Result } from "@duitamacrece/shared-kernel";
+import { type DomainError, type Paginated, Result } from "@agrocore/shared-kernel";
 import {
   calcularAjusteTemperatura,
   calcularCalendarioMensual,

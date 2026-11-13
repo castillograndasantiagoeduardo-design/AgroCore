@@ -1,7 +1,7 @@
 /**
  * Implementación de IMcpToolLogger sobre logs_mcp_tools.
  */
-import { type EjecucionMcpTool, type IMcpToolLogger, sanitizarDetalles } from "@duitamacrece/core";
+import { type EjecucionMcpTool, type IMcpToolLogger, sanitizarDetalles } from "@agrocore/core";
 import type { Database } from "../connection.ts";
 import { logsMcpToolsTable } from "../schema/index.ts";
 import { dbActual } from "../unit-of-work.ts";

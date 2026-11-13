@@ -4,9 +4,9 @@
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { z } from "zod";
-import type { AppContainer } from "@duitamacrece/composition";
-import type { ContextoSolicitud } from "@duitamacrece/core";
-import type { DomainError, Result } from "@duitamacrece/shared-kernel";
+import type { AppContainer } from "@agrocore/composition";
+import type { ContextoSolicitud } from "@agrocore/core";
+import type { DomainError, Result } from "@agrocore/shared-kernel";
 
 export interface ToolDefinition<S extends z.ZodRawShape, T> {
   name: string;

@@ -1,7 +1,7 @@
 /**
  * Resumen de la finca y del clima usados en la comparación.
  */
-import type { ComparacionRotacionesDto } from "@duitamacrece/contracts";
+import type { ComparacionRotacionesDto } from "@agrocore/contracts";
 import { listaMeses } from "../types/rotaciones.types";
 
 export function ResumenFincaClima({ comparacion }: { comparacion: ComparacionRotacionesDto }) {

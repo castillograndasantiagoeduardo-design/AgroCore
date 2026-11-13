@@ -13,7 +13,7 @@
  * Supuesto: el error de la NASA es parecido en la estación y en la finca (por eso la estación
  * debe estar cerca: ver DISTANCIA_MAX_CALIBRACION_KM).
  */
-import type { FactorCalibracionDto } from "@duitamacrece/contracts";
+import type { FactorCalibracionDto } from "@agrocore/contracts";
 import type { RegistroClimaDiario } from "../value-objects/registro-clima-diario.vo.ts";
 import type { NormalClimatologica } from "../value-objects/normal-climatologica.vo.ts";
 import { calcularCalendarioMensual } from "./calendario-climatico.service.ts";

@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createContainer, loadConfigFromEnv } from "@duitamacrece/composition";
+import { createContainer, loadConfigFromEnv } from "@agrocore/composition";
 import { ToolGateway } from "./src/tool-gateway.ts";
 import { registrarTools } from "./src/tools/index.ts";
 

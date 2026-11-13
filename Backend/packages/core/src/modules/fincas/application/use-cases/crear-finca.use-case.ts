@@ -4,8 +4,8 @@
  * Regla: `cultivoActual`, si se envía, debe ser una clave del catálogo de cultivos
  * (el motor de rotaciones la necesita para aplicar "no repetir familia").
  */
-import { AUDIT_ACTIONS, type CrearFincaInput } from "@duitamacrece/contracts";
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+import { AUDIT_ACTIONS, type CrearFincaInput } from "@agrocore/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import type { ICultivoRepository } from "../../../cultivos/domain/repositories/cultivo.repository.ts";
 import { Finca, type FincaSnapshot } from "../../domain/entities/finca.entity.ts";
 import { FincaCultivoDesconocidoError } from "../../domain/errors/finca.errors.ts";

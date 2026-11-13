@@ -1,4 +1,4 @@
-# 🧱 Capa 5A: `@duitamacrece/api` (Hono)
+# 🧱 Capa 5A: `@agrocore/api` (Hono)
 
 > Ruta: `Backend/apps/api`
 > Antes de modificar esta capa lee este archivo, `context/rules_architecture.md` y el `MODULE.md` del módulo afectado.

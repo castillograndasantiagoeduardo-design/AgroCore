@@ -6,8 +6,8 @@
  *  2. La altitud, si se conoce, debe estar entre 2.300 y 4.000 m.
  *  3. La zona altitudinal (valle / ladera / alta) se DERIVA de la altitud; nadie la escribe a mano.
  */
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
-import type { ZonaAltitudinal } from "@duitamacrece/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
+import type { ZonaAltitudinal } from "@agrocore/contracts";
 import { FincaAltitudInvalidaError, FincaFueraDeAreaError } from "../errors/finca.errors.ts";
 
 /**

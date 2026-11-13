@@ -126,4 +126,4 @@ const { pagina, crear } = useFincas();
 
 Sigue los 7 pasos de `context/ai_development_workflow.md` (contrato → dominio → caso de uso + test → infraestructura → composition → api/mcp → frontend) y actualiza este archivo.
 
-<!-- Paquete: @duitamacrece/core -->
+<!-- Paquete: @agrocore/core -->

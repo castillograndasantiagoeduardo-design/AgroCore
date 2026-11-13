@@ -6,8 +6,8 @@
  * Ventanas resultantes: marzo (semestre 1) y octubre (semestre 2).
  */
 import { assert, assertAlmostEquals, assertEquals, assertNotEquals } from "@std/assert";
-import { ComparacionRotacionesSchema, type PerfilClimaticoDto } from "@duitamacrece/contracts";
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+import { ComparacionRotacionesSchema, type PerfilClimaticoDto } from "@agrocore/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import {
   calcularPuntajes,
   calcularPuntajeTotal,

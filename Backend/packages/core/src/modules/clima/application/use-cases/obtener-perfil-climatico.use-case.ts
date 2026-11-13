@@ -11,8 +11,8 @@
  *
  * Solo lectura: no muta estado, así que no audita (Regla 6).
  */
-import type { CalibracionDto, PerfilClimaticoDto, PerfilClimaticoParams } from "@duitamacrece/contracts";
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+import type { CalibracionDto, PerfilClimaticoDto, PerfilClimaticoParams } from "@agrocore/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import type { IFincaRepository } from "../../../fincas/domain/repositories/finca.repository.ts";
 import { FincaNoEncontradoError } from "../../../fincas/domain/errors/finca.errors.ts";
 import type { RegistroClimaDiario } from "../../domain/value-objects/registro-clima-diario.vo.ts";

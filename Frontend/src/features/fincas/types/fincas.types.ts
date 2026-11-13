@@ -1,7 +1,7 @@
 /**
  * Tipos de vista del módulo fincas.
  */
-import type { FincaDto } from "@duitamacrece/contracts";
+import type { FincaDto } from "@agrocore/contracts";
 
 export interface PaginaFincas {
   items: FincaDto[];

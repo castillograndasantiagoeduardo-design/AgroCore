@@ -12,7 +12,7 @@
  *  - toleranciaHelada: baja = daño con ~0 °C · media = aguanta heladas leves (−2 °C) fuera de floración ·
  *    alta = aguanta −3/−4 °C en estado vegetativo.
  */
-import type { CrearCultivoDatos } from "@duitamacrece/core";
+import type { CrearCultivoDatos } from "@agrocore/core";
 
 const ECOCROP = "FAO ECOCROP (rangos generales de la especie)";
 const REVISAR = "Rangos ajustados al altiplano de Boyacá: validar con agrónomo local";

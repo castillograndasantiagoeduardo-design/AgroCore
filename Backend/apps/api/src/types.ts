@@ -1,5 +1,5 @@
-import type { AppContainer } from "@duitamacrece/composition";
-import type { ContextoSolicitud } from "@duitamacrece/core";
+import type { AppContainer } from "@agrocore/composition";
+import type { ContextoSolicitud } from "@agrocore/core";
 
 export type AppEnv = {
   Variables: {

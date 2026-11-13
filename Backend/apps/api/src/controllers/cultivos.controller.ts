@@ -2,7 +2,7 @@
  * Controlador de cultivos: valida con Zod (forma), invoca el caso de uso del contenedor
  * y delega la respuesta a presentResult. Sin lógica de negocio ni instanciación manual.
  */
-import { ListarCultivosQuerySchema, ObtenerCultivoParamsSchema } from "@duitamacrece/contracts";
+import { ListarCultivosQuerySchema, ObtenerCultivoParamsSchema } from "@agrocore/contracts";
 import { safeHandler } from "../http/safe-handler.ts";
 import { presentResult, presentValidationError } from "../http/present-result.ts";
 

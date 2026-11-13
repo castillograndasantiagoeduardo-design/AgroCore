@@ -1,8 +1,8 @@
 /**
  * Entidad Finca: identidad e invariantes de negocio. Sin dependencias técnicas.
  */
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
-import type { ZonaAltitudinal } from "@duitamacrece/contracts";
+import { DomainError, Result } from "@agrocore/shared-kernel";
+import type { ZonaAltitudinal } from "@agrocore/contracts";
 import { NombreFinca } from "../value-objects/nombre-finca.vo.ts";
 import { UbicacionFinca } from "../value-objects/ubicacion-finca.vo.ts";
 import { FincaYaInactivoError } from "../errors/finca.errors.ts";

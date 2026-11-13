@@ -1,4 +1,4 @@
-# 🧱 Capa 5B: `@duitamacrece/mcp-server`
+# 🧱 Capa 5B: `@agrocore/mcp-server`
 
 > Ruta: `Backend/apps/mcp-server`
 > Antes de modificar esta capa lee este archivo, `context/rules_architecture.md` y el `MODULE.md` del módulo afectado.

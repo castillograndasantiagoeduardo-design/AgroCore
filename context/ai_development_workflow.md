@@ -46,7 +46,7 @@ Antes de dar por terminada una tarea, verifica:
 - [ ] ¿`core` sigue sin importar `drizzle-orm`, `mysql2`, `hono`, `jose`, `argon2`, `nodemailer` ni `Deno.env`?
 - [ ] ¿Todo fallo de negocio retorna `Result.err(new DomainError(...))` en lugar de `throw`?
 - [ ] ¿El caso de uso está registrado en `createContainer` y no hay `new` de repositorios/casos de uso en `apps/`?
-- [ ] ¿Toda entrada externa pasa por un esquema Zod de `@duitamacrece/contracts`?
+- [ ] ¿Toda entrada externa pasa por un esquema Zod de `@agrocore/contracts`?
 - [ ] ¿Los casos de uso que mutan estado inyectan `IAuditor` con `{ antes, despues }`?
 - [ ] ¿Se respetan las tablas append-only (sin `UPDATE`/`DELETE`)?
 - [ ] ¿Pasan `deno task check` y `deno task test`?

@@ -1,4 +1,4 @@
-# 🧱 Capa 3A: `@duitamacrece/database`
+# 🧱 Capa 3A: `@agrocore/database`
 
 > Ruta: `Backend/packages/database`
 > Antes de modificar esta capa lee este archivo, `context/rules_architecture.md` y el `MODULE.md` del módulo afectado.

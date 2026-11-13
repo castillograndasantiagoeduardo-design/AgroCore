@@ -1,7 +1,7 @@
 /**
  * Errores de dominio del módulo fincas (extienden DomainError, nunca se lanzan).
  */
-import { DomainError } from "@duitamacrece/shared-kernel";
+import { DomainError } from "@agrocore/shared-kernel";
 
 export class FincaNoEncontradoError extends DomainError {
   constructor(id: number | null) {

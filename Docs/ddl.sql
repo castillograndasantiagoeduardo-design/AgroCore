@@ -1,6 +1,6 @@
--- DDL MySQL 8 — DuitamaCrece
-CREATE DATABASE IF NOT EXISTS `duitama_crece` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `duitama_crece`;
+-- DDL MySQL 8 — AgroCore
+CREATE DATABASE IF NOT EXISTS `agrocore` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `agrocore`;
 
 -- logs_auditoria: APPEND-ONLY (Regla 7)
 CREATE TABLE IF NOT EXISTS logs_auditoria (

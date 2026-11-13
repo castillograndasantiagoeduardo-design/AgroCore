@@ -4,7 +4,7 @@
  * Hay dos por año: la del primer semestre (candidatos marzo/abril) y la del segundo
  * (candidatos septiembre/octubre). Se elige el primer candidato que el perfil climático marca como lluvioso.
  */
-import type { Temporada, VentanaSiembraDto } from "@duitamacrece/contracts";
+import type { Temporada, VentanaSiembraDto } from "@agrocore/contracts";
 import { NOMBRES_MES } from "../../../clima/domain/services/calendario-climatico.service.ts";
 
 /** Meses candidatos por semestre del año, en orden de preferencia. */

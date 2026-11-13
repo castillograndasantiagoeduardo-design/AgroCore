@@ -1,4 +1,4 @@
-# 🧱 Capa 2: `@duitamacrece/core`
+# 🧱 Capa 2: `@agrocore/core`
 
 > Ruta: `Backend/packages/core`
 > Antes de modificar esta capa lee este archivo, `context/rules_architecture.md` y el `MODULE.md` del módulo afectado.

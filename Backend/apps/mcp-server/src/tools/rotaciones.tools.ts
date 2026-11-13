@@ -1,7 +1,7 @@
 /**
  * Herramientas MCP del módulo rotaciones. ToolGateway valida, ejecuta y registra.
  */
-import { CompararRotacionesSchema, MCP_TOOLS } from "@duitamacrece/contracts";
+import { CompararRotacionesSchema, MCP_TOOLS } from "@agrocore/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 export function registrarRotacionesTools(gateway: ToolGateway): void {

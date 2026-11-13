@@ -1,4 +1,4 @@
-# 🧱 Capa 3B: `@duitamacrece/platform`
+# 🧱 Capa 3B: `@agrocore/platform`
 
 > Ruta: `Backend/packages/platform`
 > Antes de modificar esta capa lee este archivo, `context/rules_architecture.md` y el `MODULE.md` del módulo afectado.

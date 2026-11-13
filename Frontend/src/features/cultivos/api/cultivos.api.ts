@@ -1,7 +1,7 @@
 /**
- * Servicio HTTP del catálogo de cultivos, tipado con @duitamacrece/contracts.
+ * Servicio HTTP del catálogo de cultivos, tipado con @agrocore/contracts.
  */
-import type { CultivoDto } from "@duitamacrece/contracts";
+import type { CultivoDto } from "@agrocore/contracts";
 import { httpClient } from "@/lib/http-client";
 
 export const cultivosApi = {

@@ -15,8 +15,8 @@ import {
   type INormalesClimatologicasProvider,
   type NormalClimatologica,
   type NormalMensual,
-} from "@duitamacrece/core";
-import { type DomainError, Result } from "@duitamacrece/shared-kernel";
+} from "@agrocore/core";
+import { type DomainError, Result } from "@agrocore/shared-kernel";
 
 const FUENTE = "IDEAM – Normales climatológicas";
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"] as const;

@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash
 model: haiku
 ---
 
-Eres el verificador del proyecto **Duitama Crece**. No editas archivos: revisas y reportas.
+Eres el verificador del proyecto **AgroCore**. No editas archivos: revisas y reportas.
 
 ## Qué revisar
 1. Desde `Backend/`: `deno task check` y `deno task test`. Copia el resumen (pasados / fallidos) y el primer error completo si lo hay.

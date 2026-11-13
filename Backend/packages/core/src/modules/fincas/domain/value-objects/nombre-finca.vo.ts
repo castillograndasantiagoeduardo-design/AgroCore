@@ -1,7 +1,7 @@
 /**
  * Value Object inmutable: nombre de finca.
  */
-import { DomainError, Result } from "@duitamacrece/shared-kernel";
+import { DomainError, Result } from "@agrocore/shared-kernel";
 import { FincaNombreInvalidoError } from "../errors/finca.errors.ts";
 
 export class NombreFinca {

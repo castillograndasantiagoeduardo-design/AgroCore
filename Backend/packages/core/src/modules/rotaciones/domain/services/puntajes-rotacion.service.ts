@@ -2,7 +2,7 @@
  * Puntajes 0–100 de una secuencia por prioridad (agua, suelo, plagas, forraje, ingreso) y puntaje total ponderado.
  * Servicio de dominio puro.
  */
-import type { Nivel, PrioridadesRotacion, PuntajesRotacionDto, ValorForrajero } from "@duitamacrece/contracts";
+import type { Nivel, PrioridadesRotacion, PuntajesRotacionDto, ValorForrajero } from "@agrocore/contracts";
 import type { Cultivo } from "../../../cultivos/domain/entities/cultivo.entity.ts";
 import type { PasoEvaluado } from "./evaluar-paso.service.ts";
 import { puntajeIngresoReferencia } from "./referencias-ingreso.ts";

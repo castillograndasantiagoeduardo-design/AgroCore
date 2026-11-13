@@ -1,4 +1,4 @@
-# 🧱 Capa 0: `@duitamacrece/shared-kernel`
+# 🧱 Capa 0: `@agrocore/shared-kernel`
 
 > Ruta: `Backend/packages/shared-kernel`
 > Antes de modificar esta capa lee este archivo, `context/rules_architecture.md` y el `MODULE.md` del módulo afectado.
@@ -36,7 +36,7 @@ Es el cimiento más interno del sistema. **No depende de ningún paquete ni libr
 ## 🛠️ Forma de Uso
 
 ```typescript
-import { Result, DomainError } from '@duitamacrece/shared-kernel';
+import { Result, DomainError } from '@agrocore/shared-kernel';
 
 if (stockActual < cantidadSolicitada) {
   return Result.err(new DomainError('STOCK_INSUFICIENTE', 'No hay unidades suficientes en la sucursal.'));

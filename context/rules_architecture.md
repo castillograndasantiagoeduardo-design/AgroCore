@@ -1,13 +1,13 @@
-# 🏛️ Reglas de Arquitectura Limpia — DuitamaCrece
+# 🏛️ Reglas de Arquitectura Limpia — AgroCore
 
 > **Documento de Referencia Arquitectónica (Clean Architecture + Domain-Driven Design)**
-> Describe cómo está organizado el monorepo de **DuitamaCrece**, cómo interactúa cada capa en tiempo de ejecución y cuáles son las reglas obligatorias que preservan la pureza del dominio.
+> Describe cómo está organizado el monorepo de **AgroCore**, cómo interactúa cada capa en tiempo de ejecución y cuáles son las reglas obligatorias que preservan la pureza del dominio.
 
 ---
 
 ## 1. Filosofía Arquitectónica
 
-**DuitamaCrece** está diseñado bajo los principios de **Clean Architecture (Arquitectura Limpia)**, **Arquitectura Hexagonal (Puertos y Adaptadores)** y **Domain-Driven Design (DDD) táctico**.
+**AgroCore** está diseñado bajo los principios de **Clean Architecture (Arquitectura Limpia)**, **Arquitectura Hexagonal (Puertos y Adaptadores)** y **Domain-Driven Design (DDD) táctico**.
 
 El objetivo central es **aislar las reglas de negocio** de cualquier detalle técnico externo (base de datos MySQL, framework HTTP Hono, protocolo MCP de IA o interfaz Next.js).
 
@@ -20,22 +20,22 @@ flowchart TB
     end
 
     subgraph Wiring ["Capa de Ensamblaje (Inyección de Dependencias)"]
-        COMP["Composition Root (@duitamacrece/composition)"]
+        COMP["Composition Root (@agrocore/composition)"]
     end
 
     subgraph Infra ["Capa de Infraestructura (Adaptadores Secundarios)"]
-        DB["Persistencia (@duitamacrece/database - Drizzle + MySQL 8)"]
-        PLAT["Servicios Técnicos (@duitamacrece/platform - NASA POWER, ORNL, Overpass, ESC/POS)"]
+        DB["Persistencia (@agrocore/database - Drizzle + MySQL 8)"]
+        PLAT["Servicios Técnicos (@agrocore/platform - NASA POWER, ORNL, Overpass, ESC/POS)"]
     end
 
     subgraph CoreDomain ["Núcleo del Sistema (Dominio y Aplicación)"]
-        APP["Casos de Uso y Puertos (@duitamacrece/core - Application)"]
-        DOM["Entidades, Value Objects y Reglas (@duitamacrece/core - Domain)"]
-        SK["Primitivas Base (@duitamacrece/shared-kernel - Result, DomainError)"]
+        APP["Casos de Uso y Puertos (@agrocore/core - Application)"]
+        DOM["Entidades, Value Objects y Reglas (@agrocore/core - Domain)"]
+        SK["Primitivas Base (@agrocore/shared-kernel - Result, DomainError)"]
     end
 
     subgraph SharedContracts ["Frontera de Datos Compartida"]
-        ZOD["Contratos y Esquemas (@duitamacrece/contracts - Zod)"]
+        ZOD["Contratos y Esquemas (@agrocore/contracts - Zod)"]
     end
 
     UI -->|Peticiones HTTP JSON| HTTP
@@ -63,10 +63,10 @@ sequenceDiagram
     autonumber
     actor Cliente as Cliente (Frontend / Agente IA)
     participant Entry as Adaptador Primario (Hono API / MCP Tool)
-    participant Zod as @duitamacrece/contracts (Zod)
-    participant UC as Caso de Uso (@duitamacrece/core)
-    participant Repo as Repositorio (@duitamacrece/database)
-    participant Audit as IAuditor (@duitamacrece/database)
+    participant Zod as @agrocore/contracts (Zod)
+    participant UC as Caso de Uso (@agrocore/core)
+    participant Repo as Repositorio (@agrocore/database)
+    participant Audit as IAuditor (@agrocore/database)
 
     Cliente->>Entry: Petición (HTTP Request / MCP CallTool)
     Entry->>Entry: Arma ContextoSolicitud (origen + IP) y aplica límite por IP
@@ -127,7 +127,7 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 ---
 
 ### Regla 5: Validación Obligatoria en la Frontera con Zod
-* Ningún dato proveniente del exterior (body JSON, query params, parámetros de rutas o argumentos de herramientas MCP) puede entrar a un caso de uso sin pasar primero por un esquema Zod de `@duitamacrece/contracts`.
+* Ningún dato proveniente del exterior (body JSON, query params, parámetros de rutas o argumentos de herramientas MCP) puede entrar a un caso de uso sin pasar primero por un esquema Zod de `@agrocore/contracts`.
 * Tampoco se deben duplicar validaciones de negocio complejas en los controladores: el controlador valida la **estructura** con Zod y el caso de uso valida las **invariantes del negocio**.
 
 ---

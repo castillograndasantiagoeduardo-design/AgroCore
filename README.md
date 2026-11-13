@@ -27,7 +27,7 @@ El proyecto sigue estrictamente los principios de **Arquitectura Limpia**, **Pue
 ```text
 AgroCore/
 ├── Shared/
-│   └── contracts/              # @duitamacrece/contracts (Zod, Roles, Permisos RBAC)
+│   └── contracts/              # @agrocore/contracts (Zod, Roles, Permisos RBAC)
 ├── Backend/                    # Workspace Deno 2.x
 │   ├── packages/
 │   │   ├── shared-kernel/      # Primitivas (Result<T,E>, DomainError, Pagination)
@@ -68,7 +68,7 @@ AgroCore/
    ```
 
 3. **Base de Datos:**
-   Ejecuta el script `Docs/ddl.sql` en MySQL para crear la base de datos `duitama_crece` y sus tablas.
+   Ejecuta el script `Docs/ddl.sql` en MySQL para crear la base de datos `agrocore` y sus tablas.
 
 4. **Instalar dependencias del Frontend:**
    ```bash

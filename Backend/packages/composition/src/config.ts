@@ -1,7 +1,7 @@
 /**
  * Configuración del contenedor leída del entorno (Fail-Fast).
  */
-import type { DatabaseConfig } from "@duitamacrece/database";
+import type { DatabaseConfig } from "@agrocore/database";
 
 export interface AppConfig {
   db: DatabaseConfig;
