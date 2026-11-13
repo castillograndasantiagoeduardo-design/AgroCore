@@ -5,7 +5,7 @@
  * El motor SUGIERE Y EXPLICA; no reemplaza el criterio del agricultor ni del agrónomo.
  */
 import { z } from "zod";
-import { ClaveCultivoSchema, FamiliaBotanicaSchema } from "./cultivos.schema.ts";
+import { AptitudClimaSchema, ClaveCultivoSchema, FamiliaBotanicaSchema } from "./cultivos.schema.ts";
 import { ClasificacionClimaticaSchema } from "./clima.schema.ts";
 
 // ---------------------------------------------------------------------------
@@ -31,7 +31,7 @@ export const REGLAS_ROTACION = [
   "leguminosa_cada_dos_anios", // al menos un cultivo que fije nitrógeno en los 4 semestres
   "siembra_inicio_lluvias", // las siembras caen en las ventanas de inicio de lluvias
   "evitar_helada", // el ciclo no cruza meses de helada si el cultivo no la tolera
-  "altitud_apta", // el cultivo es apto a la altitud de la finca
+  "temperatura_apta", // la temperatura media del ciclo está en el rango del cultivo (FAO ECOCROP)
   "agua_suficiente", // la lluvia del ciclo (o el riego) cubre el mínimo del cultivo
   "ciclo_cabe_en_ventana", // el cultivo se cosecha antes de la siguiente siembra
 ] as const;
@@ -107,6 +107,9 @@ export const PasoRotacionSchema = z.object({
   deficitAguaMm: z.number(),
   /** true si hay déficit y por eso el cultivo depende del riego. */
   requiereRiego: z.boolean(),
+  /** Temperatura media de los meses del ciclo (°C) y aptitud del cultivo a esa temperatura. */
+  tempMediaCicloC: z.number(),
+  aptitudClima: AptitudClimaSchema,
   /** Meses del ciclo que son de riesgo de helada. */
   mesesHeladaEnCiclo: z.array(MesSchema),
   riesgoHelada: RiesgoHeladaSchema,

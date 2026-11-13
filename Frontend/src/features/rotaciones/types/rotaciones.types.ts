@@ -16,7 +16,7 @@ export const ETIQUETA_REGLA: Record<ReglaRotacion, string> = {
   leguminosa_cada_dos_anios: "Incluye una leguminosa (fija nitrógeno)",
   siembra_inicio_lluvias: "Siembra al inicio de lluvias",
   evitar_helada: "Evita la helada",
-  altitud_apta: "Cultivos aptos a la altitud",
+  temperatura_apta: "Temperatura del ciclo apta",
   agua_suficiente: "Agua suficiente (lluvia o riego)",
   ciclo_cabe_en_ventana: "El ciclo cabe antes de la siguiente siembra",
 };

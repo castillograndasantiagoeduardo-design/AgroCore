@@ -1,269 +1,90 @@
 /**
- * Catálogo de cultivos de clima frío para Duitama (Boyacá). SOLO DATOS, sin lógica.
+ * Catálogo GLOBAL de cultivos (51): cereales, pseudocereales, leguminosas, tubérculos, hortalizas,
+ * oleaginosas, industriales, forrajes y coberturas / abonos verdes. SOLO DATOS, sin lógica.
  *
- * ⚠️ Son valores de REFERENCIA tomados de fichas generales (FAO ECOCROP) y ajustados al altiplano
- * boyacense (2.300–3.500 m). Deben revisarse con un agrónomo local (UMATA / AGROSAVIA) antes de
- * usarlos para decisiones reales. Cada cultivo pasa por Cultivo.crear() al arrancar: si un rango
- * queda incoherente, la API no arranca (ver catalogo-cultivos-en-memoria.ts).
+ * Origen: informe del subagente `investigador-cultivos` (2026-11-12), con rangos al estilo FAO ECOCROP
+ * (temperatura media óptima y absoluta del ciclo, lluvia anual óptima, pH, textura) complementados con
+ * FAO, CIP, CIAT, ICRISAT, ICARDA, IITA, SARE, UC Davis, Iowa State, Feedipedia y literatura andina.
+ *
+ * ⚠️ IMPORTANTE (honestidad de los datos): en esa sesión los investigadores NO pudieron consultar las fuentes
+ * en línea; los valores salen de su conocimiento de esas fichas. Por eso ninguna ficha tiene confianza "alta"
+ * y todas llevan el aviso AVISO_VERIFICACION. Antes de usarlos para decisiones reales: contrastar con
+ * https://ecocrop.apps.fao.org y validar con un agrónomo local.
+ *
+ * Cada cultivo pasa por Cultivo.crear() al arrancar: si un rango queda incoherente, la API no arranca
+ * (ver catalogo-cultivos-en-memoria.ts).
  *
  * Convenciones:
- *  - cicloDias: siembra → cosecha (forrajes: siembra → primer corte).
+ *  - cicloDias: siembra → cosecha (forrajes: → primer corte; coberturas: → incorporación).
+ *  - temperaturaOptimaC / temperaturaAbsolutaC: temperatura MEDIA del aire durante el ciclo.
  *  - aguaCicloMm: lluvia + riego durante el ciclo; para perennes, por año.
- *  - toleranciaHelada: baja = daño con ~0 °C · media = aguanta heladas leves (−2 °C) fuera de floración ·
- *    alta = aguanta −3/−4 °C en estado vegetativo.
+ *  - toleranciaHelada: baja = daño ~0 °C · media = aguanta −2 °C · alta = aguanta −4 °C o menos (vegetativo).
+ *  - toleranciaCalor: baja = sufre con Tmáx > 30 °C · alta = tolera > 35 °C.
  */
 import type { CrearCultivoDatos } from "@agrocore/core";
 
-const ECOCROP = "FAO ECOCROP (rangos generales de la especie)";
-const REVISAR = "Rangos ajustados al altiplano de Boyacá: validar con agrónomo local";
+export const AVISO_VERIFICACION =
+  "Valores de referencia sin verificar en línea (2026-11-12): contrastar con FAO ECOCROP y validar con agrónomo local";
 
-export const CATALOGO_CULTIVOS: readonly CrearCultivoDatos[] = [
-  {
-    clave: "papa",
-    nombre: "Papa",
-    nombreCientifico: "Solanum tuberosum",
-    familias: ["solanaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [120, 180],
-    altitudM: [2000, 3500],
-    altitudOptimaM: [2500, 3000],
-    toleranciaHelada: "baja",
-    necesidadAgua: "alta",
-    aguaCicloMm: [500, 750],
-    fijaNitrogeno: false,
-    coberturaSuelo: "media",
-    valorForrajero: "bajo",
-    notas: [
-      "Cultivo principal de Duitama; muy exigente en nutrientes.",
-      "No sembrar papa tras papa: acumula gusano blanco, polilla guatemalteca y Phytophthora.",
-      "Las heladas en floración y llenado de tubérculo causan las mayores pérdidas.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "arveja",
-    nombre: "Arveja",
-    nombreCientifico: "Pisum sativum",
-    familias: ["fabaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [100, 150],
-    altitudM: [2000, 3200],
-    altitudOptimaM: [2400, 2900],
-    toleranciaHelada: "media",
-    necesidadAgua: "media",
-    aguaCicloMm: [350, 500],
-    fijaNitrogeno: true,
-    coberturaSuelo: "media",
-    valorForrajero: "medio",
-    notas: [
-      "Leguminosa clásica después de papa: aprovecha el fertilizante residual y aporta nitrógeno.",
-      "La flor y la vaina tierna son sensibles a helada aunque la planta la resista.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "haba",
-    nombre: "Haba",
-    nombreCientifico: "Vicia faba",
-    familias: ["fabaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [150, 210],
-    altitudM: [2400, 3500],
-    altitudOptimaM: [2600, 3200],
-    toleranciaHelada: "alta",
-    necesidadAgua: "media",
-    aguaCicloMm: [400, 650],
-    fijaNitrogeno: true,
-    coberturaSuelo: "media",
-    valorForrajero: "medio",
-    notas: [
-      "La leguminosa más tolerante al frío del catálogo; buena opción en ladera alta.",
-      "El ciclo largo (grano seco) ocupa el lote casi todo un semestre.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "tarwi",
-    nombre: "Tarwi (chocho)",
-    nombreCientifico: "Lupinus mutabilis",
-    familias: ["fabaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [180, 240],
-    altitudM: [2500, 3800],
-    altitudOptimaM: [2800, 3500],
-    toleranciaHelada: "media",
-    necesidadAgua: "baja",
-    aguaCicloMm: [350, 600],
-    fijaNitrogeno: true,
-    coberturaSuelo: "media",
-    valorForrajero: "ninguno",
-    notas: [
-      "Alta fijación de nitrógeno y raíz profunda: recupera suelos cansados.",
-      "El grano tiene alcaloides amargos: hay que desamargarlo y no sirve como forraje directo.",
-      "Cultivo poco común en Duitama: mercado por desarrollar.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "cebada",
-    nombre: "Cebada",
-    nombreCientifico: "Hordeum vulgare",
-    familias: ["poaceas"],
-    uso: "doble_proposito",
-    perenne: false,
-    cicloDias: [120, 160],
-    altitudM: [2200, 3400],
-    altitudOptimaM: [2500, 3000],
-    toleranciaHelada: "alta",
-    necesidadAgua: "baja",
-    aguaCicloMm: [300, 500],
-    fijaNitrogeno: false,
-    coberturaSuelo: "alta",
-    valorForrajero: "medio",
-    notas: [
-      "Cereal tradicional de Boyacá; rompe el ciclo de plagas y enfermedades de la papa.",
-      "Siembra densa: protege bien el suelo y deja paja para el ganado.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "trigo",
-    nombre: "Trigo",
-    nombreCientifico: "Triticum aestivum",
-    familias: ["poaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [150, 190],
-    altitudM: [2200, 3100],
-    altitudOptimaM: [2400, 2800],
-    toleranciaHelada: "media",
-    necesidadAgua: "media",
-    aguaCicloMm: [400, 650],
-    fijaNitrogeno: false,
-    coberturaSuelo: "alta",
-    valorForrajero: "bajo",
-    notas: [
-      "La lluvia en cosecha favorece el brotamiento del grano en la espiga.",
-      "Las heladas en floración reducen el llenado del grano.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "avena_vicia",
-    nombre: "Avena + vicia (forraje)",
-    nombreCientifico: "Avena sativa + Vicia sativa",
-    familias: ["poaceas", "fabaceas"],
-    uso: "forraje",
-    perenne: false,
-    cicloDias: [100, 130],
-    altitudM: [2200, 3500],
-    altitudOptimaM: [2500, 3200],
-    toleranciaHelada: "alta",
-    necesidadAgua: "media",
-    aguaCicloMm: [350, 500],
-    fijaNitrogeno: true,
-    coberturaSuelo: "alta",
-    valorForrajero: "alto",
-    notas: [
-      "Asociación forrajera para lechería: la avena da volumen y la vicia proteína y nitrógeno.",
-      "Se corta al inicio del grano lechoso para heno o ensilaje.",
-      "Cultivo de cobertura recomendado entre dos ciclos de papa.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "quinua",
-    nombre: "Quinua",
-    nombreCientifico: "Chenopodium quinoa",
-    familias: ["amarantaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [150, 190],
-    altitudM: [2300, 3600],
-    altitudOptimaM: [2500, 3200],
-    toleranciaHelada: "alta",
-    necesidadAgua: "baja",
-    aguaCicloMm: [300, 500],
-    fijaNitrogeno: false,
-    coberturaSuelo: "media",
-    valorForrajero: "bajo",
-    notas: [
-      "Familia distinta a todas las demás del catálogo: diversifica la rotación.",
-      "Resiste sequía y heladas en estado vegetativo, no en floración.",
-      "La lluvia en madurez puede hacer germinar el grano en la panoja.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "maiz",
-    nombre: "Maíz de clima frío",
-    nombreCientifico: "Zea mays",
-    familias: ["poaceas"],
-    uso: "doble_proposito",
-    perenne: false,
-    cicloDias: [180, 270],
-    altitudM: [1800, 2900],
-    altitudOptimaM: [2200, 2700],
-    toleranciaHelada: "baja",
-    necesidadAgua: "media",
-    aguaCicloMm: [500, 800],
-    fijaNitrogeno: false,
-    coberturaSuelo: "baja",
-    valorForrajero: "medio",
-    notas: [
-      "Variedades de clima frío con ciclo muy largo; aptas sobre todo en el valle.",
-      "Surcos anchos: deja el suelo expuesto los primeros meses (mala opción en pendiente).",
-      "Doble propósito: choclo / grano y ensilaje o rastrojo para el ganado.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "cebolla_bulbo",
-    nombre: "Cebolla de bulbo (cabezona)",
-    nombreCientifico: "Allium cepa",
-    familias: ["amarilidaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [120, 160],
-    altitudM: [1500, 2900],
-    altitudOptimaM: [2000, 2700],
-    toleranciaHelada: "media",
-    necesidadAgua: "alta",
-    aguaCicloMm: [350, 550],
-    fijaNitrogeno: false,
-    coberturaSuelo: "baja",
-    valorForrajero: "ninguno",
-    notas: [
-      "Raíz superficial: necesita humedad constante, en la práctica requiere riego.",
-      "Muy poca cobertura del suelo; no recomendable en laderas con pendiente.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
-  {
-    clave: "raigras_trebol",
-    nombre: "Pradera raigrás + trébol blanco",
-    nombreCientifico: "Lolium spp. + Trifolium repens",
-    familias: ["poaceas", "fabaceas"],
-    uso: "forraje",
-    perenne: true,
-    cicloDias: [90, 120],
-    altitudM: [2200, 3300],
-    altitudOptimaM: [2500, 3000],
-    toleranciaHelada: "media",
-    necesidadAgua: "alta",
-    aguaCicloMm: [800, 1200],
-    fijaNitrogeno: true,
-    coberturaSuelo: "alta",
-    valorForrajero: "alto",
-    notas: [
-      "Pradera mejorada para lechería; dura varios años (el ciclo indicado es hasta el primer pastoreo).",
-      "El agua indicada es anual: en el verano de diciembre a febrero baja la producción sin riego.",
-      "El trébol aporta nitrógeno; el kikuyo (Cenchrus clandestinus) tiende a invadir la pradera.",
-    ],
-    fuentes: [ECOCROP, REVISAR],
-  },
+const BASE: readonly CrearCultivoDatos[] = [
+  // ───────────────────────────── Grupo A: cereales, pseudocereales, leguminosas, coberturas ─────────────────────────────
+  {"clave":"maiz","nombre":"Maíz","nombreCientifico":"Zea mays","familias":["poaceas"],"uso":"doble_proposito","grupo":"cereal","perenne":false,"cicloDias":[90,180],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[18,33],"temperaturaAbsolutaC":[10,47],"lluviaAnualOptimaMm":[600,1200],"aguaCicloMm":[500,800],"toleranciaHelada":"baja","toleranciaCalor":"media","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,7.5],"texturas":["franca","arenosa","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"alto","plagasClave":["gusano cogollero (Spodoptera frugiperda)","barrenadores del tallo (Diatraea, Ostrinia)","roya del maíz (Puccinia sorghi)","pudrición de mazorca (Fusarium)"],"notas":["Ciclo depende de la altitud: en clima frío andino puede superar 180 d. Valores globales de la especie.","Cultivo muy demandante de N; buen sucesor de leguminosas."],"fuentes":["FAO ECOCROP: Zea mays","FAO, Crop Water Information: Maize"],"confianza":"media"},
+  {"clave":"trigo","nombre":"Trigo","nombreCientifico":"Triticum aestivum","familias":["poaceas"],"uso":"alimento","grupo":"cereal","perenne":false,"cicloDias":[100,250],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[10,24],"temperaturaAbsolutaC":[4,32],"lluviaAnualOptimaMm":[450,900],"aguaCicloMm":[350,650],"toleranciaHelada":"alta","toleranciaCalor":"media","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"bajo","plagasClave":["royas (Puccinia striiformis, P. triticina)","mal del pie (Gaeumannomyces graminis)","fusariosis de la espiga (Fusarium graminearum)","pulgones (Sitobion, Rhopalosiphum)"],"notas":["Un registro: hay variedades de invierno (ciclo 200-250 d, requieren vernalización) y de primavera (100-150 d).","Los cereales sucesivos aumentan el mal del pie y las royas; la rotación con leguminosas u oleaginosas los corta."],"fuentes":["FAO ECOCROP: Triticum aestivum","FAO, Crop Water Information: Wheat"],"confianza":"media"},
+  {"clave":"cebada","nombre":"Cebada","nombreCientifico":"Hordeum vulgare","familias":["poaceas"],"uso":"doble_proposito","grupo":"cereal","perenne":false,"cicloDias":[70,200],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[12,25],"temperaturaAbsolutaC":[5,30],"lluviaAnualOptimaMm":[400,900],"aguaCicloMm":[300,600],"toleranciaHelada":"media","toleranciaCalor":"media","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[6.0,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"medio","plagasClave":["roya amarilla (Puccinia striiformis f. sp. hordei)","escaldadura (Rhynchosporium secalis)","mancha en red (Pyrenophora teres)","pulgones y virus del enanismo amarillo (BYDV)"],"notas":["Un registro: variedades de invierno y de primavera (ciclo de primavera en torno a 70-130 d).","Sensible a suelos ácidos (pH < 5.5) y al encharcamiento; usos maltero, grano y forraje."],"fuentes":["FAO ECOCROP: Hordeum vulgare","FAO, Crop Water Information: Barley"],"confianza":"media"},
+  {"clave":"avena","nombre":"Avena","nombreCientifico":"Avena sativa","familias":["poaceas"],"uso":"doble_proposito","grupo":"cereal","perenne":false,"cicloDias":[90,200],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[12,24],"temperaturaAbsolutaC":[4,30],"lluviaAnualOptimaMm":[400,1000],"aguaCicloMm":[350,600],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,7.0],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"alto","plagasClave":["roya de la corona (Puccinia coronata)","carbón (Ustilago avenae)","pulgones y BYDV","nematodo del quiste de los cereales (Heterodera avenae)"],"notas":["Tolera suelos más ácidos que trigo y cebada; sufre con calor en el llenado de grano.","Útil como cultivo de cobertura de invierno o forraje."],"fuentes":["FAO ECOCROP: Avena sativa","University of Minnesota Extension / Iowa State Univ. Extension: Oat production (fichas generales)"],"confianza":"media"},
+  {"clave":"centeno","nombre":"Centeno","nombreCientifico":"Secale cereale","familias":["poaceas"],"uso":"doble_proposito","grupo":"cereal","perenne":false,"cicloDias":[90,250],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[12,22],"temperaturaAbsolutaC":[3,30],"lluviaAnualOptimaMm":[400,900],"aguaCicloMm":[300,550],"toleranciaHelada":"alta","toleranciaCalor":"media","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.0,7.5],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"medio","plagasClave":["cornezuelo (Claviceps purpurea)","roya parda (Puccinia recondita)","mal del pie (Gaeumannomyces)","pulgones"],"notas":["El cereal más tolerante al frío y a suelos pobres y ácidos; muy usado como cobertura invernal (SARE).","Efecto alelopático sobre malezas; puede inmovilizar N al incorporarlo tardío."],"fuentes":["FAO ECOCROP: Secale cereale","SARE, Managing Cover Crops Profitably (3rd ed.): Cereal rye"],"confianza":"media"},
+  {"clave":"arroz","nombre":"Arroz","nombreCientifico":"Oryza sativa","familias":["poaceas"],"uso":"alimento","grupo":"cereal","perenne":false,"cicloDias":[90,200],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,30],"temperaturaAbsolutaC":[10,36],"lluviaAnualOptimaMm":[1000,2000],"aguaCicloMm":[900,1500],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"baja","necesidadAgua":"alta","phOptimo":[5.5,7.0],"texturas":["arcillosa","franca"],"profundidadRaiz":"superficial","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["piricularia (Pyricularia oryzae)","sogata (Tagosodes orizicolus)","barrenadores del tallo","arroz maleza / rastrojo"],"notas":["Requerimiento de agua para arroz inundado puede superar 1500 mm por ciclo; el de secano es menor.","Sensible a temperaturas < 15 °C en floración."],"fuentes":["FAO ECOCROP: Oryza sativa","FAO, Crop Water Information: Rice","IRRI Rice Knowledge Bank"],"confianza":"media"},
+  {"clave":"sorgo","nombre":"Sorgo","nombreCientifico":"Sorghum bicolor","familias":["poaceas"],"uso":"doble_proposito","grupo":"cereal","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,32],"temperaturaAbsolutaC":[8,40],"lluviaAnualOptimaMm":[500,1000],"aguaCicloMm":[400,700],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.5,7.5],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"alto","plagasClave":["mosquita del sorgo (Stenodiplosis sorghicola)","pulgón amarillo (Melanaphis sacchari)","carbón de la panícula","Striga (parásita, África)"],"notas":["Forrajeros (sudán/sorgo-sudán) pueden requerir precaución por prusiatos (HCN) en rebrote joven.","Poco apto sobre 2.500 m por frío."],"fuentes":["FAO ECOCROP: Sorghum bicolor","FAO, Crop Water Information: Sorghum","ICRISAT: Sorghum"],"confianza":"media"},
+  {"clave":"mijo_perla","nombre":"Mijo perla","nombreCientifico":"Pennisetum glaucum","familias":["poaceas"],"uso":"doble_proposito","grupo":"cereal","perenne":false,"cicloDias":[60,120],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[25,35],"temperaturaAbsolutaC":[12,42],"lluviaAnualOptimaMm":[300,750],"aguaCicloMm":[250,500],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.5,7.5],"texturas":["arenosa","franca"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"alto","plagasClave":["mildiú velloso (Sclerospora graminicola)","ergot / cornezuelo (Claviceps fusiformis)","carbón del mijo (Moesziomyces penicillariae)","Striga (África)"],"notas":["Cultivo de zonas áridas y semiáridas, tolera suelos arenosos y pobres.","Rangos de ciclo y agua de fichas generales ICRISAT; revisar variedad."],"fuentes":["FAO ECOCROP: Pennisetum glaucum","ICRISAT: Pearl millet"],"confianza":"media"},
+  {"clave":"amaranto","nombre":"Amaranto","nombreCientifico":"Amaranthus caudatus / A. cruentus / A. hypochondriacus","familias":["amarantaceas"],"uso":"alimento","grupo":"pseudocereal","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[18,27],"temperaturaAbsolutaC":[10,35],"lluviaAnualOptimaMm":[500,1000],"aguaCicloMm":[300,600],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[6.0,7.5],"texturas":["franca","arenosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"medio","plagasClave":["gusanos cortadores (Agrotis)","pulgones","chinche Lygus","damping off (Pythium)"],"notas":["Valores aproximados: varias especies con rangos distintos; no se ubicó ficha única verificable.","Sensible a helada, especialmente en plántula."],"fuentes":["FAO ECOCROP: Amaranthus caudatus, A. cruentus","National Research Council, Lost Crops of the Incas (1989) y Lost Crops of Africa"],"confianza":"baja"},
+  {"clave":"quinua","nombre":"Quinua","nombreCientifico":"Chenopodium quinoa","familias":["amarantaceas"],"uso":"alimento","grupo":"pseudocereal","perenne":false,"cicloDias":[120,180],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[8,20],"temperaturaAbsolutaC":[3,30],"lluviaAnualOptimaMm":[400,800],"aguaCicloMm":[300,500],"toleranciaHelada":"media","toleranciaCalor":"media","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[6.0,7.5],"texturas":["franca","arenosa"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["mildiú (Peronospora variabilis)","polilla de la quinua (Eurysacca spp.)","gusanos cortadores","saponinas / aves en grano maduro (manejo)"],"notas":["Tolera helada media (hasta -2 °C en fase vegetativa); el calor > 32 °C en floración reduce la fertilidad del polen.","Existen ecotipos de valle, altiplano y costa con rangos distintos."],"fuentes":["FAO ECOCROP: Chenopodium quinoa","FAO/CIP/PROINPA: Quinua, 2011","FAO: State of the Art Report on Quinoa (2013)"],"confianza":"media"},
+  {"clave":"trigo_sarraceno","nombre":"Trigo sarraceno","nombreCientifico":"Fagopyrum esculentum","familias":["poligonaceas"],"uso":"doble_proposito","grupo":"pseudocereal","perenne":false,"cicloDias":[60,120],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,25],"temperaturaAbsolutaC":[8,30],"lluviaAnualOptimaMm":[500,1000],"aguaCicloMm":[250,500],"toleranciaHelada":"baja","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[5.0,7.0],"texturas":["franca","arenosa"],"profundidadRaiz":"superficial","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"bajo","plagasClave":["pocas plagas serias","pulgones","trips","pudrición de raíz (Rhizoctonia)"],"notas":["Cobertura de ciclo muy corto (30-45 d hasta floración, SARE); supresor de malezas y movilizador de fósforo.","Sensible a helada y a calor en floración (> 30 °C); no tolera encharcamiento."],"fuentes":["FAO ECOCROP: Fagopyrum esculentum","SARE, Managing Cover Crops Profitably (3rd ed.): Buckwheat"],"confianza":"media"},
+  {"clave":"frijol","nombre":"Frijol","nombreCientifico":"Phaseolus vulgaris","familias":["fabaceas"],"uso":"alimento","grupo":"leguminosa","perenne":false,"cicloDias":[60,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[16,24],"temperaturaAbsolutaC":[10,30],"lluviaAnualOptimaMm":[500,1500],"aguaCicloMm":[300,500],"toleranciaHelada":"baja","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["franca","arenosa"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["antracnosis (Colletotrichum lindemuthianum)","mosca blanca y virus del mosaico dorado","pudrición radical (Fusarium, Rhizoctonia)","picudo/gorgojos de almacén (Acanthoscelides obtectus)"],"notas":["Ciclo: arbustivo 60-100 d, voluble 120-150 d. El nivel de fijación de N es modesto comparado con otras leguminosas.","Muy sensible a encharcamiento y salinidad."],"fuentes":["FAO ECOCROP: Phaseolus vulgaris","CIAT: Bean (ficha general)","AGROSAVIA: Fríjol (fichas técnicas)"],"confianza":"media"},
+  {"clave":"arveja","nombre":"Arveja","nombreCientifico":"Pisum sativum","familias":["fabaceas"],"uso":"alimento","grupo":"leguminosa","perenne":false,"cicloDias":[60,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[13,18],"temperaturaAbsolutaC":[4,30],"lluviaAnualOptimaMm":[600,1200],"aguaCicloMm":[350,500],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"media","valorForrajero":"medio","plagasClave":["ascochyta (Ascochyta pisi, Mycosphaerella pinodes)","oídio (Erysiphe pisi)","pudrición radical por Aphanomyces euteiches","gorgojo / pulgones"],"notas":["Aphanomyces persiste en el suelo > 6 años: la rotación con arveja debe espaciarse (≥ 5 años).","Fase de flor y vaina sufre con calor > 25-27 °C."],"fuentes":["FAO ECOCROP: Pisum sativum","UC Davis ANR: Dry Pea / Pea Production","AGROSAVIA: Arveja"],"confianza":"media"},
+  {"clave":"haba","nombre":"Haba","nombreCientifico":"Vicia faba","familias":["fabaceas"],"uso":"alimento","grupo":"leguminosa","perenne":false,"cicloDias":[90,200],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,20],"temperaturaAbsolutaC":[5,27],"lluviaAnualOptimaMm":[650,1000],"aguaCicloMm":[350,600],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"medio","plagasClave":["mancha chocolate (Botrytis fabae)","roya (Uromyces viciae-fabae)","pulgón negro (Aphis fabae)","gorgojo (Bruchus rufimanus)"],"notas":["Variedades de invierno (hasta -5 °C adultas) y de primavera; helada media por defecto.","Buena fijación de N (SARE la lista como abono verde en clima fresco); tolera suelos pesados."],"fuentes":["FAO ECOCROP: Vicia faba","ICARDA: Faba bean","SARE, Managing Cover Crops Profitably (3rd ed.): Faba bean"],"confianza":"media"},
+  {"clave":"garbanzo","nombre":"Garbanzo","nombreCientifico":"Cicer arietinum","familias":["fabaceas"],"uso":"alimento","grupo":"leguminosa","perenne":false,"cicloDias":[90,180],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[18,26],"temperaturaAbsolutaC":[5,35],"lluviaAnualOptimaMm":[400,1000],"aguaCicloMm":[300,450],"toleranciaHelada":"media","toleranciaCalor":"media","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[6.0,8.0],"texturas":["franca","arcillosa","arenosa"],"profundidadRaiz":"profunda","fijaNitrogeno":true,"coberturaSuelo":"baja","valorForrajero":"bajo","plagasClave":["rabia del garbanzo (Ascochyta rabiei)","marchitez por Fusarium (F. oxysporum f. sp. ciceris)","Helicoverpa armigera","pudrición de raíz"],"notas":["Cultivo de humedad residual y estaciones frescas; no tolera exceso de lluvia en floración.","Valores de ECOCROP aproximados; ICRISAT y ICARDA como respaldo."],"fuentes":["FAO ECOCROP: Cicer arietinum","ICRISAT: Chickpea","ICARDA: Chickpea"],"confianza":"media"},
+  {"clave":"lenteja","nombre":"Lenteja","nombreCientifico":"Lens culinaris","familias":["fabaceas"],"uso":"alimento","grupo":"leguminosa","perenne":false,"cicloDias":[80,180],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,25],"temperaturaAbsolutaC":[6,30],"lluviaAnualOptimaMm":[300,800],"aguaCicloMm":[250,400],"toleranciaHelada":"media","toleranciaCalor":"media","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[6.0,8.0],"texturas":["franca","arenosa"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"baja","valorForrajero":"bajo","plagasClave":["antracnosis / ascochyta (Colletotrichum truncatum, Ascochyta lentis)","marchitez por Fusarium","pulgones","gorgojos de almacén (Bruchus)"],"notas":["Ciclo de clima frío (siembra de invierno/primavera) en los extremos altos; en tropical es de ciclo corto.","Poco competitiva con malezas por porte bajo."],"fuentes":["FAO ECOCROP: Lens culinaris","ICARDA: Lentil","Washington State Univ. / USDA Pulse Crops (fichas generales)"],"confianza":"media"},
+  {"clave":"soya","nombre":"Soya","nombreCientifico":"Glycine max","familias":["fabaceas"],"uso":"alimento","grupo":"oleaginosa","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,30],"temperaturaAbsolutaC":[10,38],"lluviaAnualOptimaMm":[600,1500],"aguaCicloMm":[450,700],"toleranciaHelada":"baja","toleranciaCalor":"media","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[6.0,7.0],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"media","valorForrajero":"medio","plagasClave":["roya asiática (Phakopsora pachyrhizi)","nematodo del quiste de la soya (Heterodera glycines)","chinches (Nezara viridula, Piezodorus)","podredumbre de raíz y tallo (Phytophthora sojae)"],"notas":["Grupo clasificado como oleaginosa y leguminosa a la vez; fijación de N neta puede ser baja porque se extrae en el grano.","Sensible al fotoperíodo; elegir variedad por latitud."],"fuentes":["FAO ECOCROP: Glycine max","Iowa State Univ. Extension: Soybean Growth and Development (PM 1945)"],"confianza":"media"},
+  {"clave":"mani","nombre":"Maní","nombreCientifico":"Arachis hypogaea","familias":["fabaceas"],"uso":"alimento","grupo":"oleaginosa","perenne":false,"cicloDias":[90,160],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[22,28],"temperaturaAbsolutaC":[12,38],"lluviaAnualOptimaMm":[500,1200],"aguaCicloMm":[400,700],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,7.0],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"media","valorForrajero":"medio","plagasClave":["mancha foliar (Cercospora arachidicola, Nothopassalora personata)","aflatoxinas (Aspergillus flavus)","podredumbre del tallo (Sclerotium rolfsii)","nematodos (Meloidogyne arenaria)"],"notas":["Requiere suelos sueltos para el desarrollo de ginóforos y la cosecha; en arcillosos disminuye el rendimiento.","Poco apto a más de 1.800 m por frío."],"fuentes":["FAO ECOCROP: Arachis hypogaea","ICRISAT: Groundnut","FAO, Crop Water Information: Groundnut"],"confianza":"media"},
+  {"clave":"caupi","nombre":"Caupí (frijol de vaca)","nombreCientifico":"Vigna unguiculata","familias":["fabaceas"],"uso":"doble_proposito","grupo":"leguminosa","perenne":false,"cicloDias":[60,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[22,30],"temperaturaAbsolutaC":[15,35],"lluviaAnualOptimaMm":[500,1200],"aguaCicloMm":[300,500],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.5,7.5],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"alto","plagasClave":["Maruca vitrata","pulgones (Aphis craccivora)","trips (Megalurothrips sjostedti)","gorgojo del caupí (Callosobruchus maculatus)"],"notas":["Ciclo 60-90 d para tipos precoces y hasta 150 d para tipos de doble propósito.","Muy bueno en suelos pobres y secos; poco apto sobre 1.800 m."],"fuentes":["FAO ECOCROP: Vigna unguiculata","IITA: Cowpea","SARE, Managing Cover Crops Profitably (3rd ed.): Cowpea"],"confianza":"media"},
+  {"clave":"gandul","nombre":"Gandul (guandú)","nombreCientifico":"Cajanus cajan","familias":["fabaceas"],"uso":"doble_proposito","grupo":"leguminosa","perenne":false,"cicloDias":[120,300],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[18,30],"temperaturaAbsolutaC":[12,38],"lluviaAnualOptimaMm":[600,1500],"aguaCicloMm":[500,1000],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.0,7.0],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":true,"coberturaSuelo":"media","valorForrajero":"alto","plagasClave":["Helicoverpa armigera","marchitez por Fusarium (F. udum)","esterilidad del mosaico (virus)","barrenadores de vaina (Maruca, Melanagromyza)"],"notas":["Es perenne de vida corta (2-5 años) pero se maneja como anual o bienal; se marca perenne=false por el uso en rotación.","Raíz pivotante profunda; rompe horizontes compactados.","Ciclo muy variable según variedad (precoces 90-120 d, tardías > 250 d)."],"fuentes":["FAO ECOCROP: Cajanus cajan","ICRISAT: Pigeonpea","Feedipedia: Cajanus cajan"],"confianza":"media"},
+  {"clave":"tarwi","nombre":"Tarwi (chocho, lupino andino)","nombreCientifico":"Lupinus mutabilis","familias":["fabaceas"],"uso":"alimento","grupo":"leguminosa","perenne":false,"cicloDias":[150,300],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[12,20],"temperaturaAbsolutaC":[5,25],"lluviaAnualOptimaMm":[400,800],"aguaCicloMm":[350,800],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.0,7.0],"texturas":["franca","arenosa"],"profundidadRaiz":"profunda","fijaNitrogeno":true,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["antracnosis (Colletotrichum gloeosporioides)","roya (Uromyces lupini)","mosca de la semilla / barrenador de vaina (Delia platura, Etiella)","pulgones"],"notas":["Grano con alcaloides: requiere desamargado antes del consumo.","Los datos de ECOCROP son escasos; los rangos provienen de literatura andina (Perú, Ecuador)."],"fuentes":["FAO ECOCROP: Lupinus mutabilis","INIAP Ecuador: Chocho (publicaciones técnicas)","National Research Council, Lost Crops of the Incas (1989)"],"confianza":"baja"},
+  {"clave":"vicia_villosa","nombre":"Vicia villosa (veza vellosa)","nombreCientifico":"Vicia villosa","familias":["fabaceas"],"uso":"cobertura","grupo":"cobertura","perenne":false,"cicloDias":[120,240],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[10,25],"temperaturaAbsolutaC":[3,30],"lluviaAnualOptimaMm":[450,900],"aguaCicloMm":[300,500],"toleranciaHelada":"alta","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"baja","phOptimo":[5.5,7.5],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"medio","plagasClave":["pulgones","pudrición radical (Fusarium, Rhizoctonia)","nematodos de raíz (hospedera de Meloidogyne)","Sclerotinia"],"notas":["Aporta alrededor de 70-110 kg N/ha (SARE: hasta 100+ kg N/ha en condiciones favorables); mezcla con centeno recomendada.","Puede producir semilla dura y volverse maleza en cereales de invierno.","Rangos de temperatura y lluvia aproximados a partir de fichas de extensión; ECOCROP no tiene ficha sólida."],"fuentes":["SARE, Managing Cover Crops Profitably (3rd ed.): Hairy vetch","UC Davis SAREP: Cover Crop Database"],"confianza":"media"},
+  {"clave":"mucuna","nombre":"Mucuna (frijol terciopelo)","nombreCientifico":"Mucuna pruriens var. utilis","familias":["fabaceas"],"uso":"cobertura","grupo":"cobertura","perenne":false,"cicloDias":[120,240],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[20,30],"temperaturaAbsolutaC":[15,35],"lluviaAnualOptimaMm":[1200,2000],"aguaCicloMm":[800,1500],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"media","necesidadAgua":"alta","phOptimo":[5.0,7.0],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"bajo","plagasClave":["nematodos (Meloidogyne, hospedera pobre)","antracnosis","pudrición radical","pocas plagas serias"],"notas":["Aporta hasta 100-200 kg N/ha como abono verde en el trópico húmedo (fuentes de ICRAF/CIAT; rango amplio).","Semillas y forraje con L-DOPA; no usar sin procesamiento como alimento.","Ocupa varias temporadas solo si se deja a ciclo completo; como abono verde puede incorporarse a ~120 d."],"fuentes":["FAO ECOCROP: Mucuna pruriens","CIAT / CIDICCO: Abonos verdes","Feedipedia: Mucuna pruriens var. utilis"],"confianza":"baja"},
+  {"clave":"crotalaria","nombre":"Crotalaria","nombreCientifico":"Crotalaria juncea","familias":["fabaceas"],"uso":"cobertura","grupo":"cobertura","perenne":false,"cicloDias":[60,120],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,32],"temperaturaAbsolutaC":[12,38],"lluviaAnualOptimaMm":[500,1500],"aguaCicloMm":[300,600],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.0,7.5],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"ninguno","plagasClave":["nematodos (trampa o antagonista de Meloidogyne)","Etiella zinckenella","hongos de raíz","chinches"],"notas":["Tiene alcaloides pirrolizidínicos: tóxica para ganado y personas, no usar como forraje (por eso valor ninguno).","Mucha biomasa en 60-90 d; reduce nematodos, aunque algunas especies de Crotalaria son hospedantes."],"fuentes":["FAO ECOCROP: Crotalaria juncea","SARE, Managing Cover Crops Profitably (3rd ed.): Sunn hemp","Feedipedia: Crotalaria juncea"],"confianza":"media"},
+  {"clave":"canavalia","nombre":"Canavalia","nombreCientifico":"Canavalia ensiformis","familias":["fabaceas"],"uso":"cobertura","grupo":"cobertura","perenne":false,"cicloDias":[90,180],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,30],"temperaturaAbsolutaC":[14,35],"lluviaAnualOptimaMm":[700,1500],"aguaCicloMm":[500,900],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"media","phOptimo":[5.0,7.0],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"bajo","plagasClave":["pocas plagas serias","nematodos (Meloidogyne)","hongos de raíz (Fusarium, Rhizoctonia)","hormigas cortadoras"],"notas":["Semillas y forraje tóxicos (canavanina, concanavalina A); no usar sin procesamiento.","Tolera sombra y sequía mejor que mucuna; hasta unos 1.800 m en el trópico."],"fuentes":["FAO ECOCROP: Canavalia ensiformis","Feedipedia: Canavalia ensiformis","CIAT / CIDICCO: Abonos verdes"],"confianza":"baja"},
+
+  // ───────────────────────────── Grupo B: tubérculos, hortalizas, oleaginosas, forrajes, coberturas ─────────────────────────────
+  {"clave":"papa","nombre":"Papa","nombreCientifico":"Solanum tuberosum","familias":["solanaceas"],"uso":"alimento","grupo":"tuberculo","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,20],"temperaturaAbsolutaC":[7,30],"lluviaAnualOptimaMm":[600,1000],"aguaCicloMm":[450,700],"toleranciaHelada":"baja","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[5.0,6.5],"texturas":["arenosa","franca"],"profundidadRaiz":"superficial","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"ninguno","plagasClave":["tizón tardío (Phytophthora infestans)","polilla guatemalteca / gorgojo de los Andes (Tecia solanivora, Premnotrypes spp.)","nematodos (Globodera spp.)","marchitez bacteriana (Ralstonia solanacearum)"],"notas":["Tuberización se inhibe con temperatura nocturna > 20-22 °C","Rotación mínima de 3-4 años con otras solanáceas por nematodos y tizón","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Solanum tuberosum","CIP (Centro Internacional de la Papa): fichas técnicas del cultivo","FAO: International Year of the Potato 2008, Potato and Water Resources"],"confianza":"media"},
+  {"clave":"yuca","nombre":"Yuca","nombreCientifico":"Manihot esculenta","familias":["euforbiaceas"],"uso":"alimento","grupo":"tuberculo","perenne":false,"cicloDias":[240,540],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[20,29],"temperaturaAbsolutaC":[15,35],"lluviaAnualOptimaMm":[1000,1500],"aguaCicloMm":[1000,1500],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"media","phOptimo":[5.5,6.5],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["bacteriosis (Xanthomonas phaseoli pv. manihotis)","mosaico africano de la yuca (virus CMD)","cochinilla harinosa (Phenacoccus manihoti)","ácaros verdes (Mononychellus tanajoa)"],"notas":["Por encima de ~1800 m el ciclo se alarga mucho; crecimiento casi nulo bajo 15 °C","Hojas con valor proteico como forraje, con riesgo de cianuro","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Manihot esculenta","CIAT: Cassava program, fichas técnicas","FAO: Save and Grow Cassava (2013)"],"confianza":"media"},
+  {"clave":"batata","nombre":"Batata (camote)","nombreCientifico":"Ipomoea batatas","familias":["convolvulaceas"],"uso":"alimento","grupo":"tuberculo","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[21,26],"temperaturaAbsolutaC":[15,35],"lluviaAnualOptimaMm":[750,1500],"aguaCicloMm":[450,750],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,6.5],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"medio","plagasClave":["gorgojo de la batata (Cylas formicarius)","nematodos agalladores (Meloidogyne spp.)","complejo viral SPVD","pudrición del suelo (Streptomyces ipomoeae)"],"notas":["Follaje enredadera que cubre el suelo; los bejucos se usan como forraje","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Ipomoea batatas","CIP: sweetpotato fact sheets"],"confianza":"media"},
+  {"clave":"oca","nombre":"Oca","nombreCientifico":"Oxalis tuberosa","familias":["oxalidaceas"],"uso":"alimento","grupo":"tuberculo","perenne":false,"cicloDias":[180,270],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[10,16],"temperaturaAbsolutaC":[4,22],"lluviaAnualOptimaMm":[700,1200],"aguaCicloMm":[500,800],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,7.0],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["gorgojo de los Andes (Premnotrypes spp.)","nematodo falso nudoso (Nacobbus aberrans)","pulgones y virus"],"notas":["Tubérculo andino de 2.800-4.000 m; los rangos térmicos son estimaciones de literatura andina","Ciclo de 6-9 meses según altitud, de ahí ocupaVariasTemporadas=true","Dato débil: ECOCROP tiene ficha limitada de esta especie"],"fuentes":["FAO ECOCROP: Oxalis tuberosa","Literatura andina: Centro Internacional de la Papa y Bioversity (cultivos andinos olvidados)","National Research Council, Lost Crops of the Incas (1989)"],"confianza":"baja"},
+  {"clave":"remolacha","nombre":"Remolacha","nombreCientifico":"Beta vulgaris","familias":["amarantaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[70,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,22],"temperaturaAbsolutaC":[5,30],"lluviaAnualOptimaMm":[600,1000],"aguaCicloMm":[350,600],"toleranciaHelada":"media","toleranciaCalor":"media","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["arenosa","franca"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"medio","plagasClave":["cercospora (Cercospora beticola)","nematodo del quiste (Heterodera schachtii)","rizomanía (BNYVV)","pulgones vectores de virus"],"notas":["Cubre remolacha de mesa (70-90 días) y forrajera o azucarera (150-200 días); el rango es una mezcla","Tolera suelos algo salinos","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Beta vulgaris","UC Davis Vegetable Research and Information Center: Beets"],"confianza":"media"},
+  {"clave":"zanahoria","nombre":"Zanahoria","nombreCientifico":"Daucus carota","familias":["apiaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[70,130],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[16,21],"temperaturaAbsolutaC":[7,28],"lluviaAnualOptimaMm":[600,1000],"aguaCicloMm":[350,550],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[6.0,6.8],"texturas":["arenosa","franca"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"baja","valorForrajero":"bajo","plagasClave":["mosca de la zanahoria (Chamaepsylla rosae)","alternariosis (Alternaria dauci)","nematodos agalladores (Meloidogyne spp.)","pudriciones por Pythium"],"notas":["Raíces bifurcadas en suelos pedregosos o compactados","Rotación de 3 años con apiáceas","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Daucus carota","UC Davis Vegetable Research and Information Center: Carrot production"],"confianza":"media"},
+  {"clave":"cebolla_bulbo","nombre":"Cebolla de bulbo","nombreCientifico":"Allium cepa","familias":["amarilidaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[100,180],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[13,24],"temperaturaAbsolutaC":[7,30],"lluviaAnualOptimaMm":[600,1000],"aguaCicloMm":[350,550],"toleranciaHelada":"media","toleranciaCalor":"media","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[6.0,7.0],"texturas":["arenosa","franca"],"profundidadRaiz":"superficial","fijaNitrogeno":false,"coberturaSuelo":"baja","valorForrajero":"ninguno","plagasClave":["pudrición blanca (Sclerotium cepivorum)","marchitez por Fusarium oxysporum f.sp. cepae","mildiu (Peronospora destructor)","trips (Thrips tabaci)"],"notas":["La bulbificación depende del fotoperiodo (variedades de día corto, intermedio y largo)","Rotación de 4 años o más por S. cepivorum, cuyos esclerocios persisten años","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Allium cepa","UC Davis Vegetable Research and Information Center: Onion production"],"confianza":"media"},
+  {"clave":"ajo","nombre":"Ajo","nombreCientifico":"Allium sativum","familias":["amarilidaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[150,240],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[12,24],"temperaturaAbsolutaC":[4,30],"lluviaAnualOptimaMm":[600,1000],"aguaCicloMm":[350,500],"toleranciaHelada":"alta","toleranciaCalor":"media","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["arenosa","franca"],"profundidadRaiz":"superficial","fijaNitrogeno":false,"coberturaSuelo":"baja","valorForrajero":"ninguno","plagasClave":["pudrición blanca (Sclerotium cepivorum)","nematodo del tallo y bulbo (Ditylenchus dipsaci)","roya (Puccinia allii)","trips (Thrips tabaci)"],"notas":["Ciclo de 5-8 meses según variedad y latitud; en ajo de otoño puede superar 6 meses","Se propaga con dientes semilla, lo que arrastra nematodos y virus","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Allium sativum","UC Davis Vegetable Research and Information Center: Garlic production"],"confianza":"media"},
+  {"clave":"tomate","nombre":"Tomate","nombreCientifico":"Solanum lycopersicum","familias":["solanaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[18,26],"temperaturaAbsolutaC":[10,34],"lluviaAnualOptimaMm":[600,1200],"aguaCicloMm":[400,600],"toleranciaHelada":"baja","toleranciaCalor":"media","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,6.8],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"ninguno","plagasClave":["tizón tardío (Phytophthora infestans)","marchitez por Fusarium oxysporum f.sp. lycopersici","polilla del tomate (Tuta absoluta)","marchitez bacteriana (Ralstonia solanacearum)"],"notas":["La fructificación falla con noches < 10 °C o días > 32 °C","Rotación de 3 años o más con solanáceas","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Solanum lycopersicum (Lycopersicon esculentum)","UC Davis Vegetable Research and Information Center: Tomato production"],"confianza":"media"},
+  {"clave":"repollo","nombre":"Repollo","nombreCientifico":"Brassica oleracea var. capitata","familias":["brasicaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[70,130],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,20],"temperaturaAbsolutaC":[5,28],"lluviaAnualOptimaMm":[500,1000],"aguaCicloMm":[350,500],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[6.0,7.0],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["hernia de las crucíferas (Plasmodiophora brassicae)","polilla dorso de diamante (Plutella xylostella)","pudrición negra (Xanthomonas campestris pv. campestris)","alternariosis (Alternaria brassicicola)"],"notas":["Rotación de 4 años o más con otras brasicáceas por hernia, que persiste hasta 15-20 años en suelo","El pH ≥ 7,2 reduce la hernia (encalado)","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Brassica oleracea var. capitata","UC Davis Vegetable Research and Information Center: Cabbage production"],"confianza":"media"},
+  {"clave":"lechuga","nombre":"Lechuga","nombreCientifico":"Lactuca sativa","familias":["asteraceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[45,100],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,18],"temperaturaAbsolutaC":[5,28],"lluviaAnualOptimaMm":[600,1000],"aguaCicloMm":[250,400],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[6.0,7.0],"texturas":["arenosa","franca"],"profundidadRaiz":"superficial","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"ninguno","plagasClave":["mildiu (Bremia lactucae)","podredumbre blanda (Sclerotinia sclerotiorum)","pulgón de la lechuga (Nasonovia ribisnigri)","virus del mosaico de la lechuga (LMV)"],"notas":["Con Tmáx > 25-28 °C se espiga (floración prematura) y se vuelve amarga","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Lactuca sativa","UC Davis Vegetable Research and Information Center: Lettuce production"],"confianza":"media"},
+  {"clave":"calabaza","nombre":"Calabaza (zapallo)","nombreCientifico":"Cucurbita maxima / C. moschata / C. pepo","familias":["cucurbitaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[18,27],"temperaturaAbsolutaC":[10,35],"lluviaAnualOptimaMm":[600,1200],"aguaCicloMm":[400,600],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[6.0,7.0],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"bajo","plagasClave":["oídio (Podosphaera xanthii)","virus del mosaico (ZYMV, WMV, CMV)","escarabajos de las cucurbitáceas (Diabrotica, Acalymma)","marchitez bacteriana (Erwinia tracheiphila)"],"notas":["Agrupa tres especies; C. maxima tolera más frío, C. moschata más calor","Rotación de 2-3 años con otras cucurbitáceas","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Cucurbita maxima, C. moschata, C. pepo","UC Davis Vegetable Research and Information Center: Pumpkin and winter squash"],"confianza":"media"},
+  {"clave":"pepino","nombre":"Pepino","nombreCientifico":"Cucumis sativus","familias":["cucurbitaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[60,110],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,28],"temperaturaAbsolutaC":[12,35],"lluviaAnualOptimaMm":[600,1200],"aguaCicloMm":[300,500],"toleranciaHelada":"baja","toleranciaCalor":"media","toleranciaSequia":"baja","necesidadAgua":"alta","phOptimo":[5.5,7.0],"texturas":["arenosa","franca"],"profundidadRaiz":"superficial","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"ninguno","plagasClave":["mildiu (Pseudoperonospora cubensis)","oídio (Podosphaera xanthii)","marchitez por Fusarium oxysporum f.sp. cucumerinum","mosca blanca y ácaros"],"notas":["Crecimiento detenido bajo ~12 °C","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Cucumis sativus","UC Davis Vegetable Research and Information Center: Cucumber production"],"confianza":"media"},
+  {"clave":"pimiento","nombre":"Pimiento","nombreCientifico":"Capsicum annuum","familias":["solanaceas"],"uso":"alimento","grupo":"hortaliza","perenne":false,"cicloDias":[120,180],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,27],"temperaturaAbsolutaC":[12,35],"lluviaAnualOptimaMm":[600,1250],"aguaCicloMm":[500,800],"toleranciaHelada":"baja","toleranciaCalor":"media","toleranciaSequia":"baja","necesidadAgua":"media","phOptimo":[5.5,7.0],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"ninguno","plagasClave":["tristeza o Phytophthora capsici","antracnosis (Colletotrichum spp.)","trips (Frankliniella occidentalis) y virus TSWV","nematodos agalladores (Meloidogyne spp.)"],"notas":["La cuaja de flores falla con Tmáx > 32 °C o Tmín < 15 °C","Rotación de 3 años o más con solanáceas","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Capsicum annuum","UC Davis Vegetable Research and Information Center: Peppers"],"confianza":"media"},
+  {"clave":"girasol","nombre":"Girasol","nombreCientifico":"Helianthus annuus","familias":["asteraceas"],"uso":"doble_proposito","grupo":"oleaginosa","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[18,25],"temperaturaAbsolutaC":[8,35],"lluviaAnualOptimaMm":[600,1000],"aguaCicloMm":[450,750],"toleranciaHelada":"media","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["podredumbre blanca (Sclerotinia sclerotiorum)","mildiu (Plasmopara halstedii)","jopo o Orobanche (Orobanche cumana)","tizón del tallo (Phomopsis helianthi)"],"notas":["Rotación de 4 años o más por Sclerotinia (hospedante compartido con colza, soja, hortalizas)","Uso como ensilaje o cobertura es secundario, por eso valorForrajero=bajo","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Helianthus annuus","Iowa State University Extension: Sunflower production (referencia general)"],"confianza":"media"},
+  {"clave":"colza","nombre":"Colza (canola)","nombreCientifico":"Brassica napus","familias":["brasicaceas"],"uso":"alimento","grupo":"oleaginosa","perenne":false,"cicloDias":[110,300],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[10,20],"temperaturaAbsolutaC":[3,28],"lluviaAnualOptimaMm":[500,1000],"aguaCicloMm":[350,600],"toleranciaHelada":"alta","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["podredumbre blanca (Sclerotinia sclerotiorum)","hernia de las crucíferas (Plasmodiophora brassicae)","pierna negra (Leptosphaeria maculans)","escarabajo del polen (Brassicogethes aeneus)"],"notas":["Ciclo de 110-140 días en variedades de primavera y 240-300 días en las de invierno, con siembra de otoño; por eso ocupaVariasTemporadas=true","La floración se daña con calor > 27-30 °C","Rotación de 4 años o más con otras brasicáceas","Dato débil: el rango de ciclo mezcla dos tipos de variedad"],"fuentes":["FAO ECOCROP: Brassica napus","Literatura de extensión general sobre colza y canola"],"confianza":"media"},
+  {"clave":"sesamo","nombre":"Sésamo","nombreCientifico":"Sesamum indicum","familias":["pedaliaceas"],"uso":"alimento","grupo":"oleaginosa","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[25,30],"temperaturaAbsolutaC":[18,38],"lluviaAnualOptimaMm":[500,1000],"aguaCicloMm":[400,650],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.5,7.5],"texturas":["arenosa","franca"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["tizón por Phytophthora (Phytophthora parasitica var. sesami)","pudrición carbonosa (Macrophomina phaseolina)","filodia (fitoplasma)","gusano de la hoja (Antigastra catalaunalis)"],"notas":["Cultivo de tierra baja cálida; es poco apto sobre ~1.500 m","No tolera encharcamiento","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Sesamum indicum","Literatura general de extensión (FAO) sobre sésamo"],"confianza":"media"},
+  {"clave":"algodon","nombre":"Algodón","nombreCientifico":"Gossypium hirsutum","familias":["malvaceas"],"uso":"alimento","grupo":"industrial","perenne":false,"cicloDias":[150,210],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[20,30],"temperaturaAbsolutaC":[15,38],"lluviaAnualOptimaMm":[700,1300],"aguaCicloMm":[700,1200],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"media","valorForrajero":"bajo","plagasClave":["picudo del algodonero (Anthonomus grandis)","gusanos de la cápsula (Helicoverpa spp.)","marchitez por Verticillium dahliae","nematodo reniforme (Rotylenchulus reniformis)"],"notas":["Ciclo de 5-7 meses, cerca del límite de 6 meses","Valor forrajero bajo: solo torta de semilla y semilla de algodón, con gosipol limitante","Cultivo de zonas cálidas, no adecuado en clima frío","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Gossypium hirsutum","FAO: Cotton crop information (Land and Water)"],"confianza":"media"},
+  {"clave":"lino","nombre":"Lino","nombreCientifico":"Linum usitatissimum","familias":["linaceas"],"uso":"doble_proposito","grupo":"oleaginosa","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[15,20],"temperaturaAbsolutaC":[5,30],"lluviaAnualOptimaMm":[450,750],"aguaCicloMm":[350,500],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,7.0],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"baja","valorForrajero":"ninguno","plagasClave":["marchitez por Fusarium oxysporum f.sp. lini","roya del lino (Melampsora lini)","pulguilla del lino (Longitarsus parvulus)","Botrytis y Alternaria"],"notas":["Doble propósito: semilla (aceite) y fibra; el rango térmico es de ficha general","Rotación larga (5-6 años) por Fusarium","Dato débil: rangos de ficha general, no de una fuente concreta"],"fuentes":["FAO ECOCROP: Linum usitatissimum","Literatura general de extensión sobre lino"],"confianza":"baja"},
+  {"clave":"alfalfa","nombre":"Alfalfa","nombreCientifico":"Medicago sativa","familias":["fabaceas"],"uso":"forraje","grupo":"forraje","perenne":true,"cicloDias":[365,1825],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[15,25],"temperaturaAbsolutaC":[5,35],"lluviaAnualOptimaMm":[600,1200],"aguaCicloMm":[600,1000],"toleranciaHelada":"alta","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"media","phOptimo":[6.5,7.5],"texturas":["arenosa","franca"],"profundidadRaiz":"profunda","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"alto","plagasClave":["pudrición de raíz por Phytophthora medicaginis","marchitez por Verticillium albo-atrum","pulgón del guisante (Acyrthosiphon pisum)","picudo de la alfalfa (Hypera postica)"],"notas":["Vida productiva de 3-5 años; el cicloDias refleja la duración de la pradera","Intolerante a suelos ácidos (pH < 6) y a encharcamiento","Al terminar la pradera el suelo queda con N residual (~100-200 kg N/ha según SARE y UC)","aguaCicloMm es por año"],"fuentes":["FAO ECOCROP: Medicago sativa","UC Davis Alfalfa and Forage Program","SARE: Managing Cover Crops Profitably, 3a ed.","Feedipedia: Medicago sativa"],"confianza":"media"},
+  {"clave":"raigras_trebol","nombre":"Pradera de raigrás y trébol blanco","nombreCientifico":"Lolium perenne + Trifolium repens","familias":["poaceas","fabaceas"],"uso":"forraje","grupo":"forraje","perenne":true,"cicloDias":[365,1825],"ocupaVariasTemporadas":true,"temperaturaOptimaC":[12,22],"temperaturaAbsolutaC":[4,30],"lluviaAnualOptimaMm":[800,1500],"aguaCicloMm":[700,1200],"toleranciaHelada":"alta","toleranciaCalor":"baja","toleranciaSequia":"baja","necesidadAgua":"alta","phOptimo":[5.5,6.8],"texturas":["franca","arcillosa"],"profundidadRaiz":"superficial","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"alto","plagasClave":["roya de la corona (Puccinia coronata)","podredumbre del trébol (Sclerotinia trifoliorum)","gorgojo del trébol (Sitona spp.)","larvas de tipúlidos y gusanos blancos"],"notas":["Pradera de clima templado y húmedo; el raigrás sufre con Tmáx > 28-30 °C","Aporte de N del trébol blanco: orden de 100-200 kg N/ha/año según literatura general","aguaCicloMm es por año"],"fuentes":["FAO ECOCROP: Lolium perenne y Trifolium repens","Feedipedia: Lolium perenne; Trifolium repens","AGROSAVIA: Manual de praderas de clima frío (lo conozco por referencia, sin verificar)"],"confianza":"media"},
+  {"clave":"avena_vicia","nombre":"Avena y vicia forrajera","nombreCientifico":"Avena sativa + Vicia sativa","familias":["poaceas","fabaceas"],"uso":"forraje","grupo":"forraje","perenne":false,"cicloDias":[90,150],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[12,22],"temperaturaAbsolutaC":[4,30],"lluviaAnualOptimaMm":[500,900],"aguaCicloMm":[350,550],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[5.5,7.0],"texturas":["franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":true,"coberturaSuelo":"alta","valorForrajero":"alto","plagasClave":["roya de la corona (Puccinia coronata f.sp. avenae)","pulgón de la avena (Rhopalosiphum padi)","antracnosis o Ascochyta de la vicia","pudriciones radiculares por Fusarium"],"notas":["Corte para heno o ensilaje en 90-120 días (avena en espiga lechosa)","La vicia aporta N; la cantidad depende de la proporción de siembra","Dato débil: los rangos son de las especies por separado y se combinaron"],"fuentes":["FAO ECOCROP: Avena sativa y Vicia sativa","Feedipedia: Avena sativa; Vicia sativa","SARE: Managing Cover Crops Profitably, 3a ed."],"confianza":"media"},
+  {"clave":"sorgo_forrajero","nombre":"Sorgo forrajero","nombreCientifico":"Sorghum bicolor (incl. híbridos sorgo x sudán)","familias":["poaceas"],"uso":"forraje","grupo":"forraje","perenne":false,"cicloDias":[70,130],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[24,32],"temperaturaAbsolutaC":[15,38],"lluviaAnualOptimaMm":[450,900],"aguaCicloMm":[400,700],"toleranciaHelada":"baja","toleranciaCalor":"alta","toleranciaSequia":"alta","necesidadAgua":"baja","phOptimo":[5.5,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"alto","plagasClave":["pulgón amarillo de la caña (Melanaphis sacchari)","gusano cogollero (Spodoptera frugiperda)","antracnosis (Colletotrichum sublineola)","maleza parásita Striga spp."],"notas":["Crecimiento pobre con temperaturas < 15 °C; no apto en clima frío","Riesgo de cianuro (HCN) en rebrotes jóvenes y bajo estrés hídrico","Rangos ECOCROP aproximados, verificar"],"fuentes":["FAO ECOCROP: Sorghum bicolor","Feedipedia: Sorghum bicolor, forage","SARE: Managing Cover Crops Profitably, 3a ed. (sorgo-sudán)"],"confianza":"media"},
+  {"clave":"mostaza_cobertura","nombre":"Mostaza de cobertura","nombreCientifico":"Sinapis alba / Brassica juncea","familias":["brasicaceas"],"uso":"cobertura","grupo":"cobertura","perenne":false,"cicloDias":[60,100],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[10,20],"temperaturaAbsolutaC":[3,30],"lluviaAnualOptimaMm":[400,900],"aguaCicloMm":[250,450],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"baja","phOptimo":[6.0,7.5],"texturas":["arenosa","franca"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"bajo","plagasClave":["hernia de las crucíferas (Plasmodiophora brassicae)","pulguilla (Phyllotreta spp.)","alternariosis (Alternaria spp.)","podredumbre blanda (Sclerotinia sclerotiorum)"],"notas":["Usada para supresión de malezas y biofumigación; hospedante de las plagas de brasicáceas, no usar antes de repollo o colza","Dato débil: rangos de ficha general; ECOCROP cubre S. alba y B. juncea con valores distintos"],"fuentes":["FAO ECOCROP: Sinapis alba; Brassica juncea","SARE: Managing Cover Crops Profitably, 3a ed. (mostazas)"],"confianza":"baja"},
+  {"clave":"rabano_forrajero","nombre":"Rábano forrajero","nombreCientifico":"Raphanus sativus var. oleiformis","familias":["brasicaceas"],"uso":"cobertura","grupo":"cobertura","perenne":false,"cicloDias":[50,90],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[10,20],"temperaturaAbsolutaC":[4,28],"lluviaAnualOptimaMm":[400,900],"aguaCicloMm":[250,450],"toleranciaHelada":"media","toleranciaCalor":"baja","toleranciaSequia":"media","necesidadAgua":"media","phOptimo":[6.0,7.5],"texturas":["franca","arcillosa"],"profundidadRaiz":"profunda","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"bajo","plagasClave":["hernia de las crucíferas (Plasmodiophora brassicae)","pulguilla (Phyllotreta spp.)","pulgones","alternariosis (Alternaria spp.)"],"notas":["La raíz pivotante descompacta el suelo; muere con heladas fuertes (~ -5 °C)","Hospedante de las plagas de brasicáceas","Existen variedades resistentes al nematodo Heterodera schachtii, usadas como cultivo trampa","Dato débil: rangos de ficha general y literatura de coberturas"],"fuentes":["FAO ECOCROP: Raphanus sativus","SARE: Managing Cover Crops Profitably, 3a ed. (forage radish)"],"confianza":"baja"},
+  {"clave":"facelia","nombre":"Facelia","nombreCientifico":"Phacelia tanacetifolia","familias":["hidrofilaceas"],"uso":"cobertura","grupo":"cobertura","perenne":false,"cicloDias":[45,90],"ocupaVariasTemporadas":false,"temperaturaOptimaC":[12,22],"temperaturaAbsolutaC":[3,30],"lluviaAnualOptimaMm":[300,800],"aguaCicloMm":[250,450],"toleranciaHelada":"media","toleranciaCalor":"media","toleranciaSequia":"media","necesidadAgua":"baja","phOptimo":[6.0,7.5],"texturas":["arenosa","franca","arcillosa"],"profundidadRaiz":"media","fijaNitrogeno":false,"coberturaSuelo":"alta","valorForrajero":"ninguno","plagasClave":["sin plagas específicas documentadas (familia aislada de los cultivos comunes)","podredumbre blanda (Sclerotinia sclerotiorum) ocasional"],"notas":["Se usa como cobertura de rotación 'neutra' (sin hospedantes en común) y como planta melífera","Dato débil: no hay ficha ECOCROP completa; rangos de literatura de coberturas y extensión europea"],"fuentes":["SARE: Managing Cover Crops Profitably, 3a ed. (phacelia)","Literatura de extensión europea sobre Phacelia tanacetifolia"],"confianza":"baja"},
 ];
+
+/** Catálogo final: cada ficha lleva además el aviso de verificación como fuente/nota de honestidad. */
+export const CATALOGO_CULTIVOS: readonly CrearCultivoDatos[] = BASE.map((c) => ({
+  ...c,
+  fuentes: [...c.fuentes, AVISO_VERIFICACION],
+}));

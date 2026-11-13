@@ -59,6 +59,9 @@ export function evaluarPaso(cultivo: Cultivo, semestre: number, continua: boolea
   const lluviaComparada = cultivo.perenne ? ctx.perfil.resumen.lluviaAnualMm : lluviaCicloMm;
   const deficitAguaMm = r1(Math.max(0, aguaMinimaMm - lluviaComparada));
 
+  const tempDe = (mes: number) => ctx.perfil.meses.find((m) => m.mes === mes)?.tempMediaC ?? 0;
+  const tempMediaCicloC = r1(mesesCiclo.reduce((s, m) => s + tempDe(m), 0) / mesesCiclo.length);
+  const aptitudClima = cultivo.aptitudPorTemperatura(tempMediaCicloC);
   const mesesHeladaEnCiclo = mesesCiclo.filter((m) => ctx.perfil.resumen.mesesRiesgoHelada.includes(m));
   const riesgoHelada = riesgoHeladaPorTolerancia(mesesHeladaEnCiclo.length > 0, cultivo.toleranciaHelada);
 
@@ -91,6 +94,8 @@ export function evaluarPaso(cultivo: Cultivo, semestre: number, continua: boolea
       lluviaCicloMm,
       deficitAguaMm,
       requiereRiego: deficitAguaMm > 0,
+      tempMediaCicloC,
+      aptitudClima,
       mesesHeladaEnCiclo,
       riesgoHelada,
       notas,
