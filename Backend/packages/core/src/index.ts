@@ -20,4 +20,5 @@ export * from "./modules/clima/index.ts";
 export * from "./modules/cultivos/index.ts";
 export * from "./modules/rotaciones/index.ts";
 export * from "./modules/terreno/index.ts";
+export * from "./modules/impresion/index.ts";
 // @scaffold:modules

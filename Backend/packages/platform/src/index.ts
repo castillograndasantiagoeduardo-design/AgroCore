@@ -18,3 +18,4 @@ export {
 export { parsearRespuestaSoilGrids, SoilGridsClient, type SoilGridsConfig } from "./soilgrids-client.ts";
 export { OpenTopoDataElevacionClient, type OpenTopoDataConfig } from "./opentopodata-elevacion-client.ts";
 export { NasaPowerHumedadClient, type NasaPowerHumedadConfig, parsearHumedadPower } from "./nasa-power-humedad-client.ts";
+export { codificarCp850, construirBytesEscPos, type EscPosWindowsConfig, EscPosWindowsPrinter } from "./escpos-windows-printer.ts";

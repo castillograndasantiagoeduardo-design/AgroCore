@@ -1,10 +1,18 @@
 /**
- * Configuración del contenedor leída del entorno (Fail-Fast).
+ * Configuración del contenedor leída del entorno (Fail-Fast en lo obligatorio).
  */
 import type { DatabaseConfig } from "@agrocore/database";
 
 export interface AppConfig {
   db: DatabaseConfig;
+  impresora: {
+    /** Nombre con el que se compartió la térmica en Windows (IMPRESORA_COMPARTIDA, por defecto XP58). */
+    compartida: string;
+    /** n de ESC t n (IMPRESORA_CODEPAGE, por defecto 2 = PC850). */
+    codepage: number;
+    /** IMPRESORA_CORTADOR=true si la impresora tiene cortador. */
+    cortar: boolean;
+  };
 }
 
 function requireEnv(key: string): string {
@@ -14,6 +22,7 @@ function requireEnv(key: string): string {
 }
 
 export function loadConfigFromEnv(): AppConfig {
+  const codepage = Number(Deno.env.get("IMPRESORA_CODEPAGE") ?? "2");
   return {
     db: {
       host: requireEnv("DB_HOST"),
@@ -21,6 +30,11 @@ export function loadConfigFromEnv(): AppConfig {
       user: requireEnv("DB_USER"),
       password: Deno.env.get("DB_PASSWORD") ?? "",
       database: requireEnv("DB_NAME"),
+    },
+    impresora: {
+      compartida: Deno.env.get("IMPRESORA_COMPARTIDA") || "XP58",
+      codepage: Number.isInteger(codepage) && codepage >= 0 && codepage <= 255 ? codepage : 2,
+      cortar: (Deno.env.get("IMPRESORA_CORTADOR") ?? "false").toLowerCase() === "true",
     },
   };
 }

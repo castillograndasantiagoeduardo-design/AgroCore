@@ -12,6 +12,7 @@ import {
   MySqlUnitOfWork,
 } from "@agrocore/database";
 import {
+  EscPosWindowsPrinter,
   IdeamNormalesClient,
   NasaPowerClient,
   NasaPowerHumedadClient,
@@ -28,6 +29,7 @@ import {
   CompararRotacionesUseCase,
   MotorRotaciones,
   CrearFincaUseCase,
+  ImprimirTicketTerrenoUseCase,
   ListarCultivosUseCase,
   ListarFincasUseCase,
   ObtenerCultivoUseCase,
@@ -53,6 +55,11 @@ export function createContainer(config: AppConfig) {
   const sueloProvider = new SoilGridsClient({ cache });
   const elevacionProvider = new OpenTopoDataElevacionClient({ cache });
   const humedadProvider = new NasaPowerHumedadClient({ cache });
+  const impresora = new EscPosWindowsPrinter({
+    impresoraCompartida: config.impresora.compartida,
+    codepage: config.impresora.codepage,
+    cortar: config.impresora.cortar,
+  });
 
   // Repositorios
   const fincaRepository = new MySqlFincaRepository(db);
@@ -72,6 +79,7 @@ export function createContainer(config: AppConfig) {
   });
 
   const motorRotaciones = new MotorRotaciones(cultivoRepository, obtenerPerfilClimatico, analizarTerreno);
+  const compararRotacionesUbicacion = new CompararRotacionesUbicacionUseCase(motorRotaciones);
 
   return {
     mcpToolLogger,
@@ -82,8 +90,9 @@ export function createContainer(config: AppConfig) {
     listarCultivos: new ListarCultivosUseCase(cultivoRepository),
     obtenerCultivo: new ObtenerCultivoUseCase(cultivoRepository),
     compararRotaciones: new CompararRotacionesUseCase(fincaRepository, motorRotaciones),
-    compararRotacionesUbicacion: new CompararRotacionesUbicacionUseCase(motorRotaciones),
+    compararRotacionesUbicacion,
     analizarTerreno,
+    imprimirTicketTerreno: new ImprimirTicketTerrenoUseCase(analizarTerreno, compararRotacionesUbicacion, impresora, reloj),
     // @scaffold:use-cases
   };
 }

@@ -85,6 +85,7 @@ Cada módulo vive en `Backend/packages/core/src/modules/<modulo>/` y tiene su `M
 - **`cultivos`** — Catálogo global de referencia de 51 cultivos (temperaturas ECOCROP, tolerancias, pH, textura, plagas; solo lectura) · [MODULE.md](./Backend/packages/core/src/modules/cultivos/MODULE.md)
 - **`rotaciones`** — Motor que compara 3–4 estrategias de 2 años en temporadas reales de cualquier lugar (A actual, B suelo, C forraje/ingreso, D agua) con evidencia y fuente, calendario y oportunidades · [MODULE.md](./Backend/packages/core/src/modules/rotaciones/MODULE.md)
 - **`terreno`** — Análisis del sitio (punto o área ≤ 100 ha): aptitud ("No se puede sembrar: es carretera"), SRTM, SoilGrids, NDVI MODIS (meses baldíos), cobertura MODIS · [MODULE.md](./Backend/packages/core/src/modules/terreno/MODULE.md)
+- **`impresion`** — Ticket térmico ESC/POS de 58 mm con el resumen del terreno (Xprinter compartida en Windows) · [MODULE.md](./Backend/packages/core/src/modules/impresion/MODULE.md)
 <!-- @scaffold:modules -->
 
 ---
