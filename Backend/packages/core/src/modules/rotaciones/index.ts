@@ -1,11 +1,14 @@
 export * from "./domain/errors/rotacion.errors.ts";
 export * from "./domain/services/evidencia-reglas.ts";
-export type { IPerfilClimaticoQuery } from "./application/ports/index.ts";
+export type { IAnalisisTerrenoQuery, IPerfilClimaticoQuery } from "./application/ports/index.ts";
+export * from "./application/use-cases/motor-rotaciones.ts";
 export * from "./application/use-cases/comparar-rotaciones.use-case.ts";
-export * from "./domain/services/ventanas-siembra.service.ts";
+export * from "./application/use-cases/comparar-rotaciones-ubicacion.use-case.ts";
+export * from "./domain/services/ventanas-rotacion.service.ts";
 export * from "./domain/services/evaluar-paso.service.ts";
 export * from "./domain/services/reglas-rotacion.service.ts";
 export * from "./domain/services/puntajes-rotacion.service.ts";
 export * from "./domain/services/referencias-ingreso.ts";
 export * from "./domain/services/generar-estrategias.service.ts";
 export * from "./domain/services/explicar-estrategia.service.ts";
+export * from "./domain/services/calendario-oportunidades.service.ts";

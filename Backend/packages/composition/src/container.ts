@@ -24,7 +24,9 @@ import {
 import type { AppConfig } from "./config.ts";
 import {
   AnalizarTerrenoUseCase,
+  CompararRotacionesUbicacionUseCase,
   CompararRotacionesUseCase,
+  MotorRotaciones,
   CrearFincaUseCase,
   ListarCultivosUseCase,
   ListarFincasUseCase,
@@ -69,6 +71,8 @@ export function createContainer(config: AppConfig) {
     reloj,
   });
 
+  const motorRotaciones = new MotorRotaciones(cultivoRepository, obtenerPerfilClimatico, analizarTerreno);
+
   return {
     mcpToolLogger,
     // Casos de uso
@@ -77,7 +81,8 @@ export function createContainer(config: AppConfig) {
     obtenerPerfilClimatico,
     listarCultivos: new ListarCultivosUseCase(cultivoRepository),
     obtenerCultivo: new ObtenerCultivoUseCase(cultivoRepository),
-    compararRotaciones: new CompararRotacionesUseCase(fincaRepository, cultivoRepository, obtenerPerfilClimatico),
+    compararRotaciones: new CompararRotacionesUseCase(fincaRepository, motorRotaciones),
+    compararRotacionesUbicacion: new CompararRotacionesUbicacionUseCase(motorRotaciones),
     analizarTerreno,
     // @scaffold:use-cases
   };
