@@ -9,6 +9,14 @@
  *                           relieve) cruzados con el catálogo de cultivos.
  */
 import type { FuenteEvidencia, ReglaRotacion } from "@agrocore/contracts";
+import { PROBABILIDAD_RIESGO_HELADA, UMBRAL_CALOR_C } from "../../../clima/domain/services/calendario-climatico.service.ts";
+import { DIAS_CALOR_MES_CRITICO, FRACCION_DEFICIT } from "../../../clima/domain/services/resumen-climatico.service.ts";
+import { TEMP_MINIMA_CRECIMIENTO_C } from "../../../clima/domain/services/temporadas-cultivo.service.ts";
+import { DIAS_HELADA_EXPOSICION } from "./evaluar-paso.service.ts";
+import { PENDIENTE_FUERTE_PCT } from "./reglas-rotacion.service.ts";
+
+/** Fracción (0–1) escrita como porcentaje, tomada siempre de la constante que la define. */
+const pct = (fraccion: number): string => Math.round(fraccion * 100) + " %";
 
 export type RespaldoRegla = "documentada" | "practica_habitual" | "calculada";
 
@@ -60,46 +68,50 @@ export const EVIDENCIA_REGLAS: Record<ReglaRotacion, EvidenciaRegla> = {
   },
   siembra_en_temporada: {
     respaldo: "calculada",
-    resumen: "Las siembras se ubican en las temporadas de cultivo DERIVADAS del clima del sitio (temperatura media ≥ 5 °C, sin helada " +
-      "dura y, en secano, lluvia ≥ 50 % de la evapotranspiración de referencia).",
+    resumen: "Las siembras se ubican en las temporadas de cultivo DERIVADAS del clima del sitio (temperatura media ≥ " + TEMP_MINIMA_CRECIMIENTO_C +
+      " °C, sin helada dura y, en secano, lluvia ≥ " + pct(FRACCION_DEFICIT) + " de la evapotranspiración de referencia).",
     fuente: "NASA POWER",
-    fuentes: ["Perfil climático del sitio (NASA POWER, 30 años)"],
+    fuentes: ["Perfil climático del sitio (NASA POWER, normal climatológica)"],
     vacios: ["El calendario local de siembra puede diferir: confírmalo con el servicio de extensión o el agrónomo de la zona."],
   },
   temperatura_apta: {
     respaldo: "calculada",
-    resumen: "Se compara la temperatura media de los meses de cada ciclo con el rango óptimo y absoluto del cultivo (estilo FAO ECOCROP).",
+    resumen: "Se compara la temperatura media de los meses de cada ciclo con el rango óptimo (TOPMN–TOPMX) y absoluto (TMIN–TMAX) del " +
+      "cultivo en la base FAO ECOCROP.",
     fuente: "ECOCROP",
-    fuentes: ["Catálogo de cultivos (rangos de referencia FAO ECOCROP)", "Perfil climático del sitio"],
-    vacios: ["Los rangos del catálogo son de referencia, no se verificaron en línea y deben validarse con un agrónomo local."],
+    fuentes: ["FAO ECOCROP (registro por EcoPortCode de cada cultivo)", "Perfil climático del sitio"],
+    vacios: ["ECOCROP da rangos de referencia por especie, no por variedad ni por lugar: deben validarse con un agrónomo local."],
   },
   evitar_helada: {
     respaldo: "calculada",
-    resumen: "Se cruzan los meses con probabilidad de helada ≥ 25 % del perfil climático con los meses de cada ciclo y la tolerancia a " +
-      "helada del cultivo.",
+    resumen: "Se cruzan los meses con probabilidad de helada ≥ " + pct(PROBABILIDAD_RIESGO_HELADA) + " y al menos " + DIAS_HELADA_EXPOSICION +
+      " días de helada del perfil climático con los meses de cada ciclo y la tolerancia a helada del cultivo (derivada de su temperatura " +
+      "letal en FAO ECOCROP; sin ese dato, el cultivo no se recomienda en meses con helada).",
     fuente: "NASA POWER",
     fuentes: ["Perfil climático del sitio", "Catálogo de cultivos"],
     vacios: ["El perfil usa promedios de una celda de decenas de km: en hondonadas las heladas pueden ser más frecuentes."],
   },
   tolerancia_calor: {
     respaldo: "calculada",
-    resumen: "Se cruzan los meses con ≥ 5 días de máxima ≥ 32 °C con los meses de cada ciclo y la tolerancia al calor del cultivo.",
+    resumen: "Se cruzan los meses con ≥ " + DIAS_CALOR_MES_CRITICO + " días de máxima ≥ " + UMBRAL_CALOR_C + " °C con los meses de cada ciclo y la " +
+      "tolerancia al calor del cultivo.",
     fuente: "NASA POWER",
     fuentes: ["Perfil climático del sitio", "Catálogo de cultivos"],
     vacios: ["El daño por calor depende de la fase del cultivo (floración); el sistema evalúa el ciclo completo."],
   },
   agua_suficiente: {
     respaldo: "calculada",
-    resumen: "Se suma la lluvia promedio de los meses del ciclo y se compara con el agua mínima que necesita el cultivo.",
+    resumen: "Se suma la lluvia promedio de los meses del ciclo y se compara con el agua mínima del ciclo del cultivo (RMIN–ROPMN de FAO ECOCROP).",
     fuente: "NASA POWER",
     fuentes: ["Perfil climático del sitio", "Catálogo de cultivos"],
     vacios: ["No se conoce la capacidad del suelo de retener agua ni el caudal real del riego."],
   },
   ciclo_cabe_en_ventana: {
     respaldo: "calculada",
-    resumen: "Se usa el ciclo medio del cultivo para estimar si se cosecha antes de la siguiente siembra (o si ocupa dos ventanas a propósito).",
+    resumen: "Se usa el ciclo medio del cultivo (GMIN–GMAX de FAO ECOCROP) para estimar si se cosecha antes de la siguiente siembra " +
+      "(o si ocupa dos ventanas a propósito).",
     fuente: "ECOCROP",
-    fuentes: ["Catálogo de cultivos"],
+    fuentes: ["FAO ECOCROP (registro por EcoPortCode de cada cultivo)"],
     vacios: ["El ciclo real depende de la variedad y de la temperatura (con frío, ciclos más largos)."],
   },
   suelo_compatible: {
@@ -111,7 +123,7 @@ export const EVIDENCIA_REGLAS: Record<ReglaRotacion, EvidenciaRegla> = {
   },
   cobertura_en_pendiente: {
     respaldo: "documentada",
-    resumen: "Con pendiente mayor al 25 % el suelo desnudo se erosiona: se recomienda cobertura permanente, praderas o siembra en curvas de nivel.",
+    resumen: "Con pendiente mayor al " + PENDIENTE_FUERTE_PCT + " % el suelo desnudo se erosiona: se recomienda cobertura permanente, praderas o siembra en curvas de nivel.",
     fuente: "SRTM",
     fuentes: ["FAO (2000), Manual on integrated soil management and conservation practices", "NASA SRTM 30 m"],
     vacios: ["La pendiente se calcula con SRTM de 30 m en el centro del lote: puede variar dentro del área."],
@@ -129,7 +141,7 @@ export const EVIDENCIA_REGLAS: Record<ReglaRotacion, EvidenciaRegla> = {
 /** Vacíos que aplican a cualquier estrategia: el sistema no tiene estos datos. */
 export const VACIOS_GENERALES: readonly string[] = [
   "No hay análisis de suelo del lote (es la primera recomendación antes de rotar).",
-  "No se usan precios ni costos: el puntaje de 'ingreso' es una referencia cualitativa, no una proyección económica.",
+  "El puntaje de ingreso usa el valor bruto de la producción por hectárea de FAOSTAT (solo de cultivos que se siembran en la zona): no incluye costos, precios locales ni el rendimiento del lote, y no es una proyección económica.",
   "No se conoce el historial de cultivos y plagas del lote más allá de lo que declara el agricultor.",
 ];
 

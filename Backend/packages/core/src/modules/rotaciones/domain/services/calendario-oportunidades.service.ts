@@ -30,22 +30,22 @@ const fuerte = (s: SeveridadAmenaza) => PESO[s] >= 2;
 
 /** ¿El cultivo sufre esta amenaza? (según sus tolerancias en el catálogo). */
 function expuesto(c: Cultivo, tipo: string, tieneRiego: boolean): boolean {
-  if (tipo === "helada") return c.toleranciaHelada !== "alta";
+  if (tipo === "helada") return c.toleranciaHeladaConocida() !== "alta"; // sin dato (null) se trata como sensible
   if (tipo === "calor") return c.toleranciaCalor !== "alta";
   if (tipo === "deficit_hidrico") return !tieneRiego && c.toleranciaSequia !== "alta";
-  if (tipo === "lluvia_extrema") return c.coberturaSuelo !== "alta";
+  if (tipo === "lluvia_extrema") return c.coberturaConocida() !== "alta";
   return false;
 }
 
 export function construirCalendario(
   ctx: ContextoMotor,
-  actual: SecuenciaEvaluada,
+  actual: SecuenciaEvaluada | null,
   oportunidades: readonly OportunidadDto[],
 ): MesCalendarioDto[] {
   const vulnerabilidad = new Map<number, MesVulnerabilidadDto>(ctx.perfil.calendarioVulnerabilidad.map((v) => [v.mes, v]));
   const enTemporada = new Set(ctx.ventanas.flatMap((v) => v.mesesTemporada));
   const conOportunidad = new Set(oportunidades.flatMap((o) => o.meses));
-  const anio1 = actual.evaluados.filter((e) => e.paso.anio === 1 && e.cultivo !== null);
+  const anio1 = (actual?.evaluados ?? []).filter((e) => e.paso.anio === 1 && e.cultivo !== null);
 
   return Array.from({ length: 12 }, (_, i) => {
     const mes = i + 1;
@@ -72,7 +72,7 @@ export function mejorCoberturaPara(meses: readonly number[], catalogo: readonly 
   const temp = meses.reduce((s, m) => s + (ctx.perfil.meses.find((x) => x.mes === m)?.tempMediaC ?? 0), 0) / meses.length;
   const hayHelada = meses.some((m) => ctx.perfil.resumen.mesesRiesgoHelada.includes(m));
   const candidatas = catalogo
-    .filter((c) => c.esCobertura && c.aptitudPorTemperatura(temp) !== "no_apta" && (!hayHelada || c.toleranciaHelada !== "baja"))
+    .filter((c) => c.esCobertura && c.aptitudPorTemperatura(temp) !== "no_apta" && (!hayHelada || (c.toleranciaHeladaConocida() ?? "baja") !== "baja"))
     .sort((a, b) =>
       (a.aptitudPorTemperatura(temp) === "optima" ? 0 : 1) - (b.aptitudPorTemperatura(temp) === "optima" ? 0 : 1) ||
       Number(b.fijaNitrogeno) - Number(a.fijaNitrogeno) ||
@@ -84,15 +84,16 @@ export function mejorCoberturaPara(meses: readonly number[], catalogo: readonly 
 export interface DatosOportunidades {
   ctx: ContextoMotor;
   catalogo: readonly Cultivo[];
-  actual: SecuenciaEvaluada;
+  /** Secuencia actual (estrategia A), o null si el lote no declara cultivo actual. */
+  actual: SecuenciaEvaluada | null;
   estrategias: readonly EstrategiaRotacionDto[];
 }
 
 export function detectarOportunidades(d: DatosOportunidades): OportunidadDto[] {
   const { ctx } = d;
   const out: OportunidadDto[] = [];
-  const A = d.estrategias[0];
-  const otras = d.estrategias.slice(1);
+  const A = d.estrategias.find((e) => e.id === "A") ?? null;
+  const otras = d.estrategias.filter((e) => e.id !== "A");
 
   // 1. Meses baldíos → cobertura
   if (ctx.mesesBaldios.length > 0) {
@@ -136,8 +137,8 @@ export function detectarOportunidades(d: DatosOportunidades): OportunidadDto[] {
   }
 
   // 3. Romper el ciclo de plagas
-  const repite = A.reglas.find((r) => r.regla === "no_repetir_familia");
-  if (repite && !repite.cumple) {
+  const repite = A?.reglas.find((r) => r.regla === "no_repetir_familia");
+  if (A && d.actual && repite && !repite.cumple) {
     const principal = pasosSembrados(d.actual.evaluados)[0]?.cultivo ?? null;
     const alternativa = otras
       .flatMap((e) => e.secuencia)
@@ -146,8 +147,8 @@ export function detectarOportunidades(d: DatosOportunidades): OportunidadDto[] {
       out.push({
         tipo: "romper_ciclo_plagas",
         meses: [],
-        texto: "Romper el ciclo de " + principal.familias.join("/") + " (" + principal.plagasClave.slice(0, 2).join("; ") + ") con " +
-          alternativa.cultivoNombre + ", de otra familia.",
+        texto: "Romper el ciclo de plagas y enfermedades de " + principal.familias.join("/") + " con " + alternativa.cultivoNombre +
+          ", de otra familia.",
         fuentes: ["ECOCROP", "Regla"],
       });
     }
@@ -156,12 +157,12 @@ export function detectarOportunidades(d: DatosOportunidades): OportunidadDto[] {
   // 4. Menor demanda de agua
   if (ctx.perfil.resumen.mesesDeficitHidrico.length > 0) {
     const mejorAgua = [...otras].sort((a, b) => b.puntajes.agua - a.puntajes.agua)[0];
-    if (mejorAgua && mejorAgua.puntajes.agua > A.puntajes.agua) {
+    if (mejorAgua && (!A || mejorAgua.puntajes.agua > A.puntajes.agua)) {
       out.push({
         tipo: "menor_demanda_agua",
         meses: [...ctx.perfil.resumen.mesesDeficitHidrico],
         texto: "Menor demanda de agua con la estrategia " + mejorAgua.id + " (" + mejorAgua.nombre + "): puntaje de agua " + mejorAgua.puntajes.agua +
-          " frente a " + A.puntajes.agua + " de la actual; déficit en " + nombresDeMeses(ctx.perfil.resumen.mesesDeficitHidrico) + ".",
+          (A ? " frente a " + A.puntajes.agua + " de la actual" : "") + "; déficit en " + nombresDeMeses(ctx.perfil.resumen.mesesDeficitHidrico) + ".",
         fuentes: ["NASA POWER", "ECOCROP"],
       });
     }
@@ -172,7 +173,7 @@ export function detectarOportunidades(d: DatosOportunidades): OportunidadDto[] {
   if ((ctx.pendientePct !== null && ctx.pendientePct > 10) || lluviaExtrema.length > 0) {
     const profundas = [...new Set(otras.flatMap((e) => e.secuencia).filter((p) => {
       const c = d.catalogo.find((x) => x.clave === p.cultivoClave);
-      return c && (c.profundidadRaiz === "profunda" || c.coberturaSuelo === "alta");
+      return c && (c.profundidadRaiz === "profunda" || c.coberturaConocida() === "alta");
     }).map((p) => p.cultivoNombre))];
     if (profundas.length) {
       out.push({
@@ -188,13 +189,14 @@ export function detectarOportunidades(d: DatosOportunidades): OportunidadDto[] {
 
   // 6. Sumar ingreso
   const mejorIngreso = [...otras].sort((a, b) => b.puntajes.ingreso - a.puntajes.ingreso)[0];
-  if (mejorIngreso && mejorIngreso.puntajes.ingreso > A.puntajes.ingreso) {
+  if (mejorIngreso && mejorIngreso.puntajes.ingreso > 0 && (!A || mejorIngreso.puntajes.ingreso > A.puntajes.ingreso)) {
     out.push({
       tipo: "sumar_ingreso",
       meses: [],
-      texto: "Sumar ingreso con la estrategia " + mejorIngreso.id + " (" + mejorIngreso.nombre + "): referencia de ingreso " + mejorIngreso.puntajes.ingreso +
-        " frente a " + A.puntajes.ingreso + " (cualitativa, sin precios).",
-      fuentes: ["ECOCROP", "Regla"],
+      texto: "Sumar ingreso con la estrategia " + mejorIngreso.id + " (" + mejorIngreso.nombre + "): puntaje de ingreso " + mejorIngreso.puntajes.ingreso +
+        (A ? " frente a " + A.puntajes.ingreso + " de la actual" : "") +
+        " (valor bruto de la producción por hectárea de FAOSTAT, solo de cultivos que se siembran en la zona; no incluye costos).",
+      fuentes: ["Regla"],
     });
   }
   return out;

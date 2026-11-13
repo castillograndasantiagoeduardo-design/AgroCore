@@ -1,6 +1,6 @@
 /**
  * OverpassViasClient: implementa IViasProvider con la API Overpass de OpenStreetMap.
- * Prueba varios espejos en orden: si uno falla (red, timeout, HTTP != 200, cuerpo no-JSON) pasa al siguiente.
+ * Consulta los espejos EN PARALELO (presupuesto total 8 s) y toma la primera respuesta válida.
  */
 import {
   type ElementosOsm,
@@ -10,15 +10,15 @@ import {
 } from "@agrocore/core";
 import { type DomainError, Result } from "@agrocore/shared-kernel";
 import { CacheEnMemoria, obtenerConCache } from "./cache/cache-en-memoria.ts";
-import { describirError, fetchConReintentos } from "./http/fetch-con-reintentos.ts";
+import { describirError, USER_AGENT_POR_DEFECTO } from "./http/fetch-con-reintentos.ts";
+import { cajaAjustada } from "./cache/celdas.ts";
 
 const FUENTE = "OpenStreetMap (Overpass API)";
 const TTL_DIAS = 30;
+const NEGATIVA_MS = 10 * 60_000;
 const ESPEJOS_POR_DEFECTO = [
-  "https://overpass-api.de/api/interpreter",
   "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  "https://overpass.private.coffee/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass-api.de/api/interpreter",
 ];
 
 type Punto = readonly [number, number];
@@ -26,7 +26,7 @@ type Punto = readonly [number, number];
 export interface OverpassViasConfig {
   espejos?: string[];
   timeoutMs?: number;
-  /** Veces que se recorre la lista de espejos (por defecto 3). */
+  /** Obsoleto: los espejos ya se consultan en paralelo; se conserva para no romper la configuración existente. */
   rondas?: number;
   cache?: ICacheProveedores;
 }
@@ -67,76 +67,75 @@ export function parsearRespuestaOverpass(json: unknown): ElementosOsm {
 export class OverpassViasClient implements IViasProvider {
   private readonly espejos: string[];
   private readonly timeoutMs: number;
-  private readonly rondas: number;
   private readonly cache?: ICacheProveedores;
   private readonly memoria = new CacheEnMemoria();
 
   constructor(config: OverpassViasConfig = {}) {
     this.espejos = config.espejos ?? ESPEJOS_POR_DEFECTO;
+    // Presupuesto TOTAL de la consulta (todos los espejos corren a la vez, así que es también el de cada uno).
     this.timeoutMs = config.timeoutMs ?? 8_000;
-    this.rondas = config.rondas ?? 1;
     this.cache = config.cache;
   }
 
   obtenerElementos(caja: readonly [number, number, number, number]): Promise<Result<ElementosOsm, DomainError>> {
-    const clave = "overpass:" + caja.map((v) => v.toFixed(5)).join(",");
-    return obtenerConCache(clave, "overpass", TTL_DIAS, this.memoria, this.cache, () => this.cargar(caja));
+    // La caja se expande hacia afuera a una grilla de ~50 m: consultas casi iguales comparten caché.
+    const ajustada = cajaAjustada(caja, 50);
+    const clave = "overpass:" + ajustada.map((v) => v.toFixed(5)).join(",");
+    return obtenerConCache(clave, "overpass", TTL_DIAS, this.memoria, this.cache, () => this.cargar(ajustada), NEGATIVA_MS);
+  }
+
+  /** Consulta un espejo; lanza Error con el motivo si no devuelve un JSON Overpass válido. */
+  private async consultarEspejo(espejo: string, cuerpo: string, senal: AbortSignal): Promise<ElementosOsm> {
+    const nombre = espejo.replace(/^https?:\/\//, "").split("/")[0];
+    let respuesta: Response;
+    try {
+      respuesta = await fetch(espejo, {
+        method: "POST",
+        body: cuerpo,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+          "User-Agent": USER_AGENT_POR_DEFECTO,
+        },
+        signal: senal,
+      });
+    } catch (error) {
+      throw new Error(nombre + ": " + describirError(error, this.timeoutMs));
+    }
+    if (respuesta.status !== 200) {
+      await respuesta.body?.cancel();
+      throw new Error(nombre + ": HTTP " + respuesta.status);
+    }
+    let json: unknown;
+    try {
+      json = JSON.parse(await respuesta.text());
+    } catch {
+      throw new Error(nombre + ": respuesta no es JSON");
+    }
+    if (!json || !Array.isArray((json as { elements?: unknown }).elements)) {
+      throw new Error(nombre + ": respuesta sin elements");
+    }
+    return parsearRespuestaOverpass(json);
   }
 
   /**
-   * Recorre los espejos hasta RONDAS veces con espera creciente (1 s, 2 s, 4 s...). Los espejos públicos
-   * fallan a ratos ("at capacity" 502, 504 del proxy): suelen responder en un reintento. Un espejo que
-   * agotó el tiempo no se vuelve a intentar en las rondas siguientes (no se sumarían otros 25 s).
+   * Consulta los espejos EN PARALELO con un presupuesto total (timeoutMs) y toma la primera respuesta válida;
+   * al llegar, aborta las demás peticiones.
    */
   private async cargar(caja: readonly [number, number, number, number]): Promise<Result<ElementosOsm, DomainError>> {
     const cuerpo = "data=" + encodeURIComponent(construirConsultaOverpass(caja));
-    const fallos: string[] = [];
-    const lentos = new Set<string>();
-    let espera = 1000;
-    let primero = true;
-    for (let ronda = 1; ronda <= this.rondas; ronda++) {
-      for (const espejo of this.espejos) {
-        if (lentos.has(espejo)) continue;
-        if (!primero) {
-          await new Promise((r) => setTimeout(r, espera));
-          espera = Math.min(espera * 2, 8000);
-        }
-        primero = false;
-        const nombre = espejo.replace(/^https?:\/\//, "").split("/")[0];
-        try {
-          const respuesta = await fetchConReintentos(espejo, {
-            method: "POST",
-            body: cuerpo,
-            headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-            timeoutMs: this.timeoutMs,
-            reintentos: 0,
-            esperaInicialMs: 0,
-          });
-          if (respuesta.status !== 200) {
-            await respuesta.body?.cancel();
-            fallos.push(nombre + ": HTTP " + respuesta.status);
-            continue;
-          }
-          const texto = await respuesta.text();
-          let json: unknown;
-          try {
-            json = JSON.parse(texto);
-          } catch {
-            fallos.push(nombre + ": respuesta no es JSON");
-            continue;
-          }
-          if (!json || !Array.isArray((json as { elements?: unknown }).elements)) {
-            fallos.push(nombre + ": respuesta sin elements");
-            continue;
-          }
-          return Result.ok(parsearRespuestaOverpass(json));
-        } catch (error) {
-          const detalle = describirError(error, this.timeoutMs);
-          if (/tard[oó]/.test(detalle)) lentos.add(espejo);
-          fallos.push(nombre + ": " + detalle);
-        }
-      }
+    const maestro = new AbortController();
+    const senal = AbortSignal.any([maestro.signal, AbortSignal.timeout(this.timeoutMs)]);
+    try {
+      const elementos = await Promise.any(this.espejos.map((e) => this.consultarEspejo(e, cuerpo, senal)));
+      return Result.ok(elementos);
+    } catch (error) {
+      const fallos = error instanceof AggregateError
+        ? (error.errors as unknown[]).map((e) => (e instanceof Error ? e.message : String(e)))
+        : [error instanceof Error ? error.message : String(error)];
+      return Result.err(new TerrenoProveedorNoDisponibleError(FUENTE, "todos los espejos fallaron: " + [...new Set(fallos)].join("; ")));
+    } finally {
+      maestro.abort(); // cancela las peticiones que sigan en vuelo
     }
-    return Result.err(new TerrenoProveedorNoDisponibleError(FUENTE, "todos los espejos fallaron: " + [...new Set(fallos)].join("; ")));
   }
 }

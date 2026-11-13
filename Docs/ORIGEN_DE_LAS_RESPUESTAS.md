@@ -84,3 +84,40 @@ Rutas relativas a `Backend/packages/core/src/modules/`.
    `MODULE.md`, viajan con `tipo: "referencia"` y una nota, y `scripts/auditar-datos.ts` exige que cada uno esté en la
    lista de criterios justificados.
 4. Textos de evidencia con cifras escritas a mano → plantillas que insertan las cifras desde `DatoConFuente`.
+
+## 6. Diagnóstico: ¿por qué se recomendaba centeno en Duitama con papa continua?
+
+Caso real (E2E de línea base, 2026-11-13, lote rural 5.785, −73.030, papa continua, sin riego):
+`B: haba → centeno → papa → rábano forrajero` y `D: centeno → vicia villosa → centeno → vicia villosa`.
+El centeno casi no tiene mercado ni tradición en Boyacá: **EVA no registra área sembrada de centeno en Duitama ni en
+los 17 municipios a menos de 25 km (2015-2025)**, mientras sí registra papa (2 909 ha/año), cebolla de bulbo (1 523),
+maíz (634), arveja (359), avena (106), cebada (92) y haba (34).
+
+Causas (las tres a la vez):
+
+1. **Puntajes que premiaban rasgos del centeno sin mirar el mercado.** En la estrategia B (suelo) el puntaje era
+   `0,5 × suelo + 0,3 × plagas + 0,2 × total` y en D (agua) `0,6 × agua + …`. El catálogo viejo le daba al centeno
+   cobertura "alta", raíz "profunda", tolerancia a sequía "alta", necesidad de agua "baja" y helada "alta": ganaba
+   en suelo y en agua. El ingreso pesaba solo 1/5 del puntaje total y nunca entraba en B ni en D.
+2. **Ingreso inventado.** `referencias-ingreso.ts` daba "baja" (30 puntos) a los cereales y **"media" (60 puntos) por
+   defecto** a leguminosas, forrajes, oleaginosas y pseudocereales sin dato propio. No había precios, rendimientos ni
+   presencia local: el centeno perdía poco frente a cultivos con mercado real.
+3. **Catálogo sin fuentes.** Las tolerancias del centeno (y de todos) eran valores de memoria de un subagente, sin
+   verificar ("confianza media"). Nada en el sistema sabía qué se siembra en la zona.
+
+Corrección (v2):
+
+- Catálogo regenerado desde **FAO ECOCROP** (EcoPortCode por cultivo) y **FAOSTAT**; ver §2.
+- Ingreso = valor bruto de la producción por ha de **FAOSTAT** (país o mundo) **solo si el cultivo tiene presencia
+  local**; sin precio o sin presencia → **"sin datos"** (aporta 0), nunca "media".
+- **Presencia local** (puerto `IPresenciaLocalProvider`, implementado en `platform/src/presencia/presencia-local-client.ts`,
+  caché en archivos): EVA (datos.gov.co, conjuntos `uejq-wxrr` y `2pnw-mmge`) en los municipios a ≤ 25 km en Colombia;
+  FAOSTAT por país fuera de Colombia.
+- **Regla nueva** (`recomendacion/domain/services/recomendar-epoca.service.ts`): en cada época la primera recomendación
+  sale de cultivos con presencia local; un cultivo poco común solo puede ser la alternativa, con la advertencia
+  "Poco sembrado en su zona: confirme que tiene comprador antes de sembrar", y nunca es la primera de "Más ingreso".
+  En las estrategias de rotación, cada paso poco común resta puntaje y agrega esa advertencia como riesgo.
+- Test `core/tests/recomendacion/recomendacion.test.ts`: Duitama, 2 530 m, papa continua, sin riego → todas las
+  primeras recomendaciones por época son cultivos con presencia EVA; si el centeno aparece, sale marcado "poco común".
+  Resultado actual (objetivo equilibrado): frijol (lluvias mar–may), quinua (jun–ago), trigo (lluvias sep–nov),
+  quinua (heladas dic–feb); el centeno solo aparece como alternativa poco común.

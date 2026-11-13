@@ -10,7 +10,7 @@
 import type { AmenazaClimaticaDto, ClimaMensualDto, MesVulnerabilidadDto, SeveridadAmenaza } from "@agrocore/contracts";
 
 
-import { UMBRAL_CALOR_C } from "./calendario-climatico.service.ts";
+import { UMBRAL_CALOR_C, UMBRAL_LLUVIA_FUERTE_MM } from "./calendario-climatico.service.ts";
 
 type Escalon = [number, SeveridadAmenaza];
 
@@ -65,7 +65,7 @@ export function amenazasDelMes(m: ClimaMensualDto): AmenazaClimaticaDto[] {
     out.push({
       tipo: "lluvia_extrema",
       severidad: extrema,
-      detalle: r1(m.diasLluviaFuertePromedio) + " días/mes con lluvia ≥ 20 mm (escorrentía y erosión).",
+      detalle: r1(m.diasLluviaFuertePromedio) + " días/mes con lluvia ≥ " + UMBRAL_LLUVIA_FUERTE_MM + " mm (escorrentía y erosión).",
     });
   }
   return out;

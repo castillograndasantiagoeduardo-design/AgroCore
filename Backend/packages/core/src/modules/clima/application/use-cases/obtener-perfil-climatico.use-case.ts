@@ -36,7 +36,9 @@ import { clasificarClima } from "../../domain/services/clasificacion-climatica.s
 import { calcularTemporadasCultivo } from "../../domain/services/temporadas-cultivo.service.ts";
 import { calcularCalendarioVulnerabilidad } from "../../domain/services/vulnerabilidad-climatica.service.ts";
 import { indiceAridez, mesesCriticos, regimenLluvias } from "../../domain/services/resumen-climatico.service.ts";
-import type { ContextoSolicitud, IClimaProvider, INormalesClimatologicasProvider, IReloj } from "../ports/index.ts";
+import type { ContextoSolicitud, IClimaProvider, IClimatologiaProvider, INormalesClimatologicasProvider, IReloj } from "../ports/index.ts";
+import { conPlazo, type ITemporizador } from "../../../../shared/application/ports/temporizador.port.ts";
+import { ADVERTENCIA_CLIMATOLOGIA, calendarioDesdeClimatologia } from "../../domain/services/perfil-climatologia.service.ts";
 import { type IMedidorTiempos, MEDIDOR_NULO } from "../../../../shared/application/ports/medidor-tiempos.port.ts";
 
 export const ANIOS_NORMAL_CLIMATOLOGICA = 30;
@@ -57,6 +59,9 @@ export class ObtenerPerfilClimaticoUseCase {
     private readonly normales: INormalesClimatologicasProvider,
     private readonly reloj: IReloj,
     private readonly medidor: IMedidorTiempos = MEDIDOR_NULO,
+    /** Opcionales: sin ellos la etapa rápida espera la serie diaria. */
+    private readonly climatologia?: IClimatologiaProvider,
+    private readonly temporizador?: ITemporizador,
   ) {}
 
   /** Perfil de una finca guardada. */
@@ -120,38 +125,71 @@ export class ObtenerPerfilClimaticoUseCase {
     const meses = calcularCalendarioMensual(registros, ajuste, latitud);
     if (meses.length !== 12) return Result.err(new ClimaSinDatosError(latitud, longitud));
 
-    const lluviaAnualMm = redondear1(meses.reduce((s, m) => s + m.lluviaMm, 0));
-    const tempMediaAnualC = redondear1(meses.reduce((s, m) => s + m.tempMediaC, 0) / 12);
-
-    return Result.ok({
+    return Result.ok(armarPerfil({
       fincaId,
       latitud,
       longitud,
-      altitudReferenciaM: Math.round(altitudReferenciaM),
-      altitudCeldaM: Math.round(serie.altitudCeldaM),
-      ajusteTemperaturaC: Math.round(ajuste * 100) / 100,
+      altitudReferenciaM,
+      altitudCeldaM: serie.altitudCeldaM,
+      ajuste,
       periodo: { desde, hasta, anios: ANIOS_NORMAL_CLIMATOLOGICA },
       fuente: calibracion ? serie.fuente + " calibrado con IDEAM" : serie.fuente,
       calibracion,
-      umbrales: { heladaC: UMBRAL_HELADA_C, lluviaFuerteMm: UMBRAL_LLUVIA_FUERTE_MM, calorC: UMBRAL_CALOR_C },
       meses,
-      resumen: {
-        lluviaAnualMm,
-        tempMediaAnualC,
-        etoAnualMm: Math.round(meses.reduce((s, m) => s + m.etoMm, 0)),
-        indiceAridez: indiceAridez(meses),
-        regimenLluvias: regimenLluvias(meses),
-        mesesLluviosos: meses.filter((m) => m.temporada === "lluviosa").map((m) => m.mes),
-        mesesSecos: meses.filter((m) => m.temporada === "seca").map((m) => m.mes),
-        mesesRiesgoHelada: meses.filter((m) => m.probabilidadHelada >= PROBABILIDAD_RIESGO_HELADA).map((m) => m.mes),
-        clasificacionClimatica: clasificarClima(meses.map((m) => m.tempMediaC), latitud),
-        ...mesesCriticos(meses),
-      },
-      temporadasCultivo: calcularTemporadasCultivo(meses),
-      calendarioVulnerabilidad: calcularCalendarioVulnerabilidad(meses),
       advertencias,
+    }));
+  }
+
+  /**
+   * Perfil para la ETAPA RÁPIDA: intenta la serie diaria (caché, precálculo o NASA POWER) y, si no llega dentro de
+   * `plazoMs`, usa la climatología mensual de NASA POWER (aproximada, una sola petición corta).
+   * La serie diaria sigue descargándose en segundo plano y queda en caché para el detalle.
+   */
+  async porUbicacionRapida(
+    ubicacion: UbicacionClima,
+    contexto: ContextoSolicitud,
+    plazoMs: number,
+  ): Promise<Result<{ perfil: PerfilClimaticoDto; origen: "serie_diaria" | "climatologia" }, DomainError>> {
+    const diaria = this.porUbicacion(ubicacion, contexto);
+    if (!this.climatologia || !this.temporizador) {
+      const r = await diaria;
+      return r.ok ? Result.ok({ perfil: r.value, origen: "serie_diaria" as const }) : r;
+    }
+    const intento = await conPlazo(diaria, this.temporizador.esperar(plazoMs));
+    if (!intento.vencido && intento.valor.ok) return Result.ok({ perfil: intento.valor.value, origen: "serie_diaria" as const });
+
+    const { latitud, longitud, altitudM } = ubicacion;
+    const climatologia = this.climatologia;
+    const clim = await this.medidor.medir("power_climatologia", () => climatologia.obtenerClimatologia(latitud, longitud));
+    if (!clim.ok) {
+      // Sin climatología: queda esperar la serie diaria (el plazo total de la petición lo controla el llamador).
+      const r = await diaria;
+      return r.ok ? Result.ok({ perfil: r.value, origen: "serie_diaria" as const }) : r;
+    }
+    const c = clim.value;
+    const altitudReferenciaM = altitudM ?? c.altitudCeldaM;
+    const ajuste = calcularAjusteTemperatura(c.altitudCeldaM, altitudReferenciaM);
+    const meses = calendarioDesdeClimatologia(c, ajuste, latitud);
+    if (meses.length !== 12) return Result.err(new ClimaSinDatosError(latitud, longitud));
+    const [desde, hasta] = c.periodo.split("-");
+    return Result.ok({
+      perfil: armarPerfil({
+        fincaId: null,
+        latitud,
+        longitud,
+        altitudReferenciaM,
+        altitudCeldaM: c.altitudCeldaM,
+        ajuste,
+        periodo: { desde: (desde ?? "") + "-01-01", hasta: (hasta ?? desde ?? "") + "-12-31", anios: Number(hasta) - Number(desde) + 1 || 0 },
+        fuente: c.fuente + " (climatología mensual)",
+        calibracion: null,
+        meses,
+        advertencias: [ADVERTENCIA_CLIMATOLOGIA],
+      }),
+      origen: "climatologia" as const,
     });
   }
+
 
   /**
    * Intenta calibrar la serie de la finca usando el resultado ya consultado de la estación IDEAM.
@@ -210,4 +248,53 @@ export class ObtenerPerfilClimaticoUseCase {
       },
     };
   }
+}
+
+interface DatosPerfil {
+  fincaId: number | null;
+  latitud: number;
+  longitud: number;
+  altitudReferenciaM: number;
+  altitudCeldaM: number;
+  ajuste: number;
+  periodo: { desde: string; hasta: string; anios: number };
+  fuente: string;
+  calibracion: CalibracionDto | null;
+  meses: PerfilClimaticoDto["meses"];
+  advertencias: string[];
+}
+
+/** Arma el perfil (resumen, temporadas y vulnerabilidad) a partir del calendario de 12 meses. */
+function armarPerfil(d: DatosPerfil): PerfilClimaticoDto {
+  const { meses, latitud } = d;
+  const lluviaAnualMm = redondear1(meses.reduce((s, m) => s + m.lluviaMm, 0));
+  const tempMediaAnualC = redondear1(meses.reduce((s, m) => s + m.tempMediaC, 0) / 12);
+  return {
+    fincaId: d.fincaId,
+    latitud,
+    longitud: d.longitud,
+    altitudReferenciaM: Math.round(d.altitudReferenciaM),
+    altitudCeldaM: Math.round(d.altitudCeldaM),
+    ajusteTemperaturaC: Math.round(d.ajuste * 100) / 100,
+    periodo: d.periodo,
+    fuente: d.fuente,
+    calibracion: d.calibracion,
+    umbrales: { heladaC: UMBRAL_HELADA_C, lluviaFuerteMm: UMBRAL_LLUVIA_FUERTE_MM, calorC: UMBRAL_CALOR_C },
+    meses,
+    resumen: {
+        lluviaAnualMm,
+        tempMediaAnualC,
+        etoAnualMm: Math.round(meses.reduce((s, m) => s + m.etoMm, 0)),
+        indiceAridez: indiceAridez(meses),
+        regimenLluvias: regimenLluvias(meses),
+        mesesLluviosos: meses.filter((m) => m.temporada === "lluviosa").map((m) => m.mes),
+        mesesSecos: meses.filter((m) => m.temporada === "seca").map((m) => m.mes),
+        mesesRiesgoHelada: meses.filter((m) => m.probabilidadHelada >= PROBABILIDAD_RIESGO_HELADA).map((m) => m.mes),
+        clasificacionClimatica: clasificarClima(meses.map((m) => m.tempMediaC), latitud),
+        ...mesesCriticos(meses),
+      },
+    temporadasCultivo: calcularTemporadasCultivo(meses),
+    calendarioVulnerabilidad: calcularCalendarioVulnerabilidad(meses),
+    advertencias: d.advertencias,
+  };
 }

@@ -5,8 +5,9 @@
  *  2. Altitud de referencia: la del usuario / finca, si no SRTM, si no la celda del clima.
  *  3. Perfil climático (temporadas derivadas, vulnerabilidad).
  *  4. Ventanas de la rotación en las temporadas reales (secano o, con riego, con riego).
- *  5. Estrategias: A (actual, sin corregir), B (suelo), C (forraje / ingreso), D (agua, si prioridad agua ≥ 4 o
- *     hay déficit hídrico); siempre distintas.
+ *  5. Estrategias: A (actual, sin corregir; solo si hay cultivo actual), B (suelo), C (forraje / ingreso), D (agua, si
+ *     prioridad agua ≥ 4, hay déficit hídrico o no hay cultivo actual); siempre distintas y siempre ≥ 3.
+ *     La búsqueda es exacta (ramificación y acotamiento, ver generar-estrategias.service.ts).
  *  6. Explicación, calendario de 12 meses y oportunidades.
  *
  * Solo lectura: no muta estado, así que no audita (Regla 6). Los servicios de dominio son puros y deterministas.
@@ -23,6 +24,7 @@ import type {
   VentanaRotacionDto,
 } from "@agrocore/contracts";
 import { DomainError, Result } from "@agrocore/shared-kernel";
+import { PRESENCIA_DESCONOCIDA, type PresenciaMotor, calcularEscalaIngreso } from "../../domain/services/presencia-motor.ts";
 import type { AreaSeleccionada } from "../../../../shared/domain/geo/area-seleccionada.vo.ts";
 import type { Cultivo } from "../../../cultivos/domain/entities/cultivo.entity.ts";
 import {
@@ -37,14 +39,14 @@ import {
   claveSecuencia,
   esViableEnAlgunaVentana,
   evaluarSecuencia,
-  type OpcionesBusqueda,
   type SecuenciaEvaluada,
 } from "../../domain/services/generar-estrategias.service.ts";
 import { explicarEstrategia, NOMBRES_ESTRATEGIA } from "../../domain/services/explicar-estrategia.service.ts";
 import { construirVentanas } from "../../domain/services/ventanas-rotacion.service.ts";
 import { construirCalendario, detectarOportunidades } from "../../domain/services/calendario-oportunidades.service.ts";
-import { puntajeIngresoReferencia } from "../../domain/services/referencias-ingreso.ts";
+import { ENFOQUES_ROTACION } from "../../domain/services/enfoques-rotacion.ts";
 import type { ContextoSolicitud, IAnalisisTerrenoQuery, ICultivoRepository, IPerfilClimaticoQuery } from "../ports/index.ts";
+import { FRACCION_ET0_SECANO } from "../../../clima/domain/services/temporadas-cultivo.service.ts";
 import { type IMedidorTiempos, MEDIDOR_NULO } from "../../../../shared/application/ports/medidor-tiempos.port.ts";
 
 export const AVISO_ROTACIONES =
@@ -60,9 +62,17 @@ export interface DatosComparacion {
   altitudM: number | null;
   fuenteAltitud: "finca" | "usuario" | null;
   tieneRiego: boolean;
-  cultivoActual: string;
+  /** Clave del cultivo actual, o null si el lote no declara uno (no se calcula la estrategia A). */
+  cultivoActual: string | null;
   secuenciaActual?: string[];
   prioridades: PrioridadesRotacion;
+}
+
+/** Datos que el llamador ya tiene: evitan repetir las consultas de terreno, clima o presencia local. */
+export interface PreviosComparacion {
+  terreno?: PerfilTerrenoDto;
+  perfil?: PerfilClimaticoDto;
+  presencia?: PresenciaMotor;
 }
 
 interface EntradaCalculo {
@@ -72,59 +82,14 @@ interface EntradaCalculo {
   terreno: PerfilTerrenoDto;
   temporadas: TemporadaCultivoDto[];
   ventanas: VentanaRotacionDto[];
-  principal: Cultivo;
+  /** Cultivo principal del lote, o null si no hay cultivo actual. */
+  principal: Cultivo | null;
   actuales: Cultivo[];
   catalogo: Cultivo[];
   advertencias: string[];
   altitudM: number | null;
   fuenteAltitud: ComparacionRotacionesDto["sitio"]["fuenteAltitud"];
 }
-
-const NIVEL = { baja: 0, media: 1, alta: 2 } as const;
-const COB = { baja: 20, media: 55, alta: 90 } as const;
-const FOR = { ninguno: 0, bajo: 25, medio: 60, alto: 100 } as const;
-const AGUA = { baja: 100, media: 60, alta: 25 } as const;
-
-/**
- * Premio (0–25 puntos) por la fracción de pasos con temperatura ÓPTIMA: un cultivo solo "posible" (fuera del óptimo
- * ECOCROP) rinde menos; sin este premio el motor elegía cultivos de clima cálido en el altiplano por su forraje.
- */
-export const BONO_APTITUD_OPTIMA = 25;
-function bonoAptitud(s: SecuenciaEvaluada): number {
-  const conCultivo = s.pasos.filter((p) => p.aptitudClima !== null);
-  return conCultivo.length ? (conCultivo.filter((p) => p.aptitudClima === "optima").length / conCultivo.length) * BONO_APTITUD_OPTIMA : 0;
-}
-
-/** Penaliza pH o textura incompatibles (solo si se conoce el suelo). */
-function penalizacionSuelo(s: SecuenciaEvaluada): number {
-  return s.reglas.find((r) => r.regla === "suelo_compatible")?.cumple === false ? 6 : 0;
-}
-
-const heuristicaBase = (ev: PasoEvaluado) => (ev.paso.aptitudClima === "optima" ? 30 : 0) - (ev.paso.riesgoHelada === "moderado" ? 5 : 0);
-
-const ENFOQUES: Record<Exclude<IdEstrategia, "A">, { enfoque: EnfoqueEstrategia; opciones: Pick<OpcionesBusqueda, "puntuar" | "heuristica"> }> = {
-  B: {
-    enfoque: "suelo",
-    opciones: {
-      puntuar: (s) => 0.5 * s.puntajes.suelo + 0.3 * s.puntajes.plagas + 0.2 * s.puntajeTotal + bonoAptitud(s) - penalizacionSuelo(s),
-      heuristica: (c, ev) => 0.5 * COB[c.coberturaSuelo] + 30 * Number(c.fijaNitrogeno) + 10 * NIVEL[c.profundidadRaiz === "profunda" ? "alta" : "baja"] + heuristicaBase(ev),
-    },
-  },
-  C: {
-    enfoque: "forraje",
-    opciones: {
-      puntuar: (s) => 0.4 * s.puntajes.forraje + 0.3 * s.puntajes.ingreso + 0.3 * s.puntajeTotal + bonoAptitud(s) - penalizacionSuelo(s),
-      heuristica: (c, ev) => 0.5 * FOR[c.valorForrajero] + 0.4 * puntajeIngresoReferencia(c.clave, c.grupo) + 10 * Number(c.fijaNitrogeno) + heuristicaBase(ev),
-    },
-  },
-  D: {
-    enfoque: "agua",
-    opciones: {
-      puntuar: (s) => 0.6 * s.puntajes.agua + 0.2 * s.puntajes.suelo + 0.2 * s.puntajeTotal + bonoAptitud(s) - penalizacionSuelo(s),
-      heuristica: (c, ev) => 0.6 * AGUA[c.necesidadAgua] + 15 * NIVEL[c.toleranciaSequia] + 10 * Number(c.fijaNitrogeno) - ev.paso.deficitAguaMm / 10 + heuristicaBase(ev),
-    },
-  },
-};
 
 export class MotorRotaciones {
   constructor(
@@ -134,21 +99,29 @@ export class MotorRotaciones {
     private readonly medidor: IMedidorTiempos = MEDIDOR_NULO,
   ) {}
 
-  async comparar(datos: DatosComparacion, contexto: ContextoSolicitud): Promise<Result<ComparacionRotacionesDto, DomainError>> {
+  /**
+   * @param previos terreno, perfil climático y presencia local que el llamador ya consultó (no se repiten las consultas).
+   */
+  async comparar(
+    datos: DatosComparacion,
+    contexto: ContextoSolicitud,
+    previos?: PreviosComparacion,
+  ): Promise<Result<ComparacionRotacionesDto, DomainError>> {
     // 0. Catálogo y secuencia actual (antes de consultar proveedores lentos)
     const catalogo = await this.cultivos.listar();
     const porClave = new Map<string, Cultivo>(catalogo.map((c) => [c.clave, c]));
-    const clavesActuales = datos.secuenciaActual?.length ? datos.secuenciaActual : [datos.cultivoActual];
+    // Sin cultivo actual no hay estrategia A: se ignora cualquier secuencia declarada.
+    const clavesActuales = datos.cultivoActual === null ? [] : datos.secuenciaActual?.length ? datos.secuenciaActual : [datos.cultivoActual];
     const actuales: Cultivo[] = [];
     for (const clave of clavesActuales) {
       const c = porClave.get(clave);
       if (!c) return Result.err(new RotacionCultivoDesconocidoError(clave));
       actuales.push(c);
     }
-    const principal = actuales[0];
+    const principal = actuales[0] ?? null;
 
     // 1. Terreno
-    const terreno = await this.terreno.analizar(datos.area);
+    const terreno = previos?.terreno ?? await this.terreno.analizar(datos.area);
     if (terreno.aptitud !== "apto") return Result.err(new TerrenoNoAptoError(terreno.aptitud, terreno.mensajeAptitud));
 
     // 2. Altitud
@@ -160,13 +133,18 @@ export class MotorRotaciones {
     }
 
     // 3. Clima
-    const perfilR = await this.perfilClimatico.porUbicacion(
-      { latitud: datos.area.latitud, longitud: datos.area.longitud, altitudM },
-      contexto,
-      datos.sitio.fincaId,
-    );
-    if (!perfilR.ok) return Result.err(perfilR.error);
-    const perfil = perfilR.value;
+    let perfil: PerfilClimaticoDto;
+    if (previos?.perfil) {
+      perfil = previos.perfil;
+    } else {
+      const perfilR = await this.perfilClimatico.porUbicacion(
+        { latitud: datos.area.latitud, longitud: datos.area.longitud, altitudM },
+        contexto,
+        datos.sitio.fincaId,
+      );
+      if (!perfilR.ok) return Result.err(perfilR.error);
+      perfil = perfilR.value;
+    }
     if (altitudM === null) fuenteAltitud = "clima";
     const advertencias: string[] = [];
 
@@ -175,13 +153,14 @@ export class MotorRotaciones {
     if (temporadas.length === 0 && !datos.tieneRiego && perfil.temporadasCultivo.conRiego.length > 0) {
       temporadas = perfil.temporadasCultivo.conRiego;
       advertencias.push(
-        "El clima no tiene temporada de secano (lluvia < 50 % de la ET0 en todos los meses aptos por temperatura): " +
+        "El clima no tiene temporada de secano (lluvia < " + FRACCION_ET0_SECANO * 100 + " % de la ET0 en todos los meses aptos por temperatura): " +
           "las ventanas usan la temporada térmica y casi todo cultivo dependerá del riego.",
       );
     }
     if (temporadas.length === 0) return Result.err(new RotacionSinTemporadasError());
     const ventanas = construirVentanas(temporadas);
 
+    const presencia = previos?.presencia ?? PRESENCIA_DESCONOCIDA;
     const ctx: ContextoMotor = {
       perfil,
       ventanas,
@@ -190,6 +169,8 @@ export class MotorRotaciones {
       pendientePct: terreno.pendientePct,
       mesesBaldios: terreno.ndvi?.mesesBaldios ?? [],
       excluidoPct: terreno.afectacion.excluidoPct,
+      presencia,
+      escalaIngreso: calcularEscalaIngreso(catalogo, presencia) ?? undefined,
     };
 
     return this.medidor.medirSync("motor", () =>
@@ -200,49 +181,63 @@ export class MotorRotaciones {
   /** Búsqueda de estrategias, textos, calendario y oportunidades (síncrono y puro: lo mide el medidor como "motor"). */
   private calcular(e: EntradaCalculo): Result<ComparacionRotacionesDto, DomainError> {
     const { datos, ctx, perfil, terreno, temporadas, ventanas, principal, actuales, catalogo, advertencias, altitudM, fuenteAltitud } = e;
-    // 5A. Estrategia actual, sin corregir: cultivos actuales en las ventanas de temporada; barbecho en el intervalo.
-    const elementosA = this.secuenciaActual(actuales, ctx);
-    const evalA = evaluarSecuencia(elementosA, ctx, datos.prioridades);
-    const excluir = [claveSecuencia(evalA.claves)];
+    // 5A. Estrategia actual, sin corregir (solo si hay cultivo actual): cultivos declarados en las ventanas de temporada;
+    //     barbecho en el intervalo.
+    let evalA: SecuenciaEvaluada | null = null;
+    const excluir: string[] = [];
+    if (principal) {
+      evalA = evaluarSecuencia(this.secuenciaActual(actuales, ctx), ctx, datos.prioridades);
+      excluir.push(claveSecuencia(evalA.claves));
+    }
 
     // 5B. Suelo (incluye el cultivo principal si es viable)
-    let requerirClave: string | undefined = principal.clave;
-    if (!esViableEnAlgunaVentana(principal, ctx)) {
+    let requerirClave: string | undefined = principal?.clave;
+    if (principal && !esViableEnAlgunaVentana(principal, ctx)) {
       requerirClave = undefined;
       advertencias.push(
         "El cultivo actual (" + principal.nombre + ") no es viable en ninguna ventana con el clima calculado (temperatura, helada, calor, " +
           "agua o ciclo): las estrategias alternativas no lo incluyen.",
       );
     }
-    const soloAnuales = !principal.perenne;
-    let evalB = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES.B.opciones, requerirClave, soloAnuales, excluirSecuencias: excluir });
-    if (!evalB && requerirClave) {
+    const soloAnuales = !principal?.perenne;
+    let evalB = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES_ROTACION.B.opciones, requerirClave, soloAnuales, excluirSecuencias: excluir });
+    if (!evalB && requerirClave && principal) {
       advertencias.push("Ninguna rotación válida incluye " + principal.nombre + " con las reglas duras: la estrategia B se calculó sin exigirlo.");
-      evalB = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES.B.opciones, soloAnuales, excluirSecuencias: excluir });
+      evalB = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES_ROTACION.B.opciones, soloAnuales, excluirSecuencias: excluir });
     }
-    if (!evalB) evalB = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES.B.opciones, excluirSecuencias: excluir });
+    if (!evalB) evalB = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES_ROTACION.B.opciones, excluirSecuencias: excluir });
     if (!evalB) {
       return Result.err(new RotacionSinAlternativasError("ninguna secuencia cumple a la vez temperatura, helada, calor, agua, ciclo, familia y leguminosa"));
     }
     excluir.push(claveSecuencia(evalB.claves));
 
-    // 5C. Forraje / ingreso
-    let evalC = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES.C.opciones, soloAnuales, excluirSecuencias: excluir });
-    if (!evalC) evalC = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES.C.opciones, excluirSecuencias: excluir });
+    // 5C. Forraje / ingreso: el primer cultivo sembrado no es "poco común" en la zona si existe una alternativa viable.
+    let evalC: SecuenciaEvaluada | null = null;
+    for (const evitarPocoComunPrimero of [true, false]) {
+      evalC = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, {
+        ...ENFOQUES_ROTACION.C.opciones, soloAnuales, excluirSecuencias: excluir, evitarPocoComunPrimero,
+      }) ?? buscarMejorSecuencia(catalogo, ctx, datos.prioridades, {
+        ...ENFOQUES_ROTACION.C.opciones, excluirSecuencias: excluir, evitarPocoComunPrimero,
+      });
+      if (evalC) break;
+    }
     if (!evalC) return Result.err(new RotacionSinAlternativasError("no hay una tercera secuencia válida distinta de la actual y de la estrategia B"));
     excluir.push(claveSecuencia(evalC.claves));
 
-    // 5D. Agua (opcional)
+    // 5D. Agua: si la prioridad de agua es alta, hay déficit hídrico o no hay estrategia A (para tener siempre ≥ 3).
     let evalD: SecuenciaEvaluada | null = null;
-    if (datos.prioridades.agua >= PRIORIDAD_AGUA_ESTRATEGIA_D || perfil.resumen.mesesDeficitHidrico.length > 0) {
-      evalD = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES.D.opciones, soloAnuales, excluirSecuencias: excluir }) ??
-        buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES.D.opciones, excluirSecuencias: excluir });
+    if (!evalA || datos.prioridades.agua >= PRIORIDAD_AGUA_ESTRATEGIA_D || perfil.resumen.mesesDeficitHidrico.length > 0) {
+      evalD = buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES_ROTACION.D.opciones, soloAnuales, excluirSecuencias: excluir }) ??
+        buscarMejorSecuencia(catalogo, ctx, datos.prioridades, { ...ENFOQUES_ROTACION.D.opciones, excluirSecuencias: excluir });
+      if (!evalD && !evalA) {
+        return Result.err(new RotacionSinAlternativasError("no hay una tercera secuencia válida distinta de las estrategias B y C"));
+      }
     }
 
     // 6. Textos
     const secuenciaAsumida = !datos.secuenciaActual?.length;
     const construir = (id: IdEstrategia, enfoque: EnfoqueEstrategia, s: SecuenciaEvaluada): EstrategiaRotacionDto => {
-      const t = explicarEstrategia({ id, secuencia: s, ctx, clavePrincipal: principal.clave, secuenciaAsumida: id === "A" && secuenciaAsumida });
+      const t = explicarEstrategia({ id, secuencia: s, ctx, clavePrincipal: principal?.clave ?? null, secuenciaAsumida: id === "A" && secuenciaAsumida });
       return {
         id,
         enfoque,
@@ -258,12 +253,14 @@ export class MotorRotaciones {
         puntajeTotal: s.puntajeTotal,
       };
     };
-    const estrategias = [construir("A", "actual", evalA), construir("B", "suelo", evalB), construir("C", "forraje", evalC)];
+    const estrategias: EstrategiaRotacionDto[] = [];
+    if (evalA) estrategias.push(construir("A", "actual", evalA));
+    estrategias.push(construir("B", "suelo", evalB), construir("C", "forraje", evalC));
     if (evalD) estrategias.push(construir("D", "agua", evalD));
 
     // Mejor puntuada: en empate gana B, luego C, D y A.
     let mejor: IdEstrategia = "B";
-    let mejorTotal = estrategias[1].puntajeTotal;
+    let mejorTotal = estrategias.find((x) => x.id === "B")!.puntajeTotal;
     for (const id of ["B", "C", "D", "A"] as IdEstrategia[]) {
       const e = estrategias.find((x) => x.id === id);
       if (e && e.puntajeTotal > mejorTotal) {
@@ -284,7 +281,8 @@ export class MotorRotaciones {
         altitudReferenciaM: altitudM ?? perfil.altitudReferenciaM,
         fuenteAltitud,
         tieneRiego: datos.tieneRiego,
-        cultivoActual: principal.clave,
+        // Sin cultivo actual el contrato exige texto: va vacío (el contrato debería aceptar null).
+        cultivoActual: principal?.clave ?? null,
         clasificacionClimatica: perfil.resumen.clasificacionClimatica,
       },
       terreno: this.resumenTerreno(terreno),

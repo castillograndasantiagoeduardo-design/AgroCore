@@ -136,7 +136,10 @@ Deno.test("Obtener: devuelve la ficha completa", async () => {
   if (r.ok) {
     assertEquals(r.value.nombreCientifico, "Solanum tuberosum");
     assertEquals(r.value.temperaturaOptimaC, { min: 12, max: 18 });
-    assertEquals(r.value.confianza, "media");
+    // Cada ficha declara de dónde sale: registros de FAO ECOCROP, campos sin fuente y valor de producción (FAOSTAT).
+    assertEquals(r.value.ecocrop.codigos, [1]);
+    assertEquals(r.value.camposSinFuente, []);
+    assertEquals(r.value.valorProduccionHa.fuente, "FAOSTAT");
   }
 });
 
@@ -144,4 +147,32 @@ Deno.test("Obtener: clave inexistente → CULTIVO_NO_ENCONTRADO", async () => {
   const r = await new ObtenerCultivoUseCase(repo([papa])).execute({ clave: "unobtanio" }, actor);
   assertEquals(r.ok, false);
   if (!r.ok) assertEquals(r.error.code, "CULTIVO_NO_ENCONTRADO");
+});
+
+// ---------------------------------------------------------------------------
+// Campos sin fuente (FAO ECOCROP no los trae): no se usan para decidir
+// ---------------------------------------------------------------------------
+Deno.test("Cultivo: texturas sin fuente → texturaCompatible devuelve null y el filtro por textura no lo descarta", async () => {
+  const sin = cultivo({ clave: "sin_textura", nombre: "Sin textura", texturas: ["arenosa"], camposSinFuente: ["texturas"] });
+  assertEquals(sin.sinFuente("texturas"), true);
+  assertEquals(sin.texturaCompatible("arcillosa"), null);
+  const r = await new ListarCultivosUseCase(repo([sin, papa])).execute({ textura: "arcillosa" }, actor);
+  if (r.ok) assertEquals(r.value.map((c) => c.clave), ["sin_textura"]);
+});
+
+Deno.test("Cultivo: toleranciaHelada sin fuente no cumple toleranciaHeladaMin; forraje y cobertura sin fuente salen como null", async () => {
+  const sin = cultivo({ clave: "sin_helada", nombre: "Sin helada", toleranciaHelada: "alta", camposSinFuente: ["toleranciaHelada", "valorForrajero", "coberturaSuelo"] });
+  assertEquals(sin.toleranciaHeladaConocida(), null);
+  assertEquals(sin.valorForrajeroConocido(), null);
+  assertEquals(sin.coberturaConocida(), null);
+  assertEquals(papa.toleranciaHeladaConocida(), "baja");
+  const r = await new ListarCultivosUseCase(repo([sin, haba])).execute({ toleranciaHeladaMin: "media" }, actor);
+  if (r.ok) assertEquals(r.value.map((c) => c.clave), ["haba"]);
+});
+
+Deno.test("Cultivo: sin fuente en temperatura o ciclo → no es apto por temperatura en el filtro", async () => {
+  const sin = cultivo({ clave: "sin_temp", nombre: "Sin temperatura", camposSinFuente: ["temperaturaOptimaC"] });
+  assertEquals(sin.sinDatosDeViabilidad, true);
+  const r = await new ListarCultivosUseCase(repo([sin, papa])).execute({ tempMediaC: 15 }, actor);
+  if (r.ok) assertEquals(r.value.map((c) => c.clave), ["papa"]);
 });

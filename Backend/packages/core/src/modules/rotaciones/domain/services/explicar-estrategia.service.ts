@@ -4,10 +4,11 @@
  * Cada evidencia lleva la FUENTE del dato (NASA POWER, IDEAM, MODIS, SoilGrids, SRTM, OpenStreetMap, ECOCROP,
  * Regla o Agricultor).
  */
-import type { EvidenciaDto, IdEstrategia, ReglaRotacion } from "@agrocore/contracts";
+import { ADVERTENCIA_POCO_COMUN, type EvidenciaDto, type IdEstrategia, type ReglaRotacion } from "@agrocore/contracts";
 import { NOMBRES_MES } from "../../../clima/domain/services/calendario-climatico.service.ts";
 import { type ContextoMotor, nombresDeMeses } from "./evaluar-paso.service.ts";
 import { EVIDENCIA_REGLAS, RIESGOS_GENERALES, VACIOS_GENERALES } from "./evidencia-reglas.ts";
+import { motivoSinIngreso } from "./puntajes-rotacion.service.ts";
 import type { SecuenciaEvaluada } from "./generar-estrategias.service.ts";
 import { pasosSembrados, PENDIENTE_FUERTE_PCT } from "./reglas-rotacion.service.ts";
 
@@ -22,8 +23,8 @@ export interface DatosExplicacion {
   id: IdEstrategia;
   secuencia: SecuenciaEvaluada;
   ctx: ContextoMotor;
-  /** Cultivo principal del lote (primero de la secuencia actual). */
-  clavePrincipal: string;
+  /** Cultivo principal del lote (primero de la secuencia actual), o null si el lote no declara cultivo actual. */
+  clavePrincipal: string | null;
   /** Solo para A: true si no se envió secuenciaActual y se asumió que el lote repite su cultivo actual. */
   secuenciaAsumida: boolean;
 }
@@ -92,7 +93,7 @@ function construirEvidencia(d: DatosExplicacion): EvidenciaDto[] {
   const out: EvidenciaDto[] = [];
 
   out.push({
-    texto: "Clima del sitio (30 años): lluvia " + p.resumen.lluviaAnualMm + " mm/año, ET0 " + p.resumen.etoAnualMm + " mm/año, régimen " +
+    texto: "Clima del sitio (" + p.periodo.anios + " años): lluvia " + p.resumen.lluviaAnualMm + " mm/año, ET0 " + p.resumen.etoAnualMm + " mm/año, régimen " +
       p.resumen.regimenLluvias + ", clasificación " + p.resumen.clasificacionClimatica + ".",
     fuente: "NASA POWER",
   });
@@ -117,9 +118,9 @@ function construirEvidencia(d: DatosExplicacion): EvidenciaDto[] {
 
   for (const e of unicos(pasosSembrados(s.evaluados).map((x) => x.cultivo!))) {
     out.push({
-      texto: e.nombre + ": T óptima " + e.temperaturaOptimaC.min + "–" + e.temperaturaOptimaC.max + " °C, absoluta " + e.temperaturaAbsolutaC.min +
-        "–" + e.temperaturaAbsolutaC.max + " °C, agua del ciclo ≥ " + e.aguaCicloMm.min + " mm, helada " + e.toleranciaHelada + ", calor " +
-        e.toleranciaCalor + " (ficha de referencia, confianza " + e.confianza + ").",
+      texto: e.nombre + " (FAO ECOCROP, EcoPortCode " + e.ecocrop.codigos.join(", ") + "): T óptima " + e.temperaturaOptimaC.min + "–" +
+        e.temperaturaOptimaC.max + " °C, absoluta " + e.temperaturaAbsolutaC.min + "–" + e.temperaturaAbsolutaC.max + " °C, agua del ciclo ≥ " +
+        e.aguaCicloMm.min + " mm, helada " + (e.toleranciaHeladaConocida() ?? "sin dato en ECOCROP") + ", calor " + e.toleranciaCalor + ".",
       fuente: "ECOCROP",
     });
   }
@@ -158,13 +159,13 @@ function construirBeneficios(d: DatosExplicacion): string[] {
   const sembrados = pasosSembrados(s.evaluados);
   const fijan = sembrados.filter((e) => e.cultivo!.fijaNitrogeno);
   if (fijan.length) out.push("Fija nitrógeno en " + fijan.map((e) => paso(e.paso.orden) + " (" + e.paso.cultivoNombre + ")").join(", ") + ".");
-  const cobertura = s.evaluados.filter((e) => e.cultivo?.coberturaSuelo === "alta");
+  const cobertura = s.evaluados.filter((e) => e.cultivo?.coberturaConocida() === "alta");
   if (cobertura.length) out.push("Cobertura alta del suelo en " + cobertura.map((e) => paso(e.paso.orden) + " (" + e.paso.cultivoNombre + ")").join(", ") + ".");
   const profundas = unicos(sembrados.filter((e) => e.cultivo!.profundidadRaiz === "profunda").map((e) => e.paso.cultivoNombre));
   if (profundas.length) out.push("Raíces profundas que mejoran la infiltración: " + profundas.join(", ") + ".");
   const regla = (r: ReglaRotacion) => s.reglas.find((x) => x.regla === r)!;
   if (regla("no_repetir_familia").cumple && sembrados.length > 1) out.push("Ninguna familia botánica se repite seguida: se cortan ciclos de plagas del suelo.");
-  const forraje = s.evaluados.filter((e) => e.cultivo?.valorForrajero === "alto");
+  const forraje = s.evaluados.filter((e) => e.cultivo?.valorForrajeroConocido() === "alto");
   if (forraje.length) out.push("Forraje de valor alto en " + unicos(forraje.map((e) => e.paso.cultivoNombre)).join(", ") + ".");
   if (s.pasos.some((p) => p.continua)) out.push("Los cultivos de ciclo largo o perennes se mantienen sin resembrar.");
   if (s.pasos.filter((p) => p.cultivoClave !== "barbecho").every((p) => p.riesgoHelada !== "alto" && p.riesgoHelada !== "moderado" && p.riesgoCalor !== "alto")) {
@@ -181,10 +182,28 @@ export function explicarEstrategia(d: DatosExplicacion): TextosEstrategia {
   const s = d.secuencia;
 
   const vacios = [...VACIOS_GENERALES];
-  if (d.id === "A" && d.secuenciaAsumida) {
+  if (d.id === "A" && d.secuenciaAsumida && d.clavePrincipal) {
     vacios.unshift("Se ASUMIÓ que el lote repite su cultivo actual (" + d.clavePrincipal + ") en todas las temporadas porque no se conoce su historial.");
   }
   for (const regla of reglasRelevantes(s, d.ctx)) vacios.push(...EVIDENCIA_REGLAS[regla].vacios);
+
+  // Datos que FAO ECOCROP no trae: no se usaron para decidir (o aportan 0) y se dice cuáles.
+  const sembrados = pasosSembrados(s.evaluados);
+  for (const cultivo of unicos(sembrados.map((e) => e.cultivo!))) {
+    for (const campo of ["valorForrajero", "coberturaSuelo"] as const) {
+      if (cultivo.sinFuente(campo)) vacios.push("Sin dato de " + campo + " en FAO ECOCROP para " + cultivo.nombre + ": aporta 0 al puntaje.");
+    }
+    if (d.ctx.suelo.textura !== null && cultivo.sinFuente("texturas")) {
+      vacios.push("Sin dato de texturas en FAO ECOCROP para " + cultivo.nombre + ": no se verificó la textura del suelo.");
+    }
+  }
+  for (const e of sembrados) {
+    if (e.cultivo!.sinFuente("toleranciaHelada") && e.paso.mesesHeladaEnCiclo.length > 0) {
+      vacios.push("Sin dato de toleranciaHelada en FAO ECOCROP para " + e.paso.cultivoNombre + ": se evita en meses con helada.");
+    }
+    const motivo = motivoSinIngreso(e, d.ctx);
+    if (motivo) vacios.push("Ingreso sin datos: " + e.paso.cultivoNombre + " (" + motivo + ").");
+  }
 
   const riesgos: string[] = [];
   for (const r of s.reglas) if (!r.cumple) riesgos.push("No cumple " + r.regla + ": " + r.detalle);
@@ -202,9 +221,10 @@ export function explicarEstrategia(d: DatosExplicacion): TextosEstrategia {
       riesgos.push(q.cultivoNombre + " solo es posible (no óptimo) con " + q.tempMediaCicloC + " °C de media en " + paso(q.orden) + ": rendimiento menor.");
     }
   }
-  const confianzaBaja = unicos(pasosSembrados(s.evaluados).filter((e) => e.cultivo!.confianza === "baja").map((e) => e.paso.cultivoNombre));
-  if (confianzaBaja.length) riesgos.push("Los datos de referencia de " + confianzaBaja.join(", ") + " tienen confianza baja: valídalos con un agrónomo.");
-  if (d.id !== "A" && !s.claves.includes(d.clavePrincipal)) {
+  for (const nombre of unicos(sembrados.filter((e) => e.presencia === "poco_comun").map((e) => e.paso.cultivoNombre))) {
+    riesgos.push(ADVERTENCIA_POCO_COMUN + " (" + nombre + ")");
+  }
+  if (d.id !== "A" && d.clavePrincipal && !s.claves.includes(d.clavePrincipal)) {
     riesgos.push("No incluye el cultivo principal del lote (" + d.clavePrincipal + "): implica un cambio de actividad que hay que evaluar antes de decidir.");
   }
   riesgos.push(...RIESGOS_GENERALES);

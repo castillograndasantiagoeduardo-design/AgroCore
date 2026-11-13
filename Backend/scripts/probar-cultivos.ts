@@ -29,5 +29,6 @@ console.table(r.value.map((c) => ({
   calor: c.toleranciaCalor,
   sequia: c.toleranciaSequia,
   N: c.fijaNitrogeno ? "sí" : "",
-  confianza: c.confianza,
+  "sin fuente": c.camposSinFuente.join(", "),
+  "EcoPortCode": c.ecocrop.codigos.join(", "),
 })));

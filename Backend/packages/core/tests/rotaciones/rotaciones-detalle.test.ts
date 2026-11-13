@@ -1,5 +1,5 @@
 /**
- * Tests de detalle del motor de rotaciones: ventanas, ingreso por grupo, ponderación, continuaciones,
+ * Tests de detalle del motor de rotaciones: ventanas, ponderación, continuaciones,
  * riego, explicaciones, calendario, oportunidades y determinismo (sin red ni MySQL).
  */
 import { assert, assertEquals } from "@std/assert";
@@ -26,7 +26,6 @@ import {
   mesesEntre,
   MotorRotaciones,
   NombreFinca,
-  puntajeIngresoReferencia,
   UbicacionFinca,
 } from "../../src/index.ts";
 import { cultivoDePrueba } from "../_fixtures/cultivos.ts";
@@ -143,13 +142,6 @@ Deno.test("ventanas: trópico sin estación seca → dos temporadas de 6 meses",
   const v = construirVentanas(TROPICO.temporadasCultivo.secano);
   assertEquals(v.length, 2);
   assertEquals(v.map((x) => x.meses.length), [6, 6]);
-});
-
-Deno.test("ingreso: referencia por clave y por grupo (las coberturas no dan ingreso)", () => {
-  assertEquals(puntajeIngresoReferencia("frijol", "leguminosa"), 90);
-  assertEquals(puntajeIngresoReferencia("lenteja", "leguminosa"), 60);
-  assertEquals(puntajeIngresoReferencia("vicia_villosa", "cobertura"), 0);
-  assertEquals(puntajeIngresoReferencia("tomate", "hortaliza"), 90);
 });
 
 Deno.test("puntaje total: pondera con los pesos del agricultor y con pesos 0 usa el promedio simple", () => {

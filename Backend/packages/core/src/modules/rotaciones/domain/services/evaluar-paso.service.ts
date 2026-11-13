@@ -8,11 +8,13 @@ import {
   type NivelRiesgo,
   type PasoRotacionDto,
   type PerfilClimaticoDto,
+  type PresenciaLocalNivel,
   type TexturaSuelo,
   type VentanaRotacionDto,
 } from "@agrocore/contracts";
 import { NOMBRES_MES } from "../../../clima/domain/services/calendario-climatico.service.ts";
 import type { Cultivo } from "../../../cultivos/domain/entities/cultivo.entity.ts";
+import { type EscalaIngreso, PRESENCIA_DESCONOCIDA, type PresenciaMotor } from "./presencia-motor.ts";
 import { ANIOS_ROTACION, mesesDesde } from "./ventanas-rotacion.service.ts";
 
 /** Datos del sitio y su clima que necesita el motor. */
@@ -26,7 +28,16 @@ export interface ContextoMotor {
   mesesBaldios: readonly number[];
   /** % del área excluido por vías, edificaciones o agua (módulo terreno). */
   excluidoPct: number;
+  /** Presencia local de los cultivos (EVA / FAOSTAT). Si falta, PRESENCIA_DESCONOCIDA: ningún cultivo se prefiere ni se penaliza. */
+  presencia?: PresenciaMotor;
+  /**
+   * Escala del ingreso (mínimo y máximo del valor bruto por ha entre los cultivos del catálogo). Se calcula con
+   * `calcularEscalaIngreso(catalogo, presencia)`; si falta, el ingreso de todos los cultivos queda "sin datos".
+   */
+  escalaIngreso?: EscalaIngreso;
 }
+
+export const presenciaDe = (ctx: ContextoMotor): PresenciaMotor => ctx.presencia ?? PRESENCIA_DESCONOCIDA;
 
 /** Un elemento de la secuencia: un cultivo o barbecho (null), y si continúa el del paso anterior. */
 export interface ElementoSecuencia {
@@ -43,6 +54,8 @@ export interface PasoEvaluado {
   necesitaSiguiente: boolean;
   /** Agua mínima que usó la comparación (del ciclo; anual para perennes). */
   aguaMinimaMm: number;
+  /** Presencia local del cultivo en la zona ("sin_datos" para el barbecho y cuando no hay fuente). */
+  presencia: PresenciaLocalNivel;
 }
 
 const r1 = (n: number): number => Math.round(n * 10) / 10;
@@ -60,6 +73,15 @@ export function nivelRiesgo(hayExposicion: boolean, tolerancia: "baja" | "media"
   if (tolerancia === "alta") return "tolerado";
   if (tolerancia === "media") return "moderado";
   return "alto";
+}
+
+/** Nota del paso cuando un cultivo sin temperatura letal en ECOCROP queda expuesto a la helada. */
+export const NOTA_HELADA_SIN_FUENTE = "Sin temperatura letal en FAO ECOCROP: no se recomienda en meses con helada";
+
+/** Riesgo de helada del cultivo: sin temperatura letal en ECOCROP y con exposición, el riesgo es "alto" (no viable). */
+export function riesgoHeladaDe(cultivo: Cultivo, hayExposicion: boolean): NivelRiesgo {
+  if (hayExposicion && cultivo.sinFuente("toleranciaHelada")) return "alto";
+  return nivelRiesgo(hayExposicion, cultivo.toleranciaHelada);
 }
 
 export function nombresDeMeses(meses: readonly number[]): string {
@@ -80,7 +102,7 @@ function riesgoSiembra(cultivo: Cultivo, meses: number[], ctx: ContextoMotor): n
   const helada = mesesHeladaFrecuente(ctx.perfil);
   const temp = meses.reduce((s, m) => s + (ctx.perfil.meses.find((x) => x.mes === m)?.tempMediaC ?? 0), 0) / meses.length;
   const lluvia = meses.reduce((s, m) => s + (ctx.perfil.meses.find((x) => x.mes === m)?.lluviaMm ?? 0), 0);
-  const rHelada = nivelRiesgo(meses.some((m) => helada.includes(m)), cultivo.toleranciaHelada);
+  const rHelada = riesgoHeladaDe(cultivo, meses.some((m) => helada.includes(m)));
   const rCalor = nivelRiesgo(meses.some((m) => ctx.perfil.resumen.mesesCalor.includes(m)), cultivo.toleranciaCalor);
   const aptitud = cultivo.aptitudPorTemperatura(temp);
   const peso = { ninguno: 0, tolerado: 1, moderado: 10, alto: 100 } as const;
@@ -168,6 +190,7 @@ export function evaluarPaso(cultivo: Cultivo | null, orden: number, continua: bo
       cabe: true,
       necesitaSiguiente: false,
       aguaMinimaMm: 0,
+      presencia: "sin_datos",
     };
   }
 
@@ -176,9 +199,10 @@ export function evaluarPaso(cultivo: Cultivo | null, orden: number, continua: bo
   // Para un perenne el agua mínima se expresa por año: se compara con la lluvia anual.
   const lluviaComparada = cultivo.perenne ? ctx.perfil.resumen.lluviaAnualMm : lluviaCicloMm;
   const deficitAguaMm = continua ? 0 : r1(Math.max(0, aguaMinimaMm - lluviaComparada));
-  const riesgoHelada = nivelRiesgo(mesesHeladaEnCiclo.length > 0, cultivo.toleranciaHelada);
+  const riesgoHelada = riesgoHeladaDe(cultivo, mesesHeladaEnCiclo.length > 0);
   const riesgoCalor = nivelRiesgo(mesesCalorEnCiclo.length > 0, cultivo.toleranciaCalor);
 
+  if (mesesHeladaEnCiclo.length > 0 && cultivo.sinFuente("toleranciaHelada")) notas.push(NOTA_HELADA_SIN_FUENTE);
   if (continua) notas.push(cultivo.perenne ? "Continúa la pradera: no se vuelve a sembrar." : "Continúa el cultivo sembrado en la ventana anterior.");
   if (cultivo.perenne && !continua) notas.push("Para un perenne el agua mínima (" + aguaMinimaMm + " mm/año) se compara con la lluvia anual.");
   if (deficitAguaMm > 0 && ctx.tieneRiego) notas.push("Falta agua de lluvia (" + deficitAguaMm + " mm): se cubriría con riego.");
@@ -211,5 +235,6 @@ export function evaluarPaso(cultivo: Cultivo | null, orden: number, continua: bo
     cabe,
     necesitaSiguiente,
     aguaMinimaMm,
+    presencia: presenciaDe(ctx).nivel(cultivo.clave),
   };
 }

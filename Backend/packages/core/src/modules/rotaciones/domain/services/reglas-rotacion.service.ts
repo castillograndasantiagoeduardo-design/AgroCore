@@ -4,6 +4,7 @@
  */
 import { type EvaluacionReglaDto, REGLAS_ROTACION, type ReglaRotacion } from "@agrocore/contracts";
 import { type ContextoMotor, nombresDeMeses, type PasoEvaluado } from "./evaluar-paso.service.ts";
+import { ANIOS_ROTACION } from "./ventanas-rotacion.service.ts";
 
 /** Pendiente a partir de la cual se exige cobertura permanente o curvas de nivel (%). */
 export const PENDIENTE_FUERTE_PCT = 25;
@@ -24,6 +25,13 @@ export function transicionesFamiliaRepetida(evaluados: readonly PasoEvaluado[]):
     if (sembrados[i].cultivo!.compartenFamilia(sembrados[i + 1].cultivo!)) pares.push([sembrados[i], sembrados[i + 1]]);
   }
   return pares;
+}
+
+/** true si el pH o la textura del suelo no encajan con el cultivo sembrado (solo con datos de suelo y con fuente). */
+export function pasoSueloIncompatible(e: PasoEvaluado, ctx: ContextoMotor): boolean {
+  if (e.cultivo === null) return false;
+  const { ph, textura } = ctx.suelo;
+  return e.cultivo.phCompatible(ph) === false || e.cultivo.texturaCompatible(textura) === false;
 }
 
 export function evaluarReglas(evaluados: readonly PasoEvaluado[], ctx: ContextoMotor): EvaluacionReglaDto[] {
@@ -55,7 +63,7 @@ export function evaluarReglas(evaluados: readonly PasoEvaluado[], ctx: ContextoM
     "leguminosa_cada_dos_anios",
     legum.length > 0
       ? r("leguminosa_cada_dos_anios", true, "Hay una leguminosa que fija nitrógeno en: " + lista(legum.map(etiqueta)) + ".")
-      : r("leguminosa_cada_dos_anios", false, "Ningún cultivo de los 2 años fija nitrógeno (no hay leguminosa)."),
+      : r("leguminosa_cada_dos_anios", false, "Ningún cultivo de los " + ANIOS_ROTACION + " años fija nitrógeno (no hay leguminosa)."),
   );
 
   const fueraTemporada = pasosSembrados(evaluados).filter((e) => e.paso.tipoVentana === "intervalo" && !e.cultivo!.esCobertura);
@@ -115,7 +123,7 @@ export function evaluarReglas(evaluados: readonly PasoEvaluado[], ctx: ContextoM
   if (ph === null && textura === null) {
     out.set("suelo_compatible", r("suelo_compatible", true, "Sin datos de suelo (SoilGrids): no se pudo verificar pH ni textura."));
   } else {
-    const malos = pasosSembrados(evaluados).filter((e) => e.cultivo!.phCompatible(ph) === false || e.cultivo!.texturaCompatible(textura) === false);
+    const malos = pasosSembrados(evaluados).filter((e) => pasoSueloIncompatible(e, ctx));
     out.set(
       "suelo_compatible",
       malos.length === 0
@@ -129,7 +137,7 @@ export function evaluarReglas(evaluados: readonly PasoEvaluado[], ctx: ContextoM
   } else if (ctx.pendientePct <= PENDIENTE_FUERTE_PCT) {
     out.set("cobertura_en_pendiente", r("cobertura_en_pendiente", true, "Pendiente de " + ctx.pendientePct + " % (≤ " + PENDIENTE_FUERTE_PCT + " %): no exige cobertura permanente."));
   } else {
-    const protegidos = evaluados.filter((e) => e.cultivo !== null && (e.cultivo.perenne || e.cultivo.coberturaSuelo === "alta")).length;
+    const protegidos = evaluados.filter((e) => e.cultivo !== null && (e.cultivo.perenne || e.cultivo.coberturaConocida() === "alta")).length;
     out.set(
       "cobertura_en_pendiente",
       protegidos * 2 >= evaluados.length
