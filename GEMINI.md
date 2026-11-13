@@ -57,13 +57,13 @@ DuitamaCrece/
 ├── CLAUDE.md / GEMINI.md       # 🌟 Orquestadores de contexto para IA
 ├── context/                    # 📜 rules_architecture.md, ai_development_workflow.md
 ├── Shared/
-│   └── contracts/              # @duitamacrece/contracts (Esquemas Zod, Roles, Permisos RBAC)
+│   └── contracts/              # @duitamacrece/contracts (Esquemas Zod, catálogos de auditoría y tools MCP)
 ├── Backend/                    # Workspace Deno 2.x (deno.json)
 │   ├── packages/
 │   │   ├── shared-kernel/      # @duitamacrece/shared-kernel (Result<T,E>, DomainError, Pagination)
 │   │   ├── core/               # @duitamacrece/core (Entidades, Value Objects, Casos de Uso, Puertos)
 │   │   ├── database/           # @duitamacrece/database (Drizzle ORM, MySQL2, Repositorios, UnitOfWork)
-│   │   ├── platform/           # @duitamacrece/platform (Servicios técnicos: JWT HS256, ...)
+│   │   ├── platform/           # @duitamacrece/platform (Proveedores externos NASA/ORNL/OSM, impresora ESC/POS)
 │   │   └── composition/        # @duitamacrece/composition (Contenedor DI: createContainer)
 │   └── apps/
 │       ├── api/                # @duitamacrece/api (Servidor HTTP REST con Hono)
@@ -84,7 +84,6 @@ Cada módulo vive en `Backend/packages/core/src/modules/<modulo>/` y tiene su `M
 - **`clima`** — Perfil climático por finca (NASA POWER, corrección por altitud) · [MODULE.md](./Backend/packages/core/src/modules/clima/MODULE.md)
 - **`cultivos`** — Catálogo de referencia de 11 cultivos de clima frío (solo lectura) · [MODULE.md](./Backend/packages/core/src/modules/cultivos/MODULE.md)
 - **`rotaciones`** — Motor que compara 3 estrategias de rotación de 2 años (A actual, B suelo, C forraje) con evidencia, vacíos y riesgos · [MODULE.md](./Backend/packages/core/src/modules/rotaciones/MODULE.md)
-- **`autenticacion`** — Gestión de credenciales, login y tokens JWT · [MODULE.md](./Backend/packages/core/src/modules/autenticacion/MODULE.md)
 <!-- @scaffold:modules -->
 
 ---

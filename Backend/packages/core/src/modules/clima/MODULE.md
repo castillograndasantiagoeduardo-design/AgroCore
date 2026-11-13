@@ -40,9 +40,9 @@ Construir el **perfil climático de una finca de Duitama**: 12 meses con lluvia,
 
 ## ⚙️ Casos de Uso
 
-| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Permiso | Audita |
-| :--- | :--- | :--- | :--- | :--- |
-| `ObtenerPerfilClimaticoUseCase` | `obtenerPerfilClimatico` | `IFincaRepository`, `IClimaProvider`, `INormalesClimatologicasProvider`, `IReloj` | `PERMISSIONS.CLIMA_LEER` | ❌ (solo lectura) |
+| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Audita |
+| :--- | :--- | :--- | :--- |
+| `ObtenerPerfilClimaticoUseCase` | `obtenerPerfilClimatico` | `IFincaRepository`, `IClimaProvider`, `INormalesClimatologicasProvider`, `IReloj` | ❌ (solo lectura) |
 
 Periodo consultado: los **30 años completos** anteriores al año actual (normal climatológica).
 
@@ -54,7 +54,7 @@ Orden de cálculo: serie NASA de la finca → **calibración IDEAM** (si hay est
 
 ### 1. Contrato — Shared/contracts
 - `Shared/contracts/src/clima.schema.ts` (`PerfilClimaticoParamsSchema`, `ClimaMensualSchema`, `PerfilClimaticoSchema`)
-- `permissions.ts` → `CLIMA_LEER` · `mcp-tools.ts` → `CLIMA_PERFIL_FINCA`
+- `mcp-tools.ts` → `CLIMA_PERFIL_FINCA`
 
 ### 2. Dominio — core/domain
 - `domain/value-objects/registro-clima-diario.vo.ts`

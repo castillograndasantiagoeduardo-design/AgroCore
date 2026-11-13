@@ -15,7 +15,7 @@ export class MySqlAuditor implements IAuditor {
       entidad: evento.entidad,
       entidadId: String(evento.entidadId),
       detalles: sanitizarDetalles(evento.detalles),
-      usuarioId: evento.contexto.usuarioId,
+      origen: evento.contexto.origen,
       ip: evento.contexto.ip,
     });
   }

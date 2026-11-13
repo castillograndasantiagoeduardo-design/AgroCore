@@ -4,11 +4,11 @@
  *
  * Uso (desde Backend/):  deno run -A scripts/probar-cultivos.ts [altitudM]
  */
-import { ListarCultivosUseCase } from "@duitamacrece/core";
+import { type ContextoSolicitud, ListarCultivosUseCase } from "@duitamacrece/core";
 import { CatalogoCultivosEnMemoria } from "@duitamacrece/database";
 
 const altitudM = Deno.args[0] ? Number(Deno.args[0]) : 2530;
-const actor = { usuarioId: 0, rol: "admin", ip: null };
+const actor: ContextoSolicitud = { origen: "script", ip: null };
 
 const r = await new ListarCultivosUseCase(new CatalogoCultivosEnMemoria()).execute({ altitudM }, actor);
 if (!r.ok) {

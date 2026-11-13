@@ -1,21 +1,16 @@
 @baseUrl = http://localhost:8001/api
-@token = PEGA_AQUI_UN_ACCESS_TOKEN_JWT
 
 ### Perfil climático de la finca 1 (200). La primera vez tarda unos segundos: consulta 30 años en NASA POWER.
 GET {{baseUrl}}/clima/fincas/1
-Authorization: Bearer {{token}}
 
 ### Segunda consulta de la misma finca (200, inmediata: viene de la caché)
 GET {{baseUrl}}/clima/fincas/1
-Authorization: Bearer {{token}}
 
 ### Finca inexistente (404 FINCA_NO_ENCONTRADO)
 GET {{baseUrl}}/clima/fincas/9999
-Authorization: Bearer {{token}}
 
 ### Id inválido (400 VALIDATION_ERROR)
 GET {{baseUrl}}/clima/fincas/abc
-Authorization: Bearer {{token}}
 
 ### Sin token (401 NO_AUTENTICADO)
 GET {{baseUrl}}/clima/fincas/1

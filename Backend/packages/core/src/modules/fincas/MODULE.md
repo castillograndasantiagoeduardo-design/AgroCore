@@ -34,10 +34,10 @@ Gestiona el ciclo de vida de la entidad **`Finca`** (creación con nombre único
 
 ## ⚙️ Casos de Uso
 
-| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Permiso | Audita |
-| :--- | :--- | :--- | :--- | :--- |
-| `CrearFincaUseCase` | `crearFinca` | `IFincaRepository`, `IUnitOfWork`, `IAuditor`, `ICultivoRepository` (módulo cultivos) | `PERMISSIONS.FINCAS_CREAR` | ✅ `AUDIT_ACTIONS.FINCA_CREADO` |
-| `ListarFincasUseCase` | `listarFincas` | `IFincaRepository` | `PERMISSIONS.FINCAS_LEER` | ❌ (solo lectura) |
+| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Audita |
+| :--- | :--- | :--- | :--- |
+| `CrearFincaUseCase` | `crearFinca` | `IFincaRepository`, `IUnitOfWork`, `IAuditor`, `ICultivoRepository` (módulo cultivos) | ✅ `AUDIT_ACTIONS.FINCA_CREADO` |
+| `ListarFincasUseCase` | `listarFincas` | `IFincaRepository` | ❌ (solo lectura) |
 
 ---
 
@@ -101,7 +101,6 @@ Gestiona el ciclo de vida de la entidad **`Finca`** (creación con nombre único
 **HTTP (`Http/fincas.http`):**
 ```http
 POST /api/fincas
-Authorization: Bearer <token>
 Content-Type: application/json
 
 { "nombre": "La Esperanza", "latitud": 5.8269, "longitud": -73.0297, "altitudM": 2530, "tieneRiego": true, "cultivoActual": "papa" }

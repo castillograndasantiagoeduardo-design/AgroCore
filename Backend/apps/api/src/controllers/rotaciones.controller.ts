@@ -13,7 +13,7 @@ export const rotacionesController = {
     const body = raw !== null && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
     const parsed = CompararRotacionesSchema.safeParse({ ...body, fincaId: c.req.param("fincaId") });
     if (!parsed.success) return presentValidationError(c, parsed.error);
-    const result = await c.get("container").compararRotaciones.execute(parsed.data, c.get("actor"));
+    const result = await c.get("container").compararRotaciones.execute(parsed.data, c.get("contexto"));
     return presentResult(c, result);
   }),
 };

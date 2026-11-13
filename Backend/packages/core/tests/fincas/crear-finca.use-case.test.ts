@@ -12,6 +12,7 @@ import {
   type IUnitOfWork,
   NombreFinca,
   UbicacionFinca,
+  type ContextoSolicitud,
 } from "../../src/index.ts";
 
 class RepositorioEnMemoria implements IFincaRepository {
@@ -44,7 +45,7 @@ class RepositorioEnMemoria implements IFincaRepository {
 }
 
 const unitOfWork: IUnitOfWork = { ejecutar: (trabajo) => trabajo() };
-const actor = { usuarioId: 1, rol: "admin", ip: null };
+const actor: ContextoSolicitud = { origen: "script", ip: null };
 
 /** Catálogo falso: solo "papa" existe. Al caso de uso le basta saber si la clave está o no. */
 const catalogo: ICultivoRepository = {

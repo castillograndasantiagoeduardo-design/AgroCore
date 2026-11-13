@@ -1,7 +1,7 @@
 /**
- * Herramientas MCP del módulo fincas. ToolGateway valida, autoriza, ejecuta y registra.
+ * Herramientas MCP del módulo fincas. ToolGateway valida, ejecuta y registra.
  */
-import { CrearFincaSchema, ListarFincasQuerySchema, MCP_TOOLS, PERMISSIONS } from "@duitamacrece/contracts";
+import { CrearFincaSchema, ListarFincasQuerySchema, MCP_TOOLS } from "@duitamacrece/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 export function registrarFincasTools(gateway: ToolGateway): void {
@@ -9,15 +9,13 @@ export function registrarFincasTools(gateway: ToolGateway): void {
     name: MCP_TOOLS.FINCAS_LISTAR,
     description: "Lista fincas paginados.",
     schema: ListarFincasQuerySchema,
-    permission: PERMISSIONS.FINCAS_LEER,
-    execute: (input, container, actor) => container.listarFincas.execute(input, actor),
+    execute: (input, container, contexto) => container.listarFincas.execute(input, contexto),
   });
 
   gateway.register({
     name: MCP_TOOLS.FINCAS_CREAR,
     description: "Crea un finca.",
     schema: CrearFincaSchema,
-    permission: PERMISSIONS.FINCAS_CREAR,
-    execute: (input, container, actor) => container.crearFinca.execute(input, actor),
+    execute: (input, container, contexto) => container.crearFinca.execute(input, contexto),
   });
 }

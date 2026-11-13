@@ -10,7 +10,7 @@ export const climaController = {
   perfilFinca: safeHandler(async (c) => {
     const parsed = PerfilClimaticoParamsSchema.safeParse({ fincaId: c.req.param("fincaId") });
     if (!parsed.success) return presentValidationError(c, parsed.error);
-    const result = await c.get("container").obtenerPerfilClimatico.execute(parsed.data, c.get("actor"));
+    const result = await c.get("container").obtenerPerfilClimatico.execute(parsed.data, c.get("contexto"));
     return presentResult(c, result);
   }),
 };

@@ -5,8 +5,6 @@ import type { DatabaseConfig } from "@duitamacrece/database";
 
 export interface AppConfig {
   db: DatabaseConfig;
-  jwtSecret: string;
-  jwtExpiracion: string;
 }
 
 function requireEnv(key: string): string {
@@ -24,7 +22,5 @@ export function loadConfigFromEnv(): AppConfig {
       password: Deno.env.get("DB_PASSWORD") ?? "",
       database: requireEnv("DB_NAME"),
     },
-    jwtSecret: requireEnv("JWT_SECRET"),
-    jwtExpiracion: Deno.env.get("JWT_EXPIRATION") ?? "15m",
   };
 }

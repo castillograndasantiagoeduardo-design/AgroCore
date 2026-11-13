@@ -25,7 +25,7 @@ flowchart TB
 
     subgraph Infra ["Capa de Infraestructura (Adaptadores Secundarios)"]
         DB["Persistencia (@duitamacrece/database - Drizzle + MySQL 8)"]
-        PLAT["Servicios Técnicos (@duitamacrece/platform - JWT, Argon2, TOTP, SMTP)"]
+        PLAT["Servicios Técnicos (@duitamacrece/platform - NASA POWER, ORNL, Overpass, ESC/POS)"]
     end
 
     subgraph CoreDomain ["Núcleo del Sistema (Dominio y Aplicación)"]
@@ -69,7 +69,7 @@ sequenceDiagram
     participant Audit as IAuditor (@duitamacrece/database)
 
     Cliente->>Entry: Petición (HTTP Request / MCP CallTool)
-    Entry->>Entry: Verifica Autenticación JWT y Permiso RBAC
+    Entry->>Entry: Arma ContextoSolicitud (origen + IP) y aplica límite por IP
     Entry->>Zod: Valida payload en frontera (safeParse)
     alt Validación Zod falla
         Zod-->>Entry: Errores de formato
@@ -98,7 +98,7 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 | :--- | :--- | :--- |
 | **`shared-kernel`** | *(Ninguno — TypeScript puro)* | Cualquier paquete o librería externa |
 | **`Shared/contracts`** | `zod` | `core`, `database`, `platform`, `api`, `Frontend` |
-| **`core`** | `shared-kernel`, `Shared/contracts` | `database` (Drizzle/MySQL), `platform` (JWT/Argon2), `api` (Hono), `composition` |
+| **`core`** | `shared-kernel`, `Shared/contracts` | `database` (Drizzle/MySQL), `platform` (HTTP a proveedores, impresora), `api` (Hono), `composition` |
 | **`database`** | `core`, `shared-kernel`, `drizzle-orm`, `mysql2` | `platform`, `composition`, `api`, `mcp-server` |
 | **`platform`** | `core`, `shared-kernel`, `Shared/contracts` | `database`, `composition`, `api`, `mcp-server` |
 | **`composition`** | `core`, `database`, `platform`, `shared-kernel`, `Shared/contracts` | `api`, `mcp-server`, `Frontend` |
@@ -109,19 +109,19 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 
 ### Regla 2: Pureza Absoluta de `core`
 * En `Backend/packages/core` está **terminantemente prohibido** importar `drizzle-orm`, `mysql2`, `hono`, `jose`, `argon2`, `nodemailer` o usar `Deno.env` directamente.
-* Si un caso de uso necesita enviar un correo, firmar un token, consultar la hora o ejecutar una transacción SQL, debe definir una **interfaz (Puerto)** en `core` e inyectarla por constructor.
+* Si un caso de uso necesita llamar a un proveedor externo, imprimir, consultar la hora o ejecutar una transacción SQL, debe definir una **interfaz (Puerto)** en `core` e inyectarla por constructor.
 
 ---
 
 ### Regla 3: Prohibición de Excepciones para Flujo de Negocio (`Result<T, DomainError>`)
-* Ninguna regla de negocio fallida (ej. usuario inactivo, turno de caja ya abierto, stock insuficiente, factura ya anulada) puede lanzar `throw new Error(...)`.
+* Ninguna regla de negocio fallida (ej. finca duplicada, coordenadas inválidas, área demasiado grande) puede lanzar `throw new Error(...)`.
 * Todo fallo de dominio esperado debe devolverse como `Result.err(new DomainError('CODIGO', 'Mensaje'))`.
-* Las excepciones (`try/catch`) solo se usan en los adaptadores de infraestructura (`database`, `platform`, `safeHandler`) para atrapar fallos técnicos catastróficos (caída de red MySQL, timeout SMTP).
+* Las excepciones (`try/catch`) solo se usan en los adaptadores de infraestructura (`database`, `platform`, `safeHandler`) para atrapar fallos técnicos catastróficos (caída de red MySQL, timeout de un proveedor externo).
 
 ---
 
 ### Regla 4: Prohibición de Instanciación Manual fuera de `composition`
-* Ningún controlador de `apps/api` ni herramienta de `apps/mcp-server` puede hacer `new MySqlUsuarioRepository(...)` ni `new CrearUsuarioUseCase(...)`.
+* Ningún controlador de `apps/api` ni herramienta de `apps/mcp-server` puede hacer `new MySqlFincaRepository(...)` ni `new CrearFincaUseCase(...)`.
 * Todo caso de uso se registra en `Backend/packages/composition/src/container.ts` (`createContainer`) y se consume ya ensamblado desde `AppContainer`.
 
 ---
@@ -135,7 +135,7 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 ### Regla 6: Auditoría Transversal e Inmutabilidad (`IAuditor`)
 * Todo caso de uso que **cree, actualice, anule o cambie el estado** de una entidad debe inyectar el puerto `IAuditor` y registrar la operación.
 * El detalle de auditoría sigue el contrato `{ antes: {...}, despues: {...} }` registrando únicamente los campos afectados.
-* **Sanitización obligatoria:** Jamás se registran en auditoría `password_hash`, `totp_secret`, tokens JWT ni códigos de recuperación (se filtran mediante `sanitizarDetalles`).
+* **Sanitización obligatoria:** Jamás se registran en auditoría contraseñas, secretos ni tokens de acceso (se filtran mediante `sanitizarDetalles`).
 
 ---
 

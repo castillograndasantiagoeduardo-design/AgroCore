@@ -1,5 +1,4 @@
 @baseUrl = http://localhost:8001/api
-@token = PEGA_AQUI_UN_ACCESS_TOKEN_JWT
 
 # NOTA: la primera consulta de una finca tarda ~45 s (consulta del clima a NASA POWER);
 # las siguientes responden rápido porque el perfil climático queda guardado.
@@ -7,14 +6,12 @@
 
 ### Comparación con prioridades por defecto, body vacío (200: estrategias A, B y C con puntajes)
 POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {}
 
 ### Prioridades de suelo y plagas altas (200: B sube en el ranking)
 POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -23,7 +20,6 @@ Content-Type: application/json
 
 ### Prioridad de forraje alta, lechería (200: C sube en el ranking)
 POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -32,7 +28,6 @@ Content-Type: application/json
 
 ### Con secuencia actual indicada (200: A parte de papa -> arveja)
 POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -41,14 +36,12 @@ Content-Type: application/json
 
 ### Finca inexistente (404 FINCA_NO_ENCONTRADO)
 POST {{baseUrl}}/rotaciones/fincas/999999/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {}
 
 ### Prioridad fuera de rango (400 VALIDATION_ERROR)
 POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -57,7 +50,6 @@ Content-Type: application/json
 
 ### Clave de cultivo desconocida en secuenciaActual (422 ROTACION_CULTIVO_DESCONOCIDO)
 POST {{baseUrl}}/rotaciones/fincas/1/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -67,7 +59,6 @@ Content-Type: application/json
 ### Finca sin cultivo actual y sin secuenciaActual (422 ROTACION_CULTIVO_ACTUAL_REQUERIDO)
 # Usa una finca que no tenga cultivo actual registrado.
 POST {{baseUrl}}/rotaciones/fincas/2/comparar
-Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {}

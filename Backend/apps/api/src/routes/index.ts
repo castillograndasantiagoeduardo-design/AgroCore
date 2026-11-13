@@ -7,11 +7,9 @@ import { fincasRoutes } from "./fincas.routes.ts";
 import { climaRoutes } from "./clima.routes.ts";
 import { cultivosRoutes } from "./cultivos.routes.ts";
 import { rotacionesRoutes } from "./rotaciones.routes.ts";
-import { authRoutes } from "./auth.routes.ts";
 // @scaffold:imports
 
 export function registrarRutas(app: Hono<AppEnv>): void {
-  app.route("/api/auth", authRoutes);
   app.route("/api/fincas", fincasRoutes);
   app.route("/api/clima", climaRoutes);
   app.route("/api/cultivos", cultivosRoutes);

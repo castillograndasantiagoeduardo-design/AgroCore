@@ -5,7 +5,7 @@ import type { DomainError, Result } from "@duitamacrece/shared-kernel";
 import type { SerieClimatica } from "../../domain/value-objects/registro-clima-diario.vo.ts";
 import type { NormalClimatologica } from "../../domain/value-objects/normal-climatologica.vo.ts";
 
-export type { ContextoActor } from "../../../auditoria/application/ports/auditor.port.ts";
+export type { ContextoSolicitud } from "../../../auditoria/application/ports/auditor.port.ts";
 
 /**
  * Fuente de datos climáticos diarios. Implementación actual: NasaPowerClient (platform).

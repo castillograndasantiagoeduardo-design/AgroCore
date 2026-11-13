@@ -44,10 +44,10 @@ altitud óptima dentro de la posible y **solo las fabáceas fijan nitrógeno**.
 
 ## ⚙️ Casos de Uso
 
-| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Permiso | Audita |
-| :--- | :--- | :--- | :--- | :--- |
-| `ListarCultivosUseCase` | `listarCultivos` | `ICultivoRepository` | `PERMISSIONS.CULTIVOS_LEER` | ❌ (solo lectura) |
-| `ObtenerCultivoUseCase` | `obtenerCultivo` | `ICultivoRepository` | `PERMISSIONS.CULTIVOS_LEER` | ❌ (solo lectura) |
+| Caso de uso | Clave en `AppContainer` | Puertos inyectados | Audita |
+| :--- | :--- | :--- | :--- |
+| `ListarCultivosUseCase` | `listarCultivos` | `ICultivoRepository` | ❌ (solo lectura) |
+| `ObtenerCultivoUseCase` | `obtenerCultivo` | `ICultivoRepository` | ❌ (solo lectura) |
 
 ---
 
@@ -55,7 +55,7 @@ altitud óptima dentro de la posible y **solo las fabáceas fijan nitrógeno**.
 
 ### 1. Contrato — Shared/contracts
 - `Shared/contracts/src/cultivos.schema.ts` (enums `FAMILIAS_BOTANICAS`, `NIVELES`, `VALORES_FORRAJEROS`, `USOS_CULTIVO`, `APTITUDES_ALTITUD`; `ListarCultivosQuerySchema`, `ObtenerCultivoParamsSchema`, `CultivoSchema`)
-- `permissions.ts` → `CULTIVOS_LEER` · `mcp-tools.ts` → `CULTIVOS_LISTAR`, `CULTIVOS_OBTENER`
+- `mcp-tools.ts` → `CULTIVOS_LISTAR`, `CULTIVOS_OBTENER`
 
 ### 2. Dominio — core/domain
 - `domain/entities/cultivo.entity.ts`
@@ -95,7 +95,6 @@ altitud óptima dentro de la posible y **solo las fabáceas fijan nitrógeno**.
 
 ```http
 GET /api/cultivos?altitudM=2530&familia=fabaceas
-Authorization: Bearer <token>
 ```
 
 Filtros (todos opcionales, se combinan con Y): `altitudM`, `familia`, `uso` (`alimento` | `forraje` |

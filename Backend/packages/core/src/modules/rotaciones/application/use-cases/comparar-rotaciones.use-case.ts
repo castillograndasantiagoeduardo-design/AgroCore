@@ -29,7 +29,7 @@ import {
 } from "../../domain/services/generar-estrategias.service.ts";
 import { explicarEstrategia, NOMBRES_ESTRATEGIA } from "../../domain/services/explicar-estrategia.service.ts";
 import { calcularVentanasSiembra } from "../../domain/services/ventanas-siembra.service.ts";
-import type { ContextoActor, ICultivoRepository, IFincaRepository, IPerfilClimaticoQuery } from "../ports/index.ts";
+import type { ContextoSolicitud, ICultivoRepository, IFincaRepository, IPerfilClimaticoQuery } from "../ports/index.ts";
 
 export const AVISO_ROTACIONES =
   "Esta comparación sugiere y explica con los datos disponibles; no reemplaza el criterio del agricultor ni la recomendación de un agrónomo.";
@@ -43,7 +43,7 @@ export class CompararRotacionesUseCase {
 
   async execute(
     input: CompararRotacionesInput,
-    contexto: ContextoActor,
+    contexto: ContextoSolicitud,
   ): Promise<Result<ComparacionRotacionesDto, DomainError>> {
     // 1. Finca
     const finca = await this.fincas.buscarPorId(input.fincaId);
