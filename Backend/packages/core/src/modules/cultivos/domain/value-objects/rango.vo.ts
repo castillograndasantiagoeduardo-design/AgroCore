@@ -1,6 +1,6 @@
 /**
  * Value Object inmutable: rango numérico cerrado [min, max].
- * Se usa para ciclo (días), altitud (m) y agua (mm) de un cultivo.
+ * Se usa para ciclo (días), temperaturas (°C), lluvia y agua (mm) y pH de un cultivo.
  *
  * Reglas que protege: ambos extremos son números finitos, no negativos y min ≤ max.
  */
@@ -19,6 +19,17 @@ export class Rango {
   static crear(min: number, max: number, clave: string, campo: string): Result<Rango, DomainError> {
     if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0) {
       return Result.err(new CultivoDatosInvalidosError(clave, campo + " debe tener números ≥ 0"));
+    }
+    if (min > max) {
+      return Result.err(new CultivoDatosInvalidosError(clave, campo + " tiene mínimo (" + min + ") mayor que máximo (" + max + ")"));
+    }
+    return Result.ok(new Rango(min, max));
+  }
+
+  /** Igual que crear, pero admite valores negativos (temperaturas). */
+  static crearConNegativos(min: number, max: number, clave: string, campo: string): Result<Rango, DomainError> {
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      return Result.err(new CultivoDatosInvalidosError(clave, campo + " debe tener números finitos"));
     }
     if (min > max) {
       return Result.err(new CultivoDatosInvalidosError(clave, campo + " tiene mínimo (" + min + ") mayor que máximo (" + max + ")"));

@@ -1,30 +1,33 @@
 /**
- * Prueba manual del módulo cultivos SIN MySQL ni token: muestra qué cultivos del catálogo
- * son aptos a una altitud dada.
+ * Prueba manual del módulo cultivos SIN MySQL: muestra qué cultivos del catálogo global son aptos
+ * para un sitio según su temperatura media (y opcionalmente lluvia anual y pH).
  *
- * Uso (desde Backend/):  deno run -A scripts/probar-cultivos.ts [altitudM]
+ * Uso (desde Backend/):  deno run -A scripts/probar-cultivos.ts [tempMediaC] [lluviaAnualMm] [ph]
+ * Ej.:                   deno run -A scripts/probar-cultivos.ts 14.7 880        (Duitama)
+ *                        deno run -A scripts/probar-cultivos.ts 9.5 840         (Ames, Iowa: media anual)
  */
 import { type ContextoSolicitud, ListarCultivosUseCase } from "@agrocore/core";
-import { CatalogoCultivosEnMemoria } from "@agrocore/database";
+import { CATALOGO_CULTIVOS, CatalogoCultivosEnMemoria } from "@agrocore/database";
 
-const altitudM = Deno.args[0] ? Number(Deno.args[0]) : 2530;
+const tempMediaC = Deno.args[0] ? Number(Deno.args[0]) : 14.7;
+const lluviaAnualMm = Deno.args[1] ? Number(Deno.args[1]) : undefined;
+const ph = Deno.args[2] ? Number(Deno.args[2]) : undefined;
 const actor: ContextoSolicitud = { origen: "script", ip: null };
 
-const r = await new ListarCultivosUseCase(new CatalogoCultivosEnMemoria()).execute({ altitudM }, actor);
+const r = await new ListarCultivosUseCase(new CatalogoCultivosEnMemoria()).execute({ tempMediaC, lluviaAnualMm, ph }, actor);
 if (!r.ok) {
   console.error(r.error.code, r.error.message);
   Deno.exit(1);
 }
-
-console.log(`\nCultivos aptos a ${altitudM} m (${r.value.length} de 11):`);
+console.log(`\nCultivos aptos con ${tempMediaC} °C de media${lluviaAnualMm ? ", " + lluviaAnualMm + " mm/año" : ""}${ph ? ", pH " + ph : ""} (${r.value.length} de ${CATALOGO_CULTIVOS.length}):`);
 console.table(r.value.map((c) => ({
-  cultivo: c.nombre,
-  aptitud: c.aptitudAltitud,
-  familias: c.familias.join(" + "),
-  "ciclo (días)": `${c.cicloDias.min}–${c.cicloDias.max}`,
+  clave: c.clave,
+  grupo: c.grupo,
+  aptitud: c.aptitudClima,
+  "T óptima": c.temperaturaOptimaC.min + "–" + c.temperaturaOptimaC.max,
   helada: c.toleranciaHelada,
-  agua: c.necesidadAgua,
-  "fija N": c.fijaNitrogeno ? "sí" : "no",
-  cobertura: c.coberturaSuelo,
-  forraje: c.valorForrajero,
+  calor: c.toleranciaCalor,
+  sequia: c.toleranciaSequia,
+  N: c.fijaNitrogeno ? "sí" : "",
+  confianza: c.confianza,
 })));

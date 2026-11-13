@@ -5,6 +5,6 @@ export { MySqlMcpToolLogger } from "./repositories/mysql-mcp-tool-logger.ts";
 export * from "./schema/index.ts";
 export { MySqlFincaRepository } from "./repositories/mysql-finca.repository.ts";
 export { CatalogoCultivosEnMemoria } from "./catalogos/catalogo-cultivos-en-memoria.ts";
-export { CATALOGO_CULTIVOS } from "./catalogos/catalogo-cultivos.datos.ts";
+export { AVISO_VERIFICACION, CATALOGO_CULTIVOS } from "./catalogos/catalogo-cultivos.datos.ts";
 export { MySqlCacheProveedores } from "./repositories/mysql-cache-proveedores.ts";
 // @scaffold:repositories

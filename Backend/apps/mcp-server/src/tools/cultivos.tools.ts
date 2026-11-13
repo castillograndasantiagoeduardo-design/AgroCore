@@ -8,9 +8,9 @@ export function registrarCultivosTools(gateway: ToolGateway): void {
   gateway.register({
     name: MCP_TOOLS.CULTIVOS_LISTAR,
     description:
-      "Catálogo de cultivos de clima frío de Duitama (papa, leguminosas, cereales, forrajes...) con ciclo, " +
-      "altitud, tolerancia a helada, agua, fijación de nitrógeno, cobertura y valor forrajero. " +
-      "Con altitudM devuelve solo los aptos a esa altitud, primero los óptimos.",
+      "Catálogo GLOBAL de 51 cultivos (cereales, leguminosas, tubérculos, hortalizas, oleaginosas, forrajes, coberturas) con ciclo, " +
+      "temperatura óptima y absoluta (FAO ECOCROP), tolerancias a helada, calor y sequía, pH, textura, fijación de N, plagas clave y fuentes. " +
+      "Con tempMediaC (temperatura media del sitio) devuelve solo los aptos, primero los óptimos; filtros: lluviaAnualMm, ph, textura, familia, uso, grupo.",
     schema: ListarCultivosQuerySchema,
     execute: (input, container, contexto) => container.listarCultivos.execute(input, contexto),
   });

@@ -80,13 +80,13 @@ export function evaluarReglas(
       ),
   );
 
-  // altitud_apta
-  const noAptos = evaluados.filter((_, i) => cultivos[i].aptitudPorAltitud(ctx.altitudM) === "no_apta");
+  // temperatura_apta
+  const noAptos = evaluados.filter((e) => e.paso.aptitudClima === "no_apta");
   out.set(
-    "altitud_apta",
+    "temperatura_apta",
     noAptos.length === 0
-      ? r("altitud_apta", true, "Todos los cultivos son aptos a " + ctx.altitudM + " m.")
-      : r("altitud_apta", false, "No son aptos a " + ctx.altitudM + " m: " + lista(noAptos.map(etiqueta)) + "."),
+      ? r("temperatura_apta", true, "La temperatura media de cada ciclo está dentro del rango de su cultivo.")
+      : r("temperatura_apta", false, "Temperatura del ciclo fuera del rango del cultivo en: " + lista(noAptos.map((e) => etiqueta(e) + " [" + e.paso.tempMediaCicloC + " °C]")) + "."),
   );
 
   // agua_suficiente

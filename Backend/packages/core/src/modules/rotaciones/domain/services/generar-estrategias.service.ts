@@ -45,7 +45,7 @@ export function evaluarSecuencia(cultivos: Cultivo[], ctx: ContextoMotor, priori
 
 /** Un paso es viable si cumple las reglas duras que dependen de ese solo semestre. */
 export function pasoEsViable(cultivo: Cultivo, ev: PasoEvaluado, ctx: ContextoMotor): boolean {
-  if (cultivo.aptitudPorAltitud(ctx.altitudM) === "no_apta") return false;
+  if (ev.paso.aptitudClima === "no_apta") return false;
   if (!ev.cabeEnVentana) return false;
   if (ev.paso.riesgoHelada === "alto") return false;
   if (!ctx.tieneRiego && ev.paso.deficitAguaMm > DEFICIT_AGUA_MAXIMO * ev.aguaMinimaMm) return false;

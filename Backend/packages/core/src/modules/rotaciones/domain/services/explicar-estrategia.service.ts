@@ -41,7 +41,7 @@ function nombresUnicos(s: SecuenciaEvaluada): string {
 }
 
 function reglasRelevantes(s: SecuenciaEvaluada): ReglaRotacion[] {
-  const rel: ReglaRotacion[] = ["no_repetir_familia", "leguminosa_cada_dos_anios", "siembra_inicio_lluvias", "altitud_apta"];
+  const rel: ReglaRotacion[] = ["no_repetir_familia", "leguminosa_cada_dos_anios", "siembra_inicio_lluvias", "temperatura_apta"];
   if (s.pasos.some((p) => p.riesgoHelada !== "ninguno")) rel.push("evitar_helada");
   if (s.pasos.some((p) => p.deficitAguaMm > 0)) rel.push("agua_suficiente");
   if (s.evaluados.some((e) => !e.cabeEnVentana)) rel.push("ciclo_cabe_en_ventana");
@@ -76,7 +76,7 @@ function construirEvidencia(d: DatosExplicacion): string[] {
 
   out.push(
     "Altitud usada: " + ctx.altitudM + " m (" + (d.altitudConocida ? "registrada en la finca" : "tomada del perfil climático") + "). Aptitud: " +
-      unicos(s.cultivos.map((c) => c.nombre + " " + c.aptitudPorAltitud(ctx.altitudM))).join(", ") + ".",
+      unicos(s.pasos.map((p) => p.cultivoNombre + " " + p.aptitudClima + " (" + p.tempMediaCicloC + " °C)")).join(", ") + ".",
   );
   for (const p of s.pasos) {
     let t = "Semestre " + p.semestre + " (" + p.cultivoNombre + "): " +
@@ -147,8 +147,8 @@ export function explicarEstrategia(d: DatosExplicacion): TextosEstrategia {
     }
   }
   s.cultivos.forEach((c, i) => {
-    if (c.aptitudPorAltitud(d.ctx.altitudM) === "posible") {
-      riesgos.push(c.nombre + " solo es posible (no óptimo) a " + d.ctx.altitudM + " m (" + sem(i + 1) + "): el rendimiento puede ser menor.");
+    if (s.pasos[i].aptitudClima === "posible") {
+      riesgos.push(c.nombre + " solo es posible (no óptimo) con " + s.pasos[i].tempMediaCicloC + " °C de media en su ciclo (" + sem(i + 1) + "): el rendimiento puede ser menor.");
     }
   });
   if (d.id === "C" && d.clavePrincipal && !s.claves.includes(d.clavePrincipal)) {

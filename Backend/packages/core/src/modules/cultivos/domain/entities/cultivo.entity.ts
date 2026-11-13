@@ -1,16 +1,27 @@
 /**
- * Entidad Cultivo: ficha agronómica de un cultivo del catálogo de Boyacá.
+ * Entidad Cultivo: ficha agronómica de un cultivo del catálogo GLOBAL.
  * Su identidad es la `clave` (slug estable, ej. "papa"), no un id numérico.
  *
  * Invariantes que protege:
- *  1. Clave en minúsculas con letras y guion bajo; nombre no vacío; al menos una familia botánica.
- *  2. Ciclo, altitud y agua son rangos válidos (ver Rango).
- *  3. El rango de altitud ÓPTIMA está dentro del rango POSIBLE.
- *  4. Un cultivo que fija nitrógeno pertenece (al menos en parte) a las fabáceas (leguminosas).
- *  5. Tiene al menos una fuente: el sistema sugiere con evidencia, no con datos inventados.
+ *  1. Clave en minúsculas con letras y guion bajo; nombre no vacío; al menos una familia botánica y una textura.
+ *  2. Ciclo, temperaturas, lluvia, agua y pH son rangos válidos (ver Rango).
+ *  3. La temperatura ÓPTIMA está dentro de la ABSOLUTA (ECOCROP: TOPMN–TOPMX dentro de TMIN–TMAX).
+ *  4. El pH óptimo está entre 3 y 10.
+ *  5. Un cultivo que fija nitrógeno pertenece (al menos en parte) a las fabáceas (leguminosas).
+ *  6. Tiene al menos una fuente: el sistema sugiere con evidencia, no con datos inventados.
  */
 import { DomainError, Result } from "@agrocore/shared-kernel";
-import type { AptitudAltitud, FamiliaBotanica, Nivel, UsoCultivo, ValorForrajero } from "@agrocore/contracts";
+import type {
+  AptitudClima,
+  ConfianzaDato,
+  FamiliaBotanica,
+  GrupoCultivo,
+  Nivel,
+  ProfundidadRaiz,
+  TexturaSuelo,
+  UsoCultivo,
+  ValorForrajero,
+} from "@agrocore/contracts";
 import { Rango } from "../value-objects/rango.vo.ts";
 import { CultivoDatosInvalidosError } from "../errors/cultivo.errors.ts";
 
@@ -29,46 +40,51 @@ export interface CrearCultivoDatos {
   nombreCientifico: string;
   familias: FamiliaBotanica[];
   uso: UsoCultivo;
+  grupo: GrupoCultivo;
   perenne: boolean;
   cicloDias: [number, number];
-  altitudM: [number, number];
-  altitudOptimaM: [number, number];
-  toleranciaHelada: Nivel;
-  necesidadAgua: Nivel;
+  ocupaVariasTemporadas: boolean;
+  temperaturaOptimaC: [number, number];
+  temperaturaAbsolutaC: [number, number];
+  lluviaAnualOptimaMm: [number, number];
   aguaCicloMm: [number, number];
-  fijaNitrogeno: boolean;
-  coberturaSuelo: Nivel;
-  valorForrajero: ValorForrajero;
-  notas: string[];
-  fuentes: string[];
-}
-
-interface CultivoProps extends Omit<CrearCultivoDatos, "cicloDias" | "altitudM" | "altitudOptimaM" | "aguaCicloMm"> {
-  cicloDias: Rango;
-  altitudM: Rango;
-  altitudOptimaM: Rango;
-  aguaCicloMm: Rango;
-}
-
-export interface CultivoSnapshot {
-  clave: string;
-  nombre: string;
-  nombreCientifico: string;
-  familias: FamiliaBotanica[];
-  uso: UsoCultivo;
-  perenne: boolean;
-  cicloDias: { min: number; max: number };
-  altitudM: { min: number; max: number };
-  altitudOptimaM: { min: number; max: number };
   toleranciaHelada: Nivel;
+  toleranciaCalor: Nivel;
+  toleranciaSequia: Nivel;
   necesidadAgua: Nivel;
-  aguaCicloMm: { min: number; max: number };
+  phOptimo: [number, number];
+  texturas: TexturaSuelo[];
+  profundidadRaiz: ProfundidadRaiz;
   fijaNitrogeno: boolean;
   coberturaSuelo: Nivel;
   valorForrajero: ValorForrajero;
+  plagasClave: string[];
   notas: string[];
   fuentes: string[];
-  aptitudAltitud?: AptitudAltitud;
+  confianza: ConfianzaDato;
+}
+
+type CamposRango = "cicloDias" | "temperaturaOptimaC" | "temperaturaAbsolutaC" | "lluviaAnualOptimaMm" | "aguaCicloMm" | "phOptimo";
+
+interface CultivoProps extends Omit<CrearCultivoDatos, CamposRango> {
+  cicloDias: Rango;
+  temperaturaOptimaC: Rango;
+  temperaturaAbsolutaC: Rango;
+  lluviaAnualOptimaMm: Rango;
+  aguaCicloMm: Rango;
+  phOptimo: Rango;
+}
+
+type RangoJson = { min: number; max: number };
+
+export interface CultivoSnapshot extends Omit<CrearCultivoDatos, CamposRango> {
+  cicloDias: RangoJson;
+  temperaturaOptimaC: RangoJson;
+  temperaturaAbsolutaC: RangoJson;
+  lluviaAnualOptimaMm: RangoJson;
+  aguaCicloMm: RangoJson;
+  phOptimo: RangoJson;
+  aptitudClima?: AptitudClima;
 }
 
 export class Cultivo {
@@ -81,22 +97,29 @@ export class Cultivo {
     if (!PATRON_CLAVE.test(c)) return Result.err(new CultivoDatosInvalidosError(c, "la clave debe ser minúsculas y guion bajo"));
     if (datos.nombre.trim().length < 2) return Result.err(new CultivoDatosInvalidosError(c, "el nombre está vacío"));
     if (datos.familias.length === 0) return Result.err(new CultivoDatosInvalidosError(c, "no tiene familia botánica"));
+    if (datos.texturas.length === 0) return Result.err(new CultivoDatosInvalidosError(c, "no tiene texturas de suelo"));
     if (datos.fuentes.length === 0) return Result.err(new CultivoDatosInvalidosError(c, "no tiene fuentes"));
     if (datos.fijaNitrogeno && !datos.familias.includes("fabaceas")) {
       return Result.err(new CultivoDatosInvalidosError(c, "solo las leguminosas (fabáceas) fijan nitrógeno"));
     }
 
-    const ciclo = Rango.crear(datos.cicloDias[0], datos.cicloDias[1], c, "cicloDias");
-    if (!ciclo.ok) return ciclo;
-    const altitud = Rango.crear(datos.altitudM[0], datos.altitudM[1], c, "altitudM");
-    if (!altitud.ok) return altitud;
-    const optima = Rango.crear(datos.altitudOptimaM[0], datos.altitudOptimaM[1], c, "altitudOptimaM");
-    if (!optima.ok) return optima;
-    const agua = Rango.crear(datos.aguaCicloMm[0], datos.aguaCicloMm[1], c, "aguaCicloMm");
-    if (!agua.ok) return agua;
-
-    if (!altitud.value.incluye(optima.value)) {
-      return Result.err(new CultivoDatosInvalidosError(c, "la altitud óptima se sale del rango de altitud posible"));
+    const rangos: Partial<Record<CamposRango, Rango>> = {};
+    for (const campo of ["cicloDias", "lluviaAnualOptimaMm", "aguaCicloMm", "phOptimo"] as const) {
+      const r = Rango.crear(datos[campo][0], datos[campo][1], c, campo);
+      if (!r.ok) return r;
+      rangos[campo] = r.value;
+    }
+    // Las temperaturas pueden ser negativas: se valida que sean finitas y ordenadas.
+    for (const campo of ["temperaturaOptimaC", "temperaturaAbsolutaC"] as const) {
+      const r = Rango.crearConNegativos(datos[campo][0], datos[campo][1], c, campo);
+      if (!r.ok) return r;
+      rangos[campo] = r.value;
+    }
+    if (!rangos.temperaturaAbsolutaC!.incluye(rangos.temperaturaOptimaC!)) {
+      return Result.err(new CultivoDatosInvalidosError(c, "la temperatura óptima se sale del rango absoluto"));
+    }
+    if (rangos.phOptimo!.min < 3 || rangos.phOptimo!.max > 10) {
+      return Result.err(new CultivoDatosInvalidosError(c, "el pH óptimo debe estar entre 3 y 10"));
     }
 
     return Result.ok(
@@ -104,12 +127,16 @@ export class Cultivo {
         ...datos,
         nombre: datos.nombre.trim(),
         familias: [...datos.familias],
+        texturas: [...datos.texturas],
+        plagasClave: [...datos.plagasClave],
         notas: [...datos.notas],
         fuentes: [...datos.fuentes],
-        cicloDias: ciclo.value,
-        altitudM: altitud.value,
-        altitudOptimaM: optima.value,
-        aguaCicloMm: agua.value,
+        cicloDias: rangos.cicloDias!,
+        temperaturaOptimaC: rangos.temperaturaOptimaC!,
+        temperaturaAbsolutaC: rangos.temperaturaAbsolutaC!,
+        lluviaAnualOptimaMm: rangos.lluviaAnualOptimaMm!,
+        aguaCicloMm: rangos.aguaCicloMm!,
+        phOptimo: rangos.phOptimo!,
       }),
     );
   }
@@ -126,17 +153,50 @@ export class Cultivo {
   get uso(): UsoCultivo {
     return this.props.uso;
   }
+  get grupo(): GrupoCultivo {
+    return this.props.grupo;
+  }
   get perenne(): boolean {
     return this.props.perenne;
   }
   get cicloDias(): Rango {
     return this.props.cicloDias;
   }
+  get ocupaVariasTemporadas(): boolean {
+    return this.props.ocupaVariasTemporadas;
+  }
+  get temperaturaOptimaC(): Rango {
+    return this.props.temperaturaOptimaC;
+  }
+  get temperaturaAbsolutaC(): Rango {
+    return this.props.temperaturaAbsolutaC;
+  }
+  get aguaCicloMm(): Rango {
+    return this.props.aguaCicloMm;
+  }
+  get lluviaAnualOptimaMm(): Rango {
+    return this.props.lluviaAnualOptimaMm;
+  }
   get toleranciaHelada(): Nivel {
     return this.props.toleranciaHelada;
   }
+  get toleranciaCalor(): Nivel {
+    return this.props.toleranciaCalor;
+  }
+  get toleranciaSequia(): Nivel {
+    return this.props.toleranciaSequia;
+  }
   get necesidadAgua(): Nivel {
     return this.props.necesidadAgua;
+  }
+  get phOptimo(): Rango {
+    return this.props.phOptimo;
+  }
+  get texturas(): readonly TexturaSuelo[] {
+    return this.props.texturas;
+  }
+  get profundidadRaiz(): ProfundidadRaiz {
+    return this.props.profundidadRaiz;
   }
   get fijaNitrogeno(): boolean {
     return this.props.fijaNitrogeno;
@@ -147,12 +207,42 @@ export class Cultivo {
   get valorForrajero(): ValorForrajero {
     return this.props.valorForrajero;
   }
+  get plagasClave(): readonly string[] {
+    return this.props.plagasClave;
+  }
+  get fuentes(): readonly string[] {
+    return this.props.fuentes;
+  }
+  get confianza(): ConfianzaDato {
+    return this.props.confianza;
+  }
+  /** true si es una cobertura o abono verde (se usa en intervalos y meses baldíos). */
+  get esCobertura(): boolean {
+    return this.props.uso === "cobertura" || this.props.grupo === "cobertura";
+  }
 
-  /** "optima" dentro del rango óptimo, "posible" dentro del rango general, "no_apta" fuera. */
-  aptitudPorAltitud(altitudM: number): AptitudAltitud {
-    if (this.props.altitudOptimaM.contiene(altitudM)) return "optima";
-    if (this.props.altitudM.contiene(altitudM)) return "posible";
+  /** Meses que dura el ciclo medio (redondeado hacia arriba). */
+  get mesesCicloMedio(): number {
+    return Math.ceil((this.props.cicloDias.min + this.props.cicloDias.max) / 2 / 30);
+  }
+
+  /** "optima" dentro del rango óptimo de temperatura media, "posible" dentro del absoluto, "no_apta" fuera. */
+  aptitudPorTemperatura(tempMediaC: number): AptitudClima {
+    if (this.props.temperaturaOptimaC.contiene(tempMediaC)) return "optima";
+    if (this.props.temperaturaAbsolutaC.contiene(tempMediaC)) return "posible";
     return "no_apta";
+  }
+
+  /** null si no se conoce el pH; true si está dentro del óptimo ± `tolerancia`. */
+  phCompatible(ph: number | null, tolerancia = 0.5): boolean | null {
+    if (ph === null) return null;
+    return ph >= this.props.phOptimo.min - tolerancia && ph <= this.props.phOptimo.max + tolerancia;
+  }
+
+  /** null si no se conoce la textura. */
+  texturaCompatible(textura: TexturaSuelo | null): boolean | null {
+    if (textura === null) return null;
+    return this.props.texturas.includes(textura);
   }
 
   perteneceAFamilia(familia: FamiliaBotanica): boolean {
@@ -164,7 +254,7 @@ export class Cultivo {
     return this.props.familias.some((f) => otro.perteneceAFamilia(f));
   }
 
-  toSnapshot(aptitudAltitud?: AptitudAltitud): CultivoSnapshot {
+  toSnapshot(aptitudClima?: AptitudClima): CultivoSnapshot {
     const p = this.props;
     return {
       clave: p.clave,
@@ -172,19 +262,29 @@ export class Cultivo {
       nombreCientifico: p.nombreCientifico,
       familias: [...p.familias],
       uso: p.uso,
+      grupo: p.grupo,
       perenne: p.perenne,
       cicloDias: p.cicloDias.toJSON(),
-      altitudM: p.altitudM.toJSON(),
-      altitudOptimaM: p.altitudOptimaM.toJSON(),
-      toleranciaHelada: p.toleranciaHelada,
-      necesidadAgua: p.necesidadAgua,
+      ocupaVariasTemporadas: p.ocupaVariasTemporadas,
+      temperaturaOptimaC: p.temperaturaOptimaC.toJSON(),
+      temperaturaAbsolutaC: p.temperaturaAbsolutaC.toJSON(),
+      lluviaAnualOptimaMm: p.lluviaAnualOptimaMm.toJSON(),
       aguaCicloMm: p.aguaCicloMm.toJSON(),
+      toleranciaHelada: p.toleranciaHelada,
+      toleranciaCalor: p.toleranciaCalor,
+      toleranciaSequia: p.toleranciaSequia,
+      necesidadAgua: p.necesidadAgua,
+      phOptimo: p.phOptimo.toJSON(),
+      texturas: [...p.texturas],
+      profundidadRaiz: p.profundidadRaiz,
       fijaNitrogeno: p.fijaNitrogeno,
       coberturaSuelo: p.coberturaSuelo,
       valorForrajero: p.valorForrajero,
+      plagasClave: [...p.plagasClave],
       notas: [...p.notas],
       fuentes: [...p.fuentes],
-      ...(aptitudAltitud ? { aptitudAltitud } : {}),
+      confianza: p.confianza,
+      ...(aptitudClima ? { aptitudClima } : {}),
     };
   }
 }

@@ -73,11 +73,11 @@ export const EVIDENCIA_REGLAS: Record<ReglaRotacion, EvidenciaRegla> = {
       "El perfil corrige promedios mensuales: las heladas de noches puntuales, sobre todo en hondonadas, pueden estar subestimadas.",
     ],
   },
-  altitud_apta: {
+  temperatura_apta: {
     respaldo: "calculada",
-    resumen: "Se compara la altitud de la finca con el rango posible y óptimo de cada cultivo del catálogo.",
-    fuentes: ["Catálogo de cultivos (valores de referencia FAO ECOCROP ajustados al altiplano)"],
-    vacios: ["Los rangos de altitud del catálogo son de referencia y aún no los ha validado un agrónomo local."],
+    resumen: "Se compara la temperatura media de los meses de cada ciclo con el rango óptimo y absoluto del cultivo (estilo FAO ECOCROP).",
+    fuentes: ["Catálogo de cultivos (rangos de referencia FAO ECOCROP)", "Perfil climático del sitio"],
+    vacios: ["Los rangos de temperatura del catálogo son de referencia, no se verificaron en línea y aún no los ha validado un agrónomo local."],
   },
   agua_suficiente: {
     respaldo: "calculada",

@@ -32,6 +32,7 @@ import {
   calcularCalendarioVulnerabilidad,
   calcularTemporadasCultivo,
 } from "../../src/index.ts";
+import { cultivoDePrueba } from "../_fixtures/cultivos.ts";
 
 // ---------------------------------------------------------------------------
 // Datos sintéticos
@@ -91,34 +92,7 @@ function perfil(cambios: { lluviosos?: number[]; helada?: number[] } = {}): Perf
   };
 }
 
-function datos(cambios: Partial<CrearCultivoDatos>): CrearCultivoDatos {
-  return {
-    clave: "papa",
-    nombre: "Papa",
-    nombreCientifico: "Solanum tuberosum",
-    familias: ["solanaceas"],
-    uso: "alimento",
-    perenne: false,
-    cicloDias: [120, 180],
-    altitudM: [2000, 3500],
-    altitudOptimaM: [2300, 3000],
-    toleranciaHelada: "baja",
-    necesidadAgua: "alta",
-    aguaCicloMm: [500, 750],
-    fijaNitrogeno: false,
-    coberturaSuelo: "media",
-    valorForrajero: "bajo",
-    notas: [],
-    fuentes: ["Fuente de prueba"],
-    ...cambios,
-  };
-}
-
-function cultivo(cambios: Partial<CrearCultivoDatos>): Cultivo {
-  const r = Cultivo.crear(datos(cambios));
-  if (!r.ok) throw new Error("Datos de prueba inválidos: " + r.error.message);
-  return r.value;
-}
+const cultivo = (cambios: Partial<CrearCultivoDatos>): Cultivo => cultivoDePrueba({ aguaCicloMm: [500, 750], ...cambios });
 
 const papa = cultivo({});
 const arveja = cultivo({
@@ -140,8 +114,8 @@ const raigras = cultivo({
   coberturaSuelo: "alta", valorForrajero: "alto",
 });
 const maizLargo = cultivo({
-  clave: "maiz", nombre: "Maíz", familias: ["poaceas"], cicloDias: [240, 300], altitudM: [1800, 2900],
-  altitudOptimaM: [2200, 2700], toleranciaHelada: "baja", necesidadAgua: "media", aguaCicloMm: [400, 600],
+  clave: "maiz", nombre: "Maíz", familias: ["poaceas"], cicloDias: [240, 300], temperaturaAbsolutaC: [15, 40],
+  temperaturaOptimaC: [18, 30], toleranciaHelada: "baja", necesidadAgua: "media", aguaCicloMm: [400, 600],
   coberturaSuelo: "media", valorForrajero: "medio",
 });
 
@@ -293,7 +267,7 @@ Deno.test("reglas: devuelve siempre las 7 y detecta repetición de familia y fal
   assertEquals(regla(s.reglas, "evitar_helada").cumple, false);
   assertEquals(regla(s.reglas, "agua_suficiente").cumple, false);
   assertEquals(regla(s.reglas, "siembra_inicio_lluvias").cumple, true);
-  assertEquals(regla(s.reglas, "altitud_apta").cumple, true);
+  assertEquals(regla(s.reglas, "temperatura_apta").cumple, true);
   assertEquals(regla(s.reglas, "ciclo_cabe_en_ventana").cumple, true);
 });
 
@@ -309,9 +283,9 @@ Deno.test("reglas: con riego el déficit de agua no incumple agua_suficiente", (
   assertEquals(regla(conRiego.reglas, "agua_suficiente").cumple, true);
 });
 
-Deno.test("reglas: altitud no apta, ciclo que no cabe y siembra fuera de lluvias", () => {
-  const alta = evaluarSecuencia([maizLargo, arveja, maizLargo, arveja], ctxMotor({ altitudM: 3100 }), PRIORIDADES);
-  assertEquals(regla(alta.reglas, "altitud_apta").cumple, false);
+Deno.test("reglas: temperatura no apta (maíz a 14 °C), ciclo que no cabe y siembra fuera de lluvias", () => {
+  const alta = evaluarSecuencia([maizLargo, arveja, maizLargo, arveja], ctxMotor(), PRIORIDADES);
+  assertEquals(regla(alta.reglas, "temperatura_apta").cumple, false);
   assertEquals(regla(alta.reglas, "ciclo_cabe_en_ventana").cumple, false);
   const seco = evaluarSecuencia([papa, arveja, papa, arveja], ctxMotor({ p: perfil({ lluviosos: [] }) }), PRIORIDADES);
   assertEquals(regla(seco.reglas, "siembra_inicio_lluvias").cumple, false);
@@ -381,7 +355,7 @@ Deno.test("estrategia B: cumple las reglas duras y contiene la papa", async () =
   const b = (await comparar()).estrategias[1];
   assertEquals(b.enfoque, "suelo");
   assertEquals(b.secuencia.some((p) => p.cultivoClave === "papa"), true);
-  for (const nombre of ["no_repetir_familia", "leguminosa_cada_dos_anios", "altitud_apta", "evitar_helada", "ciclo_cabe_en_ventana"]) {
+  for (const nombre of ["no_repetir_familia", "leguminosa_cada_dos_anios", "temperatura_apta", "evitar_helada", "ciclo_cabe_en_ventana"]) {
     assertEquals(regla(b.reglas, nombre).cumple, true, nombre);
   }
   assertEquals(b.secuencia.every((p) => p.riesgoHelada !== "alto"), true);
@@ -471,8 +445,8 @@ Deno.test("error: clave desconocida → ROTACION_CULTIVO_DESCONOCIDO", async () 
   if (!r.ok) assertEquals(r.error.code, "ROTACION_CULTIVO_DESCONOCIDO");
 });
 
-Deno.test("error: ningún cultivo apto a la altitud → ROTACION_SIN_ALTERNATIVAS", async () => {
-  const r = await caso(finca({ altitudM: 1000 })).execute({ fincaId: 1, prioridades: PRIORIDADES }, actor);
+Deno.test("error: ningún cultivo apto a la temperatura del sitio → ROTACION_SIN_ALTERNATIVAS", async () => {
+  const r = await caso(finca({ cultivoActual: "maiz" }), perfil(), [maizLargo]).execute({ fincaId: 1, prioridades: PRIORIDADES }, actor);
   assertEquals(r.ok, false);
   if (!r.ok) assertEquals(r.error.code, "ROTACION_SIN_ALTERNATIVAS");
 });
