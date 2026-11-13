@@ -28,3 +28,51 @@ export {
   type TiemposPeticion,
   tiemposActuales,
 } from "./medicion/medidor-tiempos.ts";
+export { LimitadorConcurrencia } from "./http/limitador-concurrencia.ts";
+export { ajustarAMetros, cajaAjustada, celdaPower, type CeldaPower } from "./cache/celdas.ts";
+export { CacheArchivo, directorioCachePorDefecto } from "./cache/cache-archivo.ts";
+export {
+  NasaPowerClimatologiaClient,
+  type NasaPowerClimatologiaConfig,
+  parsearClimatologiaPower,
+} from "./nasa-power-climatologia-client.ts";
+export {
+  ALIAS_EVA,
+  claveDesdeNombreEva,
+  normalizarNombreEva,
+  PresenciaLocalClient,
+  type PresenciaLocalConfig,
+} from "./presencia/presencia-local-client.ts";
+export { TemporizadorSistema } from "./temporizador-sistema.ts";
+export {
+  CoberturaRegionalOVivo,
+  ClimaPrecalculadoOVivo,
+  ElevacionRegionalOVivo,
+  type IClimaRegional,
+  type ICoberturaRegional,
+  type IElevacionRegional,
+  type IViasRegional,
+  ViasRegionalOVivo,
+} from "./precalculo/decoradores.ts";
+export {
+  type CajaGeo,
+  parsearRegionPrecalculo,
+  puntoEnCaja,
+  REGION_PRECALCULO_POR_DEFECTO,
+  type RegionPrecalculo,
+} from "./precalculo/region.ts";
+export {
+  type AguaOsmConId,
+  type AnilloOsmConId,
+  type BloqueOsm,
+  clasificarRespuestaOverpass,
+  consultaOverpassBloque,
+  descargarBloqueOsm,
+  descargarElevaciones,
+  descargarSubsetCobertura,
+  ESPEJOS_OVERPASS_PRECALCULO,
+  parsearSubsetBloque,
+  type SubsetCobertura,
+  ultimaFechaCoberturaModis,
+  type ViaOsmConId,
+} from "./precalculo/descargas.ts";

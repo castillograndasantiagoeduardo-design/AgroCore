@@ -7,6 +7,7 @@ export {
   type IMedidorTiempos,
   MEDIDOR_NULO,
 } from "./shared/application/ports/medidor-tiempos.port.ts";
+export { conPlazo, type ConPlazo, type ITemporizador } from "./shared/application/ports/temporizador.port.ts";
 export {
   type ContextoSolicitud,
   type DetallesAuditoria,
@@ -27,4 +28,5 @@ export * from "./modules/cultivos/index.ts";
 export * from "./modules/rotaciones/index.ts";
 export * from "./modules/terreno/index.ts";
 export * from "./modules/impresion/index.ts";
+export * from "./modules/recomendacion/index.ts";
 // @scaffold:modules

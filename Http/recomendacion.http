@@ -1,0 +1,38 @@
+### Recomendación por época — etapa rápida (Duitama, papa continua, sin riego)
+POST http://localhost:8001/api/recomendacion/rapida
+Content-Type: application/json
+
+{
+  "area": { "tipo": "punto", "latitud": 5.785, "longitud": -73.03 },
+  "cultivoActual": "papa",
+  "tieneRiego": false,
+  "objetivo": "equilibrado"
+}
+
+### Detalle (suelo, vegetación, clima mes a mes y 3+ estrategias)
+POST http://localhost:8001/api/recomendacion/detalle
+Content-Type: application/json
+
+{
+  "area": { "tipo": "punto", "latitud": 5.785, "longitud": -73.03 },
+  "cultivoActual": "papa",
+  "tieneRiego": false,
+  "objetivo": "mas_ingreso"
+}
+
+### Flujo NDJSON (pasos de carga, etapa rápida, detalle y fin)
+POST http://localhost:8001/api/recomendacion/flujo
+Content-Type: application/json
+
+{
+  "area": { "tipo": "punto", "latitud": 37.85, "longitud": -4.85 },
+  "tieneRiego": false
+}
+
+### Punto sobre la calzada de la autopista A-4 → "No se puede sembrar: es carretera"
+POST http://localhost:8001/api/recomendacion/rapida
+Content-Type: application/json
+
+{
+  "area": { "tipo": "punto", "latitud": 37.89234, "longitud": -4.739788 }
+}
