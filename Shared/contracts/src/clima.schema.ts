@@ -35,10 +35,66 @@ export const ClimaMensualSchema = z.object({
   /** Fracción de años (0–1) en que el mes tuvo al menos un día de helada. */
   probabilidadHelada: z.number().min(0).max(1),
   /** Promedio de días por año con lluvia ≥ umbral de lluvia fuerte. */
+  /** Promedio de días por año con lluvia ≥ umbral de lluvia fuerte. */
   diasLluviaFuertePromedio: z.number(),
+  /** Promedio de días por año con temperatura máxima ≥ umbral de calor (estrés térmico). */
+  diasCalorPromedio: z.number(),
+  /** Evapotranspiración de referencia del mes (mm), Hargreaves–Samani (FAO-56). */
+  etoMm: z.number(),
+  /** Lluvia − ET0 del mes (mm). Negativo = déficit de agua. */
+  balanceHidricoMm: z.number(),
   temporada: TemporadaSchema,
 });
 export type ClimaMensualDto = z.infer<typeof ClimaMensualSchema>;
+
+/** Régimen de lluvias del sitio. */
+export const REGIMENES_LLUVIA = ["unimodal", "bimodal", "uniforme", "arido"] as const;
+export const RegimenLluviasSchema = z.enum(REGIMENES_LLUVIA);
+export type RegimenLluvias = z.infer<typeof RegimenLluviasSchema>;
+
+/** Temporada de cultivo derivada del clima (no fija): meses seguidos aptos para sembrar. */
+export const TemporadaCultivoSchema = z.object({
+  inicioMes: z.number().int().min(1).max(12),
+  meses: z.array(z.number().int().min(1).max(12)).min(1),
+});
+export type TemporadaCultivoDto = z.infer<typeof TemporadaCultivoSchema>;
+
+export const TemporadasCultivoSchema = z.object({
+  /** Temporadas sin riego (temperatura, helada y lluvia suficientes). */
+  secano: z.array(TemporadaCultivoSchema),
+  /** Temporadas con riego (solo temperatura y helada). */
+  conRiego: z.array(TemporadaCultivoSchema),
+  mesesAptosTermicos: z.array(z.number().int()),
+  mesesAptosSecano: z.array(z.number().int()),
+  /** Regla usada, en palabras. */
+  regla: z.string(),
+});
+export type TemporadasCultivoDto = z.infer<typeof TemporadasCultivoSchema>;
+
+export const TIPOS_AMENAZA = ["helada", "calor", "deficit_hidrico", "lluvia_extrema"] as const;
+export const TipoAmenazaSchema = z.enum(TIPOS_AMENAZA);
+export type TipoAmenaza = z.infer<typeof TipoAmenazaSchema>;
+
+export const SEVERIDADES = ["baja", "media", "alta"] as const;
+export const SeveridadAmenazaSchema = z.enum(SEVERIDADES);
+export type SeveridadAmenaza = z.infer<typeof SeveridadAmenazaSchema>;
+
+export const AmenazaClimaticaSchema = z.object({
+  tipo: TipoAmenazaSchema,
+  severidad: SeveridadAmenazaSchema,
+  detalle: z.string(),
+});
+export type AmenazaClimaticaDto = z.infer<typeof AmenazaClimaticaSchema>;
+
+/** Un mes del calendario de vulnerabilidad: qué amenaza hay y cómo de fuerte. */
+export const MesVulnerabilidadSchema = z.object({
+  mes: z.number().int().min(1).max(12),
+  nombreMes: z.string(),
+  amenazas: z.array(AmenazaClimaticaSchema),
+  /** La amenaza más fuerte del mes, o null si no hay ninguna. */
+  severidadMaxima: SeveridadAmenazaSchema.nullable(),
+});
+export type MesVulnerabilidadDto = z.infer<typeof MesVulnerabilidadSchema>;
 
 /** Corrección aplicada a NASA POWER en un mes, calculada contra la estación IDEAM. */
 export const FactorCalibracionSchema = z.object({
@@ -80,17 +136,29 @@ export const PerfilClimaticoSchema = z.object({
   fuente: z.string(),
   /** null si no hay estación IDEAM cercana con normales completas (se usan datos NASA sin calibrar). */
   calibracion: CalibracionSchema.nullable(),
-  umbrales: z.object({ heladaC: z.number(), lluviaFuerteMm: z.number() }),
+  umbrales: z.object({ heladaC: z.number(), lluviaFuerteMm: z.number(), calorC: z.number() }),
   meses: z.array(ClimaMensualSchema).length(12),
   resumen: z.object({
     lluviaAnualMm: z.number(),
     tempMediaAnualC: z.number(),
+    etoAnualMm: z.number(),
+    /** Lluvia anual / ET0 anual (índice de aridez de la UNESCO: < 0,2 árido, < 0,5 semiárido, < 0,65 subhúmedo seco). */
+    indiceAridez: z.number(),
+    regimenLluvias: RegimenLluviasSchema,
     mesesLluviosos: z.array(z.number().int()),
     mesesSecos: z.array(z.number().int()),
     /** Meses con probabilidad de helada ≥ 25 %. */
     mesesRiesgoHelada: z.array(z.number().int()),
+    /** Meses con estrés por calor (≥ 5 días con Tmáx ≥ umbral). */
+    mesesCalor: z.array(z.number().int()),
+    /** Meses con lluvia < 50 % de la ET0. */
+    mesesDeficitHidrico: z.array(z.number().int()),
+    /** Meses con ≥ 1,5 días de lluvia fuerte en promedio. */
+    mesesLluviaExtrema: z.array(z.number().int()),
     clasificacionClimatica: ClasificacionClimaticaSchema,
   }),
+  temporadasCultivo: TemporadasCultivoSchema,
+  calendarioVulnerabilidad: z.array(MesVulnerabilidadSchema).length(12),
   advertencias: z.array(z.string()),
 });
 export type PerfilClimaticoDto = z.infer<typeof PerfilClimaticoSchema>;

@@ -29,6 +29,8 @@ import {
   puntajeIngresoReferencia,
   UbicacionFinca,
   type ContextoSolicitud,
+  calcularCalendarioVulnerabilidad,
+  calcularTemporadasCultivo,
 } from "../../src/index.ts";
 
 // ---------------------------------------------------------------------------
@@ -42,6 +44,21 @@ const NOMBRES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
 function perfil(cambios: { lluviosos?: number[]; helada?: number[] } = {}): PerfilClimaticoDto {
   const lluviosos = cambios.lluviosos ?? LLUVIOSOS;
   const helada = cambios.helada ?? HELADA;
+  const meses = LLUVIA_MES.map((lluviaMm, i) => ({
+    mes: i + 1,
+    nombreMes: NOMBRES[i],
+    lluviaMm,
+    tempMediaC: 14,
+    tempMinC: 7,
+    tempMaxC: 20,
+    diasHeladaPromedio: helada.includes(i + 1) ? 3 : 0,
+    probabilidadHelada: helada.includes(i + 1) ? 0.6 : 0,
+    diasLluviaFuertePromedio: 0,
+    diasCalorPromedio: 0,
+    etoMm: 90,
+    balanceHidricoMm: lluviaMm - 90,
+    temporada: (lluviosos.includes(i + 1) ? "lluviosa" : "seca") as "lluviosa" | "seca",
+  }));
   return {
     fincaId: 1,
     latitud: 5.8269,
@@ -52,27 +69,24 @@ function perfil(cambios: { lluviosos?: number[]; helada?: number[] } = {}): Perf
     periodo: { desde: "1996-01-01", hasta: "2025-12-31", anios: 30 },
     fuente: "NASA POWER (sintético)",
     calibracion: null,
-    umbrales: { heladaC: 2, lluviaFuerteMm: 20 },
-    meses: LLUVIA_MES.map((lluviaMm, i) => ({
-      mes: i + 1,
-      nombreMes: NOMBRES[i],
-      lluviaMm,
-      tempMediaC: 14,
-      tempMinC: 7,
-      tempMaxC: 20,
-      diasHeladaPromedio: helada.includes(i + 1) ? 3 : 0,
-      probabilidadHelada: helada.includes(i + 1) ? 0.6 : 0,
-      diasLluviaFuertePromedio: 0,
-      temporada: lluviosos.includes(i + 1) ? "lluviosa" : "seca",
-    })),
+    umbrales: { heladaC: 2, lluviaFuerteMm: 20, calorC: 32 },
+    meses,
     resumen: {
       lluviaAnualMm: LLUVIA_MES.reduce((a, b) => a + b, 0),
       tempMediaAnualC: 14,
+      etoAnualMm: 1080,
+      indiceAridez: 0.81,
+      regimenLluvias: "bimodal",
+      mesesCalor: [],
+      mesesDeficitHidrico: [],
+      mesesLluviaExtrema: [],
       mesesLluviosos: lluviosos,
       mesesSecos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter((m) => !lluviosos.includes(m)),
       mesesRiesgoHelada: helada,
       clasificacionClimatica: "de_altura",
     },
+    temporadasCultivo: calcularTemporadasCultivo(meses),
+    calendarioVulnerabilidad: calcularCalendarioVulnerabilidad(meses),
     advertencias: ["Advertencia del clima de prueba."],
   };
 }

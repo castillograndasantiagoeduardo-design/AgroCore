@@ -135,7 +135,7 @@ Deno.test("Corrección por altitud: 200 m más abajo ≈ 1,3 °C más cálido", 
 // Calendario mensual
 // ---------------------------------------------------------------------------
 Deno.test("Calendario: enero tiene helada todos los años y abril es lluvioso", () => {
-  const meses = calcularCalendarioMensual(serieSintetica(1996, 30), 0);
+  const meses = calcularCalendarioMensual(serieSintetica(1996, 30), 0, 5.83);
 
   assertEquals(meses.length, 12);
   assertEquals(meses[0].probabilidadHelada, 1); // enero: Tmin 1 °C ≤ 2 °C
@@ -148,12 +148,12 @@ Deno.test("Calendario: enero tiene helada todos los años y abril es lluvioso", 
 
 Deno.test("Calendario: una finca 900 m más alta convierte julio (7 °C) en mes de helada", () => {
   const ajuste = calcularAjusteTemperatura(2500, 3400); // −5,85 °C → Tmin julio ≈ 1,15 °C
-  const meses = calcularCalendarioMensual(serieSintetica(1996, 30), ajuste);
+  const meses = calcularCalendarioMensual(serieSintetica(1996, 30), ajuste, 5.83);
   assertEquals(meses[6].probabilidadHelada, 1);
 });
 
 Deno.test("Calendario: sin datos suficientes devuelve vacío", () => {
-  assertEquals(calcularCalendarioMensual(serieSintetica(1996, 30).slice(0, 100), 0), []);
+  assertEquals(calcularCalendarioMensual(serieSintetica(1996, 30).slice(0, 100), 0, 5.83), []);
 });
 
 // ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ Deno.test("Perfil climático: finca sin altitud usa la de la celda y lo advierte
   if (r.ok) {
     assertEquals(r.value.altitudReferenciaM, 2515);
     assertEquals(r.value.ajusteTemperaturaC, 0);
-    assertEquals(r.value.advertencias.some((a) => a.startsWith("La finca no tiene altitud")), true);
+    assertEquals(r.value.advertencias.some((a) => a.startsWith("No se conoce la altitud del sitio")), true);
   }
 });
 

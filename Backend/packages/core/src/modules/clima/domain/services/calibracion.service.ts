@@ -47,7 +47,7 @@ export function calcularFactoresCalibracion(
   registrosNasaEstacion: RegistroClimaDiario[],
   ajusteCeldaAEstacionC: number,
 ): FactorCalibracionDto[] | null {
-  const nasa = calcularCalendarioMensual(registrosNasaEstacion, ajusteCeldaAEstacionC);
+  const nasa = calcularCalendarioMensual(registrosNasaEstacion, ajusteCeldaAEstacionC, normal.latitud);
   if (nasa.length !== 12) return null;
 
   return normal.meses.map((ideam, i) => {
