@@ -16,11 +16,13 @@
  */
 import {
   ClimaProveedorNoDisponibleError,
+  type ICacheProveedores,
   type IClimaProvider,
   type RegistroClimaDiario,
   type SerieClimatica,
 } from "@agrocore/core";
 import { type DomainError, Result } from "@agrocore/shared-kernel";
+import { CacheEnMemoria, obtenerConCache } from "./cache/cache-en-memoria.ts";
 
 const FUENTE = "NASA POWER";
 const PARAMETROS = ["T2M", "T2M_MIN", "T2M_MAX", "PRECTOTCORR"] as const;
@@ -36,25 +38,33 @@ interface RespuestaPower {
 export interface NasaPowerConfig {
   baseUrl?: string;
   timeoutMs?: number;
+  /** Caché persistente opcional (tabla cache_proveedores). */
+  cache?: ICacheProveedores;
 }
 
 export class NasaPowerClient implements IClimaProvider {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
-  private readonly cache = new Map<string, SerieClimatica>();
+  private readonly cachePersistente?: ICacheProveedores;
+  private readonly memoria = new CacheEnMemoria();
 
   constructor(config: NasaPowerConfig = {}) {
     this.baseUrl = config.baseUrl ?? "https://power.larc.nasa.gov/api/temporal/daily/point";
     this.timeoutMs = config.timeoutMs ?? 90_000;
+    this.cachePersistente = config.cache;
   }
 
   async obtenerSerieDiaria(consulta: { latitud: number; longitud: number; desde: string; hasta: string }): Promise<
     Result<SerieClimatica, DomainError>
   > {
-    const clave = [consulta.latitud.toFixed(3), consulta.longitud.toFixed(3), consulta.desde, consulta.hasta].join("|");
-    const enCache = this.cache.get(clave);
-    if (enCache) return Result.ok(enCache);
+    const clave = "nasa_power_diario:" +
+      [consulta.latitud.toFixed(3), consulta.longitud.toFixed(3), consulta.desde, consulta.hasta].join(":");
+    return obtenerConCache(clave, "nasa_power", 365, this.memoria, this.cachePersistente, () => this.cargar(consulta));
+  }
 
+  private async cargar(consulta: { latitud: number; longitud: number; desde: string; hasta: string }): Promise<
+    Result<SerieClimatica, DomainError>
+  > {
     const url = new URL(this.baseUrl);
     url.searchParams.set("parameters", PARAMETROS.join(","));
     url.searchParams.set("community", "AG");
@@ -101,7 +111,6 @@ export class NasaPowerClient implements IClimaProvider {
     }));
 
     const serie: SerieClimatica = { fuente: FUENTE, altitudCeldaM, registros };
-    this.cache.set(clave, serie);
     return Result.ok(serie);
   }
 }

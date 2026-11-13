@@ -84,6 +84,7 @@ Cada módulo vive en `Backend/packages/core/src/modules/<modulo>/` y tiene su `M
 - **`clima`** — Perfil climático por finca (NASA POWER, corrección por altitud) · [MODULE.md](./Backend/packages/core/src/modules/clima/MODULE.md)
 - **`cultivos`** — Catálogo de referencia de 11 cultivos de clima frío (solo lectura) · [MODULE.md](./Backend/packages/core/src/modules/cultivos/MODULE.md)
 - **`rotaciones`** — Motor que compara 3 estrategias de rotación de 2 años (A actual, B suelo, C forraje) con evidencia, vacíos y riesgos · [MODULE.md](./Backend/packages/core/src/modules/rotaciones/MODULE.md)
+- **`terreno`** — Análisis del sitio (punto o área ≤ 100 ha): aptitud ("No se puede sembrar: es carretera"), SRTM, SoilGrids, NDVI MODIS (meses baldíos), cobertura MODIS · [MODULE.md](./Backend/packages/core/src/modules/terreno/MODULE.md)
 <!-- @scaffold:modules -->
 
 ---
