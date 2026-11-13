@@ -127,6 +127,12 @@ export class AreaSeleccionada {
     return { type: "Polygon", coordinates: [[...anillo, anillo[0]]] };
   }
 
+  /** El área como DTO del contrato (punto o polígono GeoJSON cerrado). Sirve, p. ej., como clave estable de caché. */
+  aDto(): AreaSeleccionadaDto {
+    if (this.tipo === "punto") return { tipo: "punto", latitud: this.centro[0], longitud: this.centro[1] };
+    return { tipo: "poligono", geojson: this.toGeoJson()! };
+  }
+
   resumen(): UbicacionResueltaDto {
     return {
       tipo: this.tipo,
