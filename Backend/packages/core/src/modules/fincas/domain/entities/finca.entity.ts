@@ -1,10 +1,12 @@
 /**
  * Entidad Finca: identidad e invariantes de negocio. Sin dependencias técnicas.
+ * Una finca puede estar en cualquier lugar del mundo y tener (opcionalmente) el polígono del lote.
  */
 import { DomainError, Result } from "@agrocore/shared-kernel";
-import type { ZonaAltitudinal } from "@agrocore/contracts";
+import type { PoligonoGeoJson } from "@agrocore/contracts";
 import { NombreFinca } from "../value-objects/nombre-finca.vo.ts";
 import { UbicacionFinca } from "../value-objects/ubicacion-finca.vo.ts";
+import { AreaSeleccionada } from "../../../../shared/domain/geo/area-seleccionada.vo.ts";
 import { FincaYaInactivoError } from "../errors/finca.errors.ts";
 
 export interface FincaProps {
@@ -12,7 +14,11 @@ export interface FincaProps {
   nombre: NombreFinca;
   descripcion: string | null;
   ubicacion: UbicacionFinca;
-  vereda: string | null;
+  /** Polígono del lote (null si la finca es solo un punto). */
+  area: AreaSeleccionada | null;
+  localidad: string | null;
+  pais: string | null;
+  region: string | null;
   tieneRiego: boolean;
   cultivoActual: string | null;
   activo: boolean;
@@ -26,8 +32,11 @@ export interface FincaSnapshot {
   latitud: number;
   longitud: number;
   altitudM: number | null;
-  zonaAltitudinal: ZonaAltitudinal | null;
-  vereda: string | null;
+  localidad: string | null;
+  pais: string | null;
+  region: string | null;
+  area: PoligonoGeoJson | null;
+  areaHa: number | null;
   tieneRiego: boolean;
   cultivoActual: string | null;
   activo: boolean;
@@ -40,7 +49,10 @@ export interface CrearFincaDatos {
   latitud: number;
   longitud: number;
   altitudM?: number | null;
-  vereda?: string | null;
+  localidad?: string | null;
+  pais?: string | null;
+  region?: string | null;
+  area?: PoligonoGeoJson | null;
   tieneRiego?: boolean;
   cultivoActual?: string | null;
 }
@@ -55,13 +67,23 @@ export class Finca {
     const ubicacion = UbicacionFinca.crear(datos);
     if (!ubicacion.ok) return ubicacion;
 
+    let area: AreaSeleccionada | null = null;
+    if (datos.area) {
+      const r = AreaSeleccionada.poligono(datos.area);
+      if (!r.ok) return r;
+      area = r.value;
+    }
+
     return Result.ok(
       new Finca({
         id: null,
         nombre: nombre.value,
         descripcion: datos.descripcion ?? null,
         ubicacion: ubicacion.value,
-        vereda: datos.vereda ?? null,
+        area,
+        localidad: datos.localidad ?? null,
+        pais: datos.pais ?? null,
+        region: datos.region ?? null,
         tieneRiego: datos.tieneRiego ?? false,
         cultivoActual: datos.cultivoActual ?? null,
         activo: true,
@@ -86,8 +108,17 @@ export class Finca {
   get ubicacion(): UbicacionFinca {
     return this.props.ubicacion;
   }
-  get vereda(): string | null {
-    return this.props.vereda;
+  get area(): AreaSeleccionada | null {
+    return this.props.area;
+  }
+  get localidad(): string | null {
+    return this.props.localidad;
+  }
+  get pais(): string | null {
+    return this.props.pais;
+  }
+  get region(): string | null {
+    return this.props.region;
   }
   get tieneRiego(): boolean {
     return this.props.tieneRiego;
@@ -97,6 +128,13 @@ export class Finca {
   }
   get activo(): boolean {
     return this.props.activo;
+  }
+
+  /** Lo que se analiza de la finca: su polígono si lo tiene; si no, su punto. */
+  areaDeAnalisis(): AreaSeleccionada {
+    if (this.props.area) return this.props.area;
+    // La ubicación ya fue validada al crear la finca (UbicacionFinca).
+    return AreaSeleccionada.puntoValidado(this.props.ubicacion.latitud, this.props.ubicacion.longitud);
   }
 
   desactivar(): Result<void, DomainError> {
@@ -114,8 +152,11 @@ export class Finca {
       latitud: u.latitud,
       longitud: u.longitud,
       altitudM: u.altitudM,
-      zonaAltitudinal: u.zona,
-      vereda: this.props.vereda,
+      localidad: this.props.localidad,
+      pais: this.props.pais,
+      region: this.props.region,
+      area: this.props.area?.toGeoJson() ?? null,
+      areaHa: this.props.area?.areaHa ?? null,
       tieneRiego: this.props.tieneRiego,
       cultivoActual: this.props.cultivoActual,
       activo: this.props.activo,

@@ -1,28 +1,30 @@
 /**
  * Contratos del módulo fincas: validan la FORMA del dato en la frontera.
- * Las reglas de negocio (¿está la finca dentro de Duitama?, ¿la altitud es razonable?)
- * NO van aquí: viven en core (UbicacionFinca).
+ * La finca puede estar en cualquier lugar del mundo. Las reglas de negocio (altitud razonable,
+ * área máxima del polígono) NO van aquí: viven en core (UbicacionFinca y AreaSeleccionada).
  */
 import { z } from "zod";
 import { ClaveCultivoSchema } from "./cultivos.schema.ts";
-
-/** Zonas de trabajo de Duitama según la altitud (ver core/fincas/domain/value-objects/ubicacion-finca.vo.ts). */
-export const ZONAS_ALTITUDINALES = ["valle", "ladera", "alta"] as const;
-export const ZonaAltitudinalSchema = z.enum(ZONAS_ALTITUDINALES);
-export type ZonaAltitudinal = z.infer<typeof ZonaAltitudinalSchema>;
+import { LatitudSchema, LongitudSchema, PoligonoGeoJsonSchema } from "./geo.schema.ts";
 
 export const CrearFincaSchema = z.object({
   nombre: z.string().trim().min(2).max(120),
   descripcion: z.string().trim().max(500).optional(),
   /** Grados decimales (WGS84). Ej.: 5.8269 */
-  latitud: z.number().min(-90).max(90),
+  latitud: LatitudSchema,
   /** Grados decimales (WGS84). Ej.: -73.0297 (negativa: oeste de Greenwich) */
-  longitud: z.number().min(-180).max(180),
-  /** Metros sobre el nivel del mar. Opcional: si no se envía, se completará luego con SRTM. */
-  altitudM: z.number().int().min(0).max(9000).optional(),
-  vereda: z.string().trim().min(2).max(80).optional(),
+  longitud: LongitudSchema,
+  /** Metros sobre el nivel del mar (−500 a 6.000). Opcional: si no se envía, se usa SRTM o la celda del clima. */
+  altitudM: z.number().int().optional(),
+  /** Vereda, aldea, condado o paraje. */
+  localidad: z.string().trim().min(2).max(80).optional(),
+  pais: z.string().trim().min(2).max(80).optional(),
+  /** Departamento, estado, provincia o región. */
+  region: z.string().trim().min(2).max(80).optional(),
+  /** Polígono del lote (opcional): hasta 100 ha. */
+  area: PoligonoGeoJsonSchema.optional(),
   tieneRiego: z.boolean().default(false),
-  /** Clave del catálogo de cultivos (ej. "papa", "avena_vicia"). core verifica que exista. */
+  /** Clave del catálogo de cultivos (ej. "papa", "maiz"). core verifica que exista. */
   cultivoActual: ClaveCultivoSchema.optional(),
 });
 export type CrearFincaInput = z.input<typeof CrearFincaSchema>;
@@ -40,9 +42,13 @@ export const FincaSchema = z.object({
   latitud: z.number(),
   longitud: z.number(),
   altitudM: z.number().int().nullable(),
-  /** Calculada por core a partir de altitudM; null si aún no se conoce la altitud. */
-  zonaAltitudinal: ZonaAltitudinalSchema.nullable(),
-  vereda: z.string().nullable(),
+  localidad: z.string().nullable(),
+  pais: z.string().nullable(),
+  region: z.string().nullable(),
+  /** Polígono del lote, o null si la finca es solo un punto. */
+  area: PoligonoGeoJsonSchema.nullable(),
+  /** Hectáreas del polígono (calculadas por core), o null. */
+  areaHa: z.number().nullable(),
   tieneRiego: z.boolean(),
   /** Clave del catálogo de cultivos, o null si no se registró. */
   cultivoActual: z.string().nullable(),

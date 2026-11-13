@@ -6,7 +6,7 @@
  */
 import { z } from "zod";
 import { ClaveCultivoSchema, FamiliaBotanicaSchema } from "./cultivos.schema.ts";
-import { ZonaAltitudinalSchema } from "./fincas.schema.ts";
+import { ClasificacionClimaticaSchema } from "./clima.schema.ts";
 
 // ---------------------------------------------------------------------------
 // Vocabulario
@@ -171,7 +171,7 @@ export const ComparacionRotacionesSchema = z.object({
     /** Altitud usada para filtrar cultivos (la de la finca o, si no se conoce, la del perfil climático). */
     altitudReferenciaM: z.number(),
     altitudConocida: z.boolean(),
-    zonaAltitudinal: ZonaAltitudinalSchema.nullable(),
+    clasificacionClimatica: ClasificacionClimaticaSchema,
     tieneRiego: z.boolean(),
     cultivoActual: z.string().nullable(),
   }),

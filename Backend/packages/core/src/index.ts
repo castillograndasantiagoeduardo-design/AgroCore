@@ -8,6 +8,8 @@ export {
   ORIGENES_SOLICITUD,
   type OrigenSolicitud,
 } from "./modules/auditoria/application/ports/auditor.port.ts";
+export * from "./shared/domain/geo/geometria.ts";
+export * from "./shared/domain/geo/area-seleccionada.vo.ts";
 export { sanitizarDetalles } from "./modules/auditoria/domain/services/sanitizar-detalles.ts";
 export type { EjecucionMcpTool, IMcpToolLogger } from "./modules/mcp-audit/application/ports/mcp-tool-logger.port.ts";
 

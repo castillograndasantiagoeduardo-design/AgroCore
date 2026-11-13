@@ -29,6 +29,7 @@ import {
   DISTANCIA_MAX_CALIBRACION_KM,
 } from "../../domain/services/calibracion.service.ts";
 import { ClimaSinDatosError } from "../../domain/errors/clima.errors.ts";
+import { clasificarClima } from "../../domain/services/clasificacion-climatica.service.ts";
 import type { ContextoSolicitud, IClimaProvider, INormalesClimatologicasProvider, IReloj } from "../ports/index.ts";
 
 export const ANIOS_NORMAL_CLIMATOLOGICA = 30;
@@ -112,6 +113,7 @@ export class ObtenerPerfilClimaticoUseCase {
         mesesLluviosos: meses.filter((m) => m.temporada === "lluviosa").map((m) => m.mes),
         mesesSecos: meses.filter((m) => m.temporada === "seca").map((m) => m.mes),
         mesesRiesgoHelada: meses.filter((m) => m.probabilidadHelada >= PROBABILIDAD_RIESGO_HELADA).map((m) => m.mes),
+        clasificacionClimatica: clasificarClima(meses.map((m) => m.tempMediaC), latitud),
       },
       advertencias,
     });

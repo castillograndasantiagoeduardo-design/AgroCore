@@ -14,9 +14,10 @@ Gestiona el ciclo de vida de la entidad **`Finca`** (creación con nombre único
 
 | Elemento | Nombre | Descripción |
 | :--- | :--- | :--- |
-| Entidad | `Finca` | `id`, `nombre`, `descripcion`, `ubicacion`, `vereda`, `tieneRiego`, `cultivoActual` (**clave del catálogo de cultivos**, ej. `papa`; `CrearFincaUseCase` verifica que exista), `activo`, `creadoEn`. Se crea con `Finca.crear()` y se reconstruye con `Finca.reconstruir()`. |
+| Entidad | `Finca` | `id`, `nombre`, `descripcion`, `ubicacion`, `area` (polígono opcional, `AreaSeleccionada`), `localidad`, `pais`, `region`, `tieneRiego`, `cultivoActual` (**clave del catálogo de cultivos**, ej. `papa`; `CrearFincaUseCase` verifica que exista), `activo`, `creadoEn`. Se crea con `Finca.crear()` y se reconstruye con `Finca.reconstruir()`. |
 | Value Object | `NombreFinca` | Nombre recortado de 2 a 120 caracteres. |
-| Value Object | `UbicacionFinca` | `latitud`, `longitud`, `altitudM` (opcional). Debe estar dentro de `AREA_ESTUDIO_DUITAMA` y entre 2.300 y 4.000 m. Deriva `zona`: `valle` (<2.600 m), `ladera` (2.600–2.999 m), `alta` (≥3.000 m). |
+| Value Object | `UbicacionFinca` | `latitud` (−90..90), `longitud` (−180..180), `altitudM` opcional (−500 a 6.000 m). **Cualquier lugar del mundo.** La clasificación del clima (tropical, de altura...) la deriva el módulo `clima`. |
+| Value Object (compartido) | `AreaSeleccionada` (`core/src/shared/domain/geo`) | Punto o polígono GeoJSON: ≥ 3 vértices, ≤ 100 vértices, sin lados cruzados, ≤ 100 ha. Deriva centroide, hectáreas y malla de muestreo. `Finca.areaDeAnalisis()` devuelve el polígono o el punto. |
 | Servicio de dominio | `verificarNombreFincaDisponible` | Falla si ya existe un `finca` con el mismo nombre. |
 | Puerto | `IFincaRepository` | `buscarPorId`, `buscarPorNombre`, `listar`, `guardar`. |
 
@@ -27,7 +28,8 @@ Gestiona el ciclo de vida de la entidad **`Finca`** (creación con nombre único
 | `FINCA_NO_ENCONTRADO` | `FincaNoEncontradoError` | 404 |
 | `FINCA_DUPLICADO` | `FincaDuplicadoError` | 409 |
 | `FINCA_NOMBRE_INVALIDO` | `FincaNombreInvalidoError` | 422 |
-| `FINCA_FUERA_DE_AREA` | `FincaFueraDeAreaError` | 422 |
+| `FINCA_COORDENADAS_INVALIDAS` | `FincaCoordenadasInvalidasError` | 422 |
+| `AREA_INVALIDA` / `AREA_DEMASIADO_GRANDE` | `AreaInvalidaError` / `AreaDemasiadoGrandeError` | 422 |
 | `FINCA_ALTITUD_INVALIDA` | `FincaAltitudInvalidaError` | 422 |
 | `FINCA_CULTIVO_DESCONOCIDO` | `FincaCultivoDesconocidoError` | 422 |
 | `FINCA_YA_INACTIVO` | `FincaYaInactivoError` | 422 |

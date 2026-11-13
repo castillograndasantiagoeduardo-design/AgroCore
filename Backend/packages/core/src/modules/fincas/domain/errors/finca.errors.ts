@@ -21,20 +21,20 @@ export class FincaNombreInvalidoError extends DomainError {
   }
 }
 
-/** La finca está fuera del área de estudio (municipio de Duitama). HTTP 422. */
-export class FincaFueraDeAreaError extends DomainError {
+/** Coordenadas fuera de rango (latitud −90..90, longitud −180..180). HTTP 422. */
+export class FincaCoordenadasInvalidasError extends DomainError {
   constructor(latitud: number, longitud: number) {
     super(
-      "FINCA_FUERA_DE_AREA",
-      "Las coordenadas (" + latitud + ", " + longitud + ") están fuera del área de estudio de Duitama.",
+      "FINCA_COORDENADAS_INVALIDAS",
+      "Las coordenadas (" + latitud + ", " + longitud + ") no son válidas: latitud −90..90 y longitud −180..180.",
     );
   }
 }
 
-/** Altitud imposible para Duitama (el municipio va aprox. de 2.300 a 4.000 m). HTTP 422. */
+/** Altitud imposible para un cultivo (rango aceptado: −500 a 6.000 m). HTTP 422. */
 export class FincaAltitudInvalidaError extends DomainError {
   constructor(altitudM: number) {
-    super("FINCA_ALTITUD_INVALIDA", "La altitud " + altitudM + " m no es válida para Duitama (2300–4000 m).");
+    super("FINCA_ALTITUD_INVALIDA", "La altitud " + altitudM + " m no es válida (rango aceptado: −500 a 6.000 m).");
   }
 }
 
