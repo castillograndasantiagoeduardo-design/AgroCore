@@ -2,6 +2,7 @@
  * Errores de dominio del módulo rotaciones (extienden DomainError, nunca se lanzan). Todos HTTP 422.
  */
 import { DomainError } from "@agrocore/shared-kernel";
+import { TEMP_MINIMA_CRECIMIENTO_C } from "../../../clima/domain/services/temporadas-cultivo.service.ts";
 
 /** No se puede armar la estrategia A: la finca no tiene cultivoActual y no se envió secuenciaActual. */
 export class RotacionCultivoActualRequeridoError extends DomainError {
@@ -47,7 +48,7 @@ export class RotacionSinTemporadasError extends DomainError {
   constructor() {
     super(
       "ROTACION_SIN_TEMPORADAS",
-      "El clima del sitio no tiene ninguna temporada de cultivo (temperatura media < 5 °C o helada dura casi todo el año), ni siquiera con riego.",
+      "El clima del sitio no tiene ninguna temporada de cultivo (temperatura media < " + TEMP_MINIMA_CRECIMIENTO_C + " °C o helada dura casi todo el año), ni siquiera con riego.",
     );
   }
 }

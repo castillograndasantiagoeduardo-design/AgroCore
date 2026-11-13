@@ -28,3 +28,6 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Cachés de archivos del backend (IDEAM, presencia local)
+Backend/.cache/

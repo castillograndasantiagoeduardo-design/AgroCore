@@ -6,6 +6,7 @@
  */
 import { z } from "zod";
 import { TexturaSueloSchema } from "./terreno.schema.ts";
+import { DatoNumericoSchema, FuenteDatoSchema, TipoDatoSchema } from "./dato.schema.ts";
 
 /** Familias botánicas del catálogo. Base de la regla "no repetir familia" de la rotación. */
 export const FAMILIAS_BOTANICAS = [
@@ -62,10 +63,6 @@ export type GrupoCultivo = z.infer<typeof GrupoCultivoSchema>;
 export const PROFUNDIDADES_RAIZ = ["superficial", "media", "profunda"] as const;
 export const ProfundidadRaizSchema = z.enum(PROFUNDIDADES_RAIZ);
 export type ProfundidadRaiz = z.infer<typeof ProfundidadRaizSchema>;
-
-export const CONFIANZAS_DATO = ["alta", "media", "baja"] as const;
-export const ConfianzaDatoSchema = z.enum(CONFIANZAS_DATO);
-export type ConfianzaDato = z.infer<typeof ConfianzaDatoSchema>;
 
 /** Resultado de comparar la temperatura media de un sitio (o de un ciclo) con los rangos del cultivo. */
 export const APTITUDES_CLIMA = ["optima", "posible", "no_apta"] as const;
@@ -141,12 +138,16 @@ export const CultivoSchema = z.object({
   /** Qué tanto protege el suelo de la erosión (clave en laderas con pendiente). */
   coberturaSuelo: NivelSchema,
   valorForrajero: ValorForrajeroSchema,
-  /** Plagas y enfermedades clave de la especie o su familia (las que una rotación ayuda a cortar). */
-  plagasClave: z.array(z.string()),
   notas: z.array(z.string()),
   fuentes: z.array(z.string()).min(1),
-  /** Confianza en los valores de referencia de esta ficha. */
-  confianza: ConfianzaDatoSchema,
+  /** Registro(s) de FAO ECOCROP de donde salen los valores (EcoPortCode). Vacío = no está en ECOCROP. */
+  ecocrop: z.object({ codigos: z.array(z.number().int()), url: z.string() }),
+  /** Fuente concreta de cada valor que usa el motor para decidir. */
+  fuentesValores: z.array(z.object({ campo: z.string(), fuente: FuenteDatoSchema, tipo: TipoDatoSchema, referencia: z.string() })),
+  /** Campos sin fuente verificable: el motor NO los usa para decidir (excluye el cultivo u omite la regla). */
+  camposSinFuente: z.array(z.string()),
+  /** Valor bruto de la producción por hectárea (FAOSTAT, mundo, I$ constantes 2014-2016). null = sin datos. */
+  valorProduccionHa: DatoNumericoSchema,
   /** Solo aparece cuando se filtró por temperatura media del sitio. */
   aptitudClima: AptitudClimaSchema.optional(),
 });

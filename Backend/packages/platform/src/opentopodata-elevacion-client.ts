@@ -5,6 +5,7 @@
 import { type ElevacionPuntos, type ICacheProveedores, type IElevacionProvider, TerrenoProveedorNoDisponibleError } from "@agrocore/core";
 import { type DomainError, Result } from "@agrocore/shared-kernel";
 import { CacheEnMemoria, obtenerConCache } from "./cache/cache-en-memoria.ts";
+import { ajustarAMetros } from "./cache/celdas.ts";
 import { describirError, fetchConReintentos } from "./http/fetch-con-reintentos.ts";
 
 const MAX_PUNTOS = 100;
@@ -35,13 +36,17 @@ export class OpenTopoDataElevacionClient implements IElevacionProvider {
   constructor(config: OpenTopoDataConfig = {}) {
     this.baseUrl = (config.baseUrl ?? "https://api.opentopodata.org/v1").replace(/\/$/, "");
     this.datasets = config.datasets ?? ["srtm30m", "aster30m"];
-    this.timeoutMs = config.timeoutMs ?? 15_000;
+    this.timeoutMs = config.timeoutMs ?? 6_000;
     this.cache = config.cache;
   }
 
   obtenerElevaciones(puntos: readonly Punto[]): Promise<Result<ElevacionPuntos, DomainError>> {
-    const clave = "opentopodata:" + puntos.map((p) => p[0].toFixed(5) + "," + p[1].toFixed(5)).join("|");
-    return obtenerConCache(clave, "opentopodata", 3650, this.memoria, this.cache, () => this.cargar(puntos));
+    // Puntos ajustados a 30 m (resolución de SRTM) en la clave; se consulta el punto original.
+    const clave = "opentopodata:" + puntos.map((p) => {
+      const a = ajustarAMetros(p[0], p[1], 30);
+      return a.latitud.toFixed(5) + "," + a.longitud.toFixed(5);
+    }).join("|");
+    return obtenerConCache(clave, "opentopodata", 3650, this.memoria, this.cache, () => this.cargar(puntos), 10 * 60_000);
   }
 
   private async esperarTurno(): Promise<void> {

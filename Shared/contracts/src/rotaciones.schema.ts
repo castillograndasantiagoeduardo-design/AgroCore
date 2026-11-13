@@ -259,7 +259,8 @@ export const ComparacionRotacionesSchema = z.object({
     altitudReferenciaM: z.number(),
     fuenteAltitud: z.enum(["finca", "usuario", "srtm", "clima"]),
     tieneRiego: z.boolean(),
-    cultivoActual: z.string(),
+    /** null si no se indicó el cultivo actual (no hay estrategia A). */
+    cultivoActual: z.string().nullable(),
     clasificacionClimatica: ClasificacionClimaticaSchema,
   }),
   terreno: z.object({

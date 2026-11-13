@@ -1,8 +1,10 @@
 /**
- * Fixture compartido: ficha de cultivo válida con valores de referencia (estilo ECOCROP).
- * Cada test cambia solo lo que le interesa.
+ * Fixture compartido: ficha de cultivo válida con valores de referencia (estilo FAO ECOCROP).
+ * Cada test cambia solo lo que le interesa. La ficha trae todos sus campos con fuente (`camposSinFuente` vacío).
  */
 import { type CrearCultivoDatos, Cultivo } from "../../src/index.ts";
+// Solo DATOS del catálogo generado desde FAO ECOCROP + FAOSTAT (no se importa lógica de database).
+import { CATALOGO_CULTIVOS } from "../../../database/src/catalogos/catalogo-cultivos.datos.ts";
 
 export function datosCultivo(cambios: Partial<CrearCultivoDatos> = {}): CrearCultivoDatos {
   return {
@@ -29,10 +31,12 @@ export function datosCultivo(cambios: Partial<CrearCultivoDatos> = {}): CrearCul
     fijaNitrogeno: false,
     coberturaSuelo: "media",
     valorForrajero: "bajo",
-    plagasClave: ["tizón tardío"],
     notas: [],
     fuentes: ["Fuente de prueba"],
-    confianza: "media",
+    ecocrop: { codigos: [1], url: "https://ecocrop.apps.fao.org (prueba)" },
+    fuentesValores: [],
+    camposSinFuente: [],
+    valorProduccionHa: { valor: null, unidad: "I$/ha", fuente: "FAOSTAT", tipo: "referencia", nota: "Sin datos (prueba)" },
     ...cambios,
   };
 }
@@ -41,4 +45,13 @@ export function cultivoDePrueba(cambios: Partial<CrearCultivoDatos> = {}): Culti
   const r = Cultivo.crear(datosCultivo(cambios));
   if (!r.ok) throw new Error("Datos de prueba inválidos: " + r.error.message);
   return r.value;
+}
+
+/** Los cultivos del catálogo REAL (generado desde FAO ECOCROP + FAOSTAT), construidos con la entidad. */
+export function cultivosDelCatalogoReal(): Cultivo[] {
+  return CATALOGO_CULTIVOS.map((d) => {
+    const r = Cultivo.crear(d);
+    if (!r.ok) throw new Error("Catálogo real inválido: " + r.error.message);
+    return r.value;
+  });
 }

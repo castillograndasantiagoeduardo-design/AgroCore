@@ -9,11 +9,15 @@
  *  4. El pH óptimo está entre 3 y 10.
  *  5. Un cultivo que fija nitrógeno pertenece (al menos en parte) a las fabáceas (leguminosas).
  *  6. Tiene al menos una fuente: el sistema sugiere con evidencia, no con datos inventados.
+ *  7. Cada valor que usa el motor declara su fuente (`fuentesValores`); lo que no tiene fuente va en
+ *     `camposSinFuente` y NO se usa para decidir (ver `sinFuente`).
  */
 import { DomainError, Result } from "@agrocore/shared-kernel";
 import type {
   AptitudClima,
-  ConfianzaDato,
+  DatoConFuente,
+  FuenteDato,
+  TipoDato,
   FamiliaBotanica,
   GrupoCultivo,
   Nivel,
@@ -58,10 +62,16 @@ export interface CrearCultivoDatos {
   fijaNitrogeno: boolean;
   coberturaSuelo: Nivel;
   valorForrajero: ValorForrajero;
-  plagasClave: string[];
   notas: string[];
   fuentes: string[];
-  confianza: ConfianzaDato;
+  /** Registros de FAO ECOCROP (EcoPortCode) y URL de la base usada. */
+  ecocrop: { codigos: number[]; url: string };
+  /** Fuente concreta de cada valor que usa el motor. */
+  fuentesValores: { campo: string; fuente: FuenteDato; tipo: TipoDato; referencia: string }[];
+  /** Campos sin fuente verificable: no se usan para decidir. */
+  camposSinFuente: string[];
+  /** Valor bruto de la producción por hectárea (FAOSTAT mundo); valor null = sin datos. */
+  valorProduccionHa: DatoConFuente<number>;
 }
 
 type CamposRango = "cicloDias" | "temperaturaOptimaC" | "temperaturaAbsolutaC" | "lluviaAnualOptimaMm" | "aguaCicloMm" | "phOptimo";
@@ -128,7 +138,10 @@ export class Cultivo {
         nombre: datos.nombre.trim(),
         familias: [...datos.familias],
         texturas: [...datos.texturas],
-        plagasClave: [...datos.plagasClave],
+        fuentesValores: datos.fuentesValores.map((f) => ({ ...f })),
+        camposSinFuente: [...datos.camposSinFuente],
+        ecocrop: { codigos: [...datos.ecocrop.codigos], url: datos.ecocrop.url },
+        valorProduccionHa: { ...datos.valorProduccionHa },
         notas: [...datos.notas],
         fuentes: [...datos.fuentes],
         cicloDias: rangos.cicloDias!,
@@ -207,14 +220,28 @@ export class Cultivo {
   get valorForrajero(): ValorForrajero {
     return this.props.valorForrajero;
   }
-  get plagasClave(): readonly string[] {
-    return this.props.plagasClave;
-  }
   get fuentes(): readonly string[] {
     return this.props.fuentes;
   }
-  get confianza(): ConfianzaDato {
-    return this.props.confianza;
+  get ecocrop(): { codigos: readonly number[]; url: string } {
+    return this.props.ecocrop;
+  }
+  get fuentesValores(): CrearCultivoDatos["fuentesValores"] {
+    return this.props.fuentesValores;
+  }
+  get camposSinFuente(): readonly string[] {
+    return this.props.camposSinFuente;
+  }
+  get valorProduccionHa(): DatoConFuente<number> {
+    return this.props.valorProduccionHa;
+  }
+  /** true si `campo` no tiene fuente verificable: el motor no lo usa para decidir. */
+  sinFuente(campo: keyof CrearCultivoDatos): boolean {
+    return this.props.camposSinFuente.includes(campo);
+  }
+  /** Referencia de la fuente de un campo ("FAO ECOCROP 1971: TOPMN-TOPMX"), o null si no tiene. */
+  fuenteDe(campo: keyof CrearCultivoDatos): CrearCultivoDatos["fuentesValores"][number] | null {
+    return this.props.fuentesValores.find((f) => f.campo === campo) ?? null;
   }
   /** true si es una cobertura o abono verde (se usa en intervalos y meses baldíos). */
   get esCobertura(): boolean {
@@ -239,10 +266,30 @@ export class Cultivo {
     return ph >= this.props.phOptimo.min - tolerancia && ph <= this.props.phOptimo.max + tolerancia;
   }
 
-  /** null si no se conoce la textura. */
+  /** null si no se conoce la textura del suelo o si las texturas del cultivo no tienen fuente (no se usan para decidir). */
   texturaCompatible(textura: TexturaSuelo | null): boolean | null {
-    if (textura === null) return null;
+    if (textura === null || this.sinFuente("texturas")) return null;
     return this.props.texturas.includes(textura);
+  }
+
+  /** Tolerancia a la helada, o null si FAO ECOCROP no trae temperatura letal (el motor no puede suponer un valor). */
+  toleranciaHeladaConocida(): Nivel | null {
+    return this.sinFuente("toleranciaHelada") ? null : this.props.toleranciaHelada;
+  }
+
+  /** Valor forrajero, o null si no tiene fuente (aporta 0 al puntaje). */
+  valorForrajeroConocido(): ValorForrajero | null {
+    return this.sinFuente("valorForrajero") ? null : this.props.valorForrajero;
+  }
+
+  /** Cobertura del suelo, o null si no tiene fuente (aporta 0 al puntaje). */
+  coberturaConocida(): Nivel | null {
+    return this.sinFuente("coberturaSuelo") ? null : this.props.coberturaSuelo;
+  }
+
+  /** true si algún campo que decide la viabilidad (temperatura, ciclo o agua del ciclo) no tiene fuente: el cultivo no es viable. */
+  get sinDatosDeViabilidad(): boolean {
+    return ["temperaturaOptimaC", "temperaturaAbsolutaC", "cicloDias", "aguaCicloMm"].some((c) => this.props.camposSinFuente.includes(c));
   }
 
   perteneceAFamilia(familia: FamiliaBotanica): boolean {
@@ -280,10 +327,12 @@ export class Cultivo {
       fijaNitrogeno: p.fijaNitrogeno,
       coberturaSuelo: p.coberturaSuelo,
       valorForrajero: p.valorForrajero,
-      plagasClave: [...p.plagasClave],
       notas: [...p.notas],
       fuentes: [...p.fuentes],
-      confianza: p.confianza,
+      ecocrop: { codigos: [...p.ecocrop.codigos], url: p.ecocrop.url },
+      fuentesValores: p.fuentesValores.map((f) => ({ ...f })),
+      camposSinFuente: [...p.camposSinFuente],
+      valorProduccionHa: { ...p.valorProduccionHa },
       ...(aptitudClima ? { aptitudClima } : {}),
     };
   }

@@ -6,6 +6,7 @@ import { type ICacheProveedores, type IHumedadSueloProvider, TerrenoProveedorNoD
 import type { HumedadSueloMensualDto } from "@agrocore/contracts";
 import { type DomainError, Result } from "@agrocore/shared-kernel";
 import { CacheEnMemoria, obtenerConCache } from "./cache/cache-en-memoria.ts";
+import { celdaPower } from "./cache/celdas.ts";
 import { describirError, fetchConReintentos } from "./http/fetch-con-reintentos.ts";
 
 const FUENTE = "NASA POWER GWETTOP/GWETROOT/GWETPROF (climatología mensual)";
@@ -46,19 +47,21 @@ export class NasaPowerHumedadClient implements IHumedadSueloProvider {
 
   constructor(config: NasaPowerHumedadConfig = {}) {
     this.baseUrl = config.baseUrl ?? "https://power.larc.nasa.gov/api/temporal/climatology/point";
-    this.timeoutMs = config.timeoutMs ?? 60_000;
+    this.timeoutMs = config.timeoutMs ?? 10_000;
     this.cache = config.cache;
   }
 
   obtenerClimatologia(latitud: number, longitud: number) {
-    const clave = ["nasa_power_humedad", latitud.toFixed(3), longitud.toFixed(3)].join(":");
+    const celda = celdaPower(latitud, longitud);
+    const clave = "nasa_power_humedad:" + celda.clave;
     return obtenerConCache<{ fuente: string; meses: HumedadSueloMensualDto[] }>(
       clave,
       "nasa_power_humedad",
-      365,
+      30,
       this.memoria,
       this.cache,
-      () => this.cargar(latitud, longitud),
+      () => this.cargar(celda.latitud, celda.longitud),
+      10 * 60_000,
     );
   }
 

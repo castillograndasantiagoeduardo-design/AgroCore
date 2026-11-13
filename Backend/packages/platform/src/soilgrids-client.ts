@@ -7,6 +7,7 @@ import { type ICacheProveedores, type ISueloProvider, TerrenoProveedorNoDisponib
 import type { SueloDto } from "@agrocore/contracts";
 import { type DomainError, Result } from "@agrocore/shared-kernel";
 import { CacheEnMemoria, obtenerConCache } from "./cache/cache-en-memoria.ts";
+import { ajustarAMetros } from "./cache/celdas.ts";
 import { describirError, fetchConReintentos } from "./http/fetch-con-reintentos.ts";
 
 const FUENTE = "ISRIC SoilGrids v2.0 (250 m)";
@@ -75,8 +76,10 @@ export class SoilGridsClient implements ISueloProvider {
   }
 
   obtenerPropiedades(latitud: number, longitud: number): Promise<Result<SueloDto | null, DomainError>> {
-    const clave = ["soilgrids", latitud.toFixed(4), longitud.toFixed(4)].join(":");
-    return obtenerConCache(clave, "soilgrids", 365, this.memoria, this.cache, () => this.cargar(latitud, longitud));
+    // Punto ajustado a 250 m (resolución de SoilGrids): consultas cercanas comparten caché.
+    const p = ajustarAMetros(latitud, longitud, 250);
+    const clave = ["soilgrids", p.latitud.toFixed(4), p.longitud.toFixed(4)].join(":");
+    return obtenerConCache(clave, "soilgrids", 180, this.memoria, this.cache, () => this.cargar(p.latitud, p.longitud), 30 * 60_000);
   }
 
   private async cargar(lat: number, lon: number): Promise<Result<SueloDto | null, DomainError>> {

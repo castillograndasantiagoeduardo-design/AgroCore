@@ -17,6 +17,7 @@ import {
   type NormalMensual,
 } from "@agrocore/core";
 import { type DomainError, Result } from "@agrocore/shared-kernel";
+import { CacheArchivo, directorioCachePorDefecto } from "./cache/cache-archivo.ts";
 
 const FUENTE = "IDEAM – Normales climatológicas";
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"] as const;
@@ -45,6 +46,8 @@ export interface IdeamNormalesConfig {
   periodo?: string;
   baseUrl?: string;
   timeoutMs?: number;
+  /** Directorio del catálogo descargado (TTL 30 días); por defecto Backend/.cache/ideam/. */
+  directorioCache?: string;
 }
 
 /** Caja envolvente aproximada de Colombia continental e insular (grados), con margen de ~25 km. */
@@ -56,12 +59,14 @@ export class IdeamNormalesClient implements INormalesClimatologicasProvider {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private estaciones: NormalClimatologica[] | null = null;
+  private readonly cacheArchivo: CacheArchivo;
 
   constructor(config: IdeamNormalesConfig = {}) {
     this.departamentos = config.departamentos ?? ["Boyacá"];
     this.periodo = config.periodo ?? "1991-2020";
     this.baseUrl = config.baseUrl ?? "https://www.datos.gov.co/resource/nsz2-kzcq.json";
-    this.timeoutMs = config.timeoutMs ?? 60_000;
+    this.timeoutMs = config.timeoutMs ?? 8_000;
+    this.cacheArchivo = new CacheArchivo(config.directorioCache ?? directorioCachePorDefecto("ideam"), 30);
   }
 
 
@@ -86,7 +91,17 @@ export class IdeamNormalesClient implements INormalesClimatologicasProvider {
     return Result.ok(mejor);
   }
 
+  /** Catálogo desde el archivo de caché (30 días) o, si no hay, descargado y guardado. */
   private async cargarEstaciones(): Promise<Result<NormalClimatologica[], DomainError>> {
+    const clave = "ideam_" + this.periodo + "_" + this.departamentos.join("_");
+    const guardado = await this.cacheArchivo.leer<NormalClimatologica[]>(clave);
+    if (guardado && Array.isArray(guardado) && guardado.length > 0) return Result.ok(guardado);
+    const descargado = await this.descargarEstaciones();
+    if (descargado.ok && descargado.value.length > 0) await this.cacheArchivo.escribir(clave, descargado.value);
+    return descargado;
+  }
+
+  private async descargarEstaciones(): Promise<Result<NormalClimatologica[], DomainError>> {
     const url = new URL(this.baseUrl);
     const deptos = this.departamentos.map((d) => "'" + d.replaceAll("'", "''") + "'").join(",");
     url.searchParams.set("$where", "periodo='" + this.periodo + "' AND departamento in(" + deptos + ")");
