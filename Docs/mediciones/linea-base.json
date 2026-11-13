@@ -1,0 +1,192 @@
+{
+  "fecha": "2026-11-13T12:13:33.640Z",
+  "resultados": [
+    {
+      "lugar": "Duitama (lote rural)",
+      "modo": "frio",
+      "primerMs": 63035.5946,
+      "completoMs": 66414.23300000001,
+      "tiempos": {
+        "power_humedad": 786,
+        "srtm": 786,
+        "soilgrids": 6012,
+        "overpass": 25440,
+        "modis_cobertura": 63033,
+        "modis_ndvi": 63033,
+        "ideam": 1429,
+        "power_sitio": 1748,
+        "power_estacion": 1375,
+        "motor": 213
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Duitama (lote rural)",
+      "modo": "caliente",
+      "primerMs": 6009.355200000005,
+      "completoMs": 6094.379100000006,
+      "tiempos": {
+        "overpass": 0,
+        "modis_cobertura": 0,
+        "modis_ndvi": 0,
+        "srtm": 1,
+        "power_humedad": 1,
+        "mysql": 1,
+        "soilgrids": 6009,
+        "ideam": 0,
+        "power_sitio": 0,
+        "power_estacion": 0,
+        "motor": 80
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Ames, Iowa",
+      "modo": "frio",
+      "primerMs": 63051.44959999999,
+      "completoMs": 65012.88329999999,
+      "tiempos": {
+        "srtm": 626,
+        "power_humedad": 658,
+        "soilgrids": 6002,
+        "overpass": 25071,
+        "modis_cobertura": 63051,
+        "modis_ndvi": 63051,
+        "ideam": 0,
+        "power_sitio": 1945,
+        "motor": 11
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Ames, Iowa",
+      "modo": "caliente",
+      "primerMs": 6009.155300000013,
+      "completoMs": 6016.508700000006,
+      "tiempos": {
+        "overpass": 0,
+        "modis_cobertura": 0,
+        "modis_ndvi": 0,
+        "srtm": 0,
+        "power_humedad": 0,
+        "mysql": 2,
+        "soilgrids": 6009,
+        "ideam": 0,
+        "power_sitio": 0,
+        "motor": 6
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Nakuru, Kenia",
+      "modo": "frio",
+      "primerMs": 63059.2672,
+      "completoMs": 64775.18830000001,
+      "tiempos": {
+        "srtm": 376,
+        "power_humedad": 609,
+        "soilgrids": 6009,
+        "overpass": 32248,
+        "modis_cobertura": 63059,
+        "modis_ndvi": 63059,
+        "ideam": 0,
+        "power_sitio": 1654,
+        "motor": 61
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Nakuru, Kenia",
+      "modo": "caliente",
+      "primerMs": 23762.685199999978,
+      "completoMs": 23803.75409999999,
+      "tiempos": {
+        "modis_cobertura": 0,
+        "modis_ndvi": 0,
+        "srtm": 0,
+        "power_humedad": 0,
+        "mysql": 3,
+        "soilgrids": 6008,
+        "overpass": 23762,
+        "ideam": 0,
+        "power_sitio": 0,
+        "motor": 37
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Córdoba, Andalucía",
+      "modo": "frio",
+      "primerMs": 187842.6557,
+      "completoMs": 189429.88300000003,
+      "tiempos": {
+        "power_humedad": 463,
+        "srtm": 608,
+        "soilgrids": 6015,
+        "overpass": 31251,
+        "modis_cobertura": 60254,
+        "modis_ndvi": 187842,
+        "ideam": 0,
+        "power_sitio": 1578,
+        "motor": 5
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Córdoba, Andalucía",
+      "modo": "caliente",
+      "primerMs": 31585.052599999995,
+      "completoMs": 31591.248499999987,
+      "tiempos": {
+        "modis_cobertura": 0,
+        "modis_ndvi": 0,
+        "srtm": 0,
+        "power_humedad": 0,
+        "mysql": 2,
+        "soilgrids": 6014,
+        "overpass": 31585,
+        "ideam": 0,
+        "power_sitio": 0,
+        "motor": 4
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Autopista A-4",
+      "modo": "frio",
+      "primerMs": 53439.94100000005,
+      "completoMs": 54816.35619999998,
+      "tiempos": {
+        "power_humedad": 669,
+        "srtm": 678,
+        "soilgrids": 6008,
+        "modis_cobertura": 9032,
+        "overpass": 39063,
+        "modis_ndvi": 53440,
+        "ideam": 0,
+        "power_sitio": 1367,
+        "motor": 7
+      },
+      "nota": "primer ok · completo ok"
+    },
+    {
+      "lugar": "Autopista A-4",
+      "modo": "caliente",
+      "primerMs": 39055.41749999998,
+      "completoMs": 39063.45679999993,
+      "tiempos": {
+        "modis_cobertura": 0,
+        "modis_ndvi": 0,
+        "srtm": 0,
+        "power_humedad": 0,
+        "mysql": 2,
+        "soilgrids": 6011,
+        "overpass": 39055,
+        "ideam": 0,
+        "power_sitio": 0,
+        "motor": 4
+      },
+      "nota": "primer ok · completo ok"
+    }
+  ]
+}

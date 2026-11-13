@@ -14,6 +14,7 @@ import {
 import {
   EscPosWindowsPrinter,
   IdeamNormalesClient,
+  MedidorTiemposAls,
   NasaPowerClient,
   NasaPowerHumedadClient,
   OpenTopoDataElevacionClient,
@@ -37,14 +38,21 @@ import {
 } from "@agrocore/core";
 // @scaffold:imports
 
-export function createContainer(config: AppConfig) {
+/** Opciones de ensamblaje (scripts de medición). */
+export interface OpcionesContenedor {
+  /** true = sin caché MySQL de proveedores (para medir en frío sin borrar nada). */
+  sinCachePersistente?: boolean;
+}
+
+export function createContainer(config: AppConfig, opciones: OpcionesContenedor = {}) {
   const db = createDatabase(config.db);
 
   // Adaptadores transversales
   const auditor = new MySqlAuditor(db);
   const unitOfWork = new MySqlUnitOfWork(db);
   const mcpToolLogger = new MySqlMcpToolLogger(db);
-  const cache = new MySqlCacheProveedores(db); // caché persistente de proveedores externos (tabla cache_proveedores)
+  const cache = opciones.sinCachePersistente ? undefined : new MySqlCacheProveedores(db); // caché persistente de proveedores externos (tabla cache_proveedores)
+  const medidor = new MedidorTiemposAls(); // Server-Timing y scripts/medir-tiempos.ts
   const reloj = new SistemaReloj();
 
   // Proveedores externos (platform)
@@ -67,7 +75,7 @@ export function createContainer(config: AppConfig) {
   // @scaffold:repositories
 
   // Casos de uso que otros casos de uso consumen a través de un puerto
-  const obtenerPerfilClimatico = new ObtenerPerfilClimaticoUseCase(fincaRepository, climaProvider, normalesProvider, reloj);
+  const obtenerPerfilClimatico = new ObtenerPerfilClimaticoUseCase(fincaRepository, climaProvider, normalesProvider, reloj, medidor);
   const analizarTerreno = new AnalizarTerrenoUseCase({
     vias: viasProvider,
     cobertura: modis,
@@ -76,13 +84,15 @@ export function createContainer(config: AppConfig) {
     elevacion: elevacionProvider,
     humedad: humedadProvider,
     reloj,
+    medidor,
   });
 
-  const motorRotaciones = new MotorRotaciones(cultivoRepository, obtenerPerfilClimatico, analizarTerreno);
+  const motorRotaciones = new MotorRotaciones(cultivoRepository, obtenerPerfilClimatico, analizarTerreno, medidor);
   const compararRotacionesUbicacion = new CompararRotacionesUbicacionUseCase(motorRotaciones);
 
   return {
     mcpToolLogger,
+    medidor,
     // Casos de uso
     crearFinca: new CrearFincaUseCase(fincaRepository, unitOfWork, auditor, cultivoRepository),
     listarFincas: new ListarFincasUseCase(fincaRepository),

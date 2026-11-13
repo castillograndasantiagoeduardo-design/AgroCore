@@ -4,6 +4,7 @@
 import type { ICacheProveedores } from "@agrocore/core";
 import type { DomainError } from "@agrocore/shared-kernel";
 import { Result } from "@agrocore/shared-kernel";
+import { registrarTiempo } from "../medicion/medidor-tiempos.ts";
 
 const DIA_MS = 86_400_000;
 
@@ -64,7 +65,9 @@ export async function obtenerConCache<T>(
   const tarea = (async (): Promise<Result<T, DomainError>> => {
     if (persistente) {
       try {
+        const inicioMysql = performance.now();
         const guardado = await persistente.obtener<T>(k);
+        registrarTiempo("mysql", performance.now() - inicioMysql);
         if (guardado !== null && guardado !== undefined) {
           memoria.guardar(k, guardado, ttlDias);
           return Result.ok(guardado);
@@ -77,7 +80,9 @@ export async function obtenerConCache<T>(
       memoria.guardar(k, resultado.value, ttlDias);
       if (persistente) {
         try {
+          const inicioMysql = performance.now();
           await persistente.guardar(k, proveedor, resultado.value, ttlDias);
+          registrarTiempo("mysql", performance.now() - inicioMysql);
         } catch { /* ignorar */ }
       }
     }

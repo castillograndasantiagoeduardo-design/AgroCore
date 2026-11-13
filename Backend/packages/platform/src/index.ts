@@ -19,3 +19,12 @@ export { parsearRespuestaSoilGrids, SoilGridsClient, type SoilGridsConfig } from
 export { OpenTopoDataElevacionClient, type OpenTopoDataConfig } from "./opentopodata-elevacion-client.ts";
 export { NasaPowerHumedadClient, type NasaPowerHumedadConfig, parsearHumedadPower } from "./nasa-power-humedad-client.ts";
 export { codificarCp850, construirBytesEscPos, type EscPosWindowsConfig, EscPosWindowsPrinter } from "./escpos-windows-printer.ts";
+export {
+  ejecutarConMedicion,
+  formatearServerTiming,
+  MedidorTiemposAls,
+  registrarTiempo,
+  type TiempoEtiqueta,
+  type TiemposPeticion,
+  tiemposActuales,
+} from "./medicion/medidor-tiempos.ts";

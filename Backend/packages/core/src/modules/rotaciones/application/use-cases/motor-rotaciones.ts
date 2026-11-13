@@ -16,8 +16,11 @@ import type {
   EnfoqueEstrategia,
   EstrategiaRotacionDto,
   IdEstrategia,
+  PerfilClimaticoDto,
   PerfilTerrenoDto,
   PrioridadesRotacion,
+  TemporadaCultivoDto,
+  VentanaRotacionDto,
 } from "@agrocore/contracts";
 import { DomainError, Result } from "@agrocore/shared-kernel";
 import type { AreaSeleccionada } from "../../../../shared/domain/geo/area-seleccionada.vo.ts";
@@ -42,6 +45,7 @@ import { construirVentanas } from "../../domain/services/ventanas-rotacion.servi
 import { construirCalendario, detectarOportunidades } from "../../domain/services/calendario-oportunidades.service.ts";
 import { puntajeIngresoReferencia } from "../../domain/services/referencias-ingreso.ts";
 import type { ContextoSolicitud, IAnalisisTerrenoQuery, ICultivoRepository, IPerfilClimaticoQuery } from "../ports/index.ts";
+import { type IMedidorTiempos, MEDIDOR_NULO } from "../../../../shared/application/ports/medidor-tiempos.port.ts";
 
 export const AVISO_ROTACIONES =
   "Esta comparación sugiere y explica con los datos disponibles; no reemplaza el criterio del agricultor ni la recomendación de un agrónomo local.";
@@ -59,6 +63,21 @@ export interface DatosComparacion {
   cultivoActual: string;
   secuenciaActual?: string[];
   prioridades: PrioridadesRotacion;
+}
+
+interface EntradaCalculo {
+  datos: DatosComparacion;
+  ctx: ContextoMotor;
+  perfil: PerfilClimaticoDto;
+  terreno: PerfilTerrenoDto;
+  temporadas: TemporadaCultivoDto[];
+  ventanas: VentanaRotacionDto[];
+  principal: Cultivo;
+  actuales: Cultivo[];
+  catalogo: Cultivo[];
+  advertencias: string[];
+  altitudM: number | null;
+  fuenteAltitud: ComparacionRotacionesDto["sitio"]["fuenteAltitud"];
 }
 
 const NIVEL = { baja: 0, media: 1, alta: 2 } as const;
@@ -112,6 +131,7 @@ export class MotorRotaciones {
     private readonly cultivos: ICultivoRepository,
     private readonly perfilClimatico: IPerfilClimaticoQuery,
     private readonly terreno: IAnalisisTerrenoQuery,
+    private readonly medidor: IMedidorTiempos = MEDIDOR_NULO,
   ) {}
 
   async comparar(datos: DatosComparacion, contexto: ContextoSolicitud): Promise<Result<ComparacionRotacionesDto, DomainError>> {
@@ -172,6 +192,14 @@ export class MotorRotaciones {
       excluidoPct: terreno.afectacion.excluidoPct,
     };
 
+    return this.medidor.medirSync("motor", () =>
+      this.calcular({ datos, ctx, perfil, terreno, temporadas, ventanas, principal, actuales, catalogo, advertencias, altitudM, fuenteAltitud })
+    );
+  }
+
+  /** Búsqueda de estrategias, textos, calendario y oportunidades (síncrono y puro: lo mide el medidor como "motor"). */
+  private calcular(e: EntradaCalculo): Result<ComparacionRotacionesDto, DomainError> {
+    const { datos, ctx, perfil, terreno, temporadas, ventanas, principal, actuales, catalogo, advertencias, altitudM, fuenteAltitud } = e;
     // 5A. Estrategia actual, sin corregir: cultivos actuales en las ventanas de temporada; barbecho en el intervalo.
     const elementosA = this.secuenciaActual(actuales, ctx);
     const evalA = evaluarSecuencia(elementosA, ctx, datos.prioridades);

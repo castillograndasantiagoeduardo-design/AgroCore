@@ -37,6 +37,7 @@ import { calcularTemporadasCultivo } from "../../domain/services/temporadas-cult
 import { calcularCalendarioVulnerabilidad } from "../../domain/services/vulnerabilidad-climatica.service.ts";
 import { indiceAridez, mesesCriticos, regimenLluvias } from "../../domain/services/resumen-climatico.service.ts";
 import type { ContextoSolicitud, IClimaProvider, INormalesClimatologicasProvider, IReloj } from "../ports/index.ts";
+import { type IMedidorTiempos, MEDIDOR_NULO } from "../../../../shared/application/ports/medidor-tiempos.port.ts";
 
 export const ANIOS_NORMAL_CLIMATOLOGICA = 30;
 
@@ -55,6 +56,7 @@ export class ObtenerPerfilClimaticoUseCase {
     private readonly clima: IClimaProvider,
     private readonly normales: INormalesClimatologicasProvider,
     private readonly reloj: IReloj,
+    private readonly medidor: IMedidorTiempos = MEDIDOR_NULO,
   ) {}
 
   /** Perfil de una finca guardada. */
@@ -81,8 +83,8 @@ export class ObtenerPerfilClimaticoUseCase {
 
     // 3 y 4. Datos satelitales del sitio y búsqueda de estación IDEAM en paralelo
     const [consulta, busquedaEstacion] = await Promise.all([
-      this.clima.obtenerSerieDiaria({ latitud, longitud, desde, hasta }),
-      this.normales.estacionMasCercana(latitud, longitud),
+      this.medidor.medir("power_sitio", () => this.clima.obtenerSerieDiaria({ latitud, longitud, desde, hasta })),
+      this.medidor.medir("ideam", () => this.normales.estacionMasCercana(latitud, longitud)),
     ]);
     if (!consulta.ok) return consulta;
     const serie = consulta.value;
@@ -174,12 +176,14 @@ export class ObtenerPerfilClimaticoUseCase {
     }
 
     const { normal, distanciaKm } = busqueda.value;
-    const nasaEstacion = await this.clima.obtenerSerieDiaria({
-      latitud: normal.latitud,
-      longitud: normal.longitud,
-      desde: normal.anioInicio + "-01-01",
-      hasta: normal.anioFin + "-12-31",
-    });
+    const nasaEstacion = await this.medidor.medir("power_estacion", () =>
+      this.clima.obtenerSerieDiaria({
+        latitud: normal.latitud,
+        longitud: normal.longitud,
+        desde: normal.anioInicio + "-01-01",
+        hasta: normal.anioFin + "-12-31",
+      })
+    );
     if (!nasaEstacion.ok) {
       advertencias.push("No se pudo obtener la serie satelital de la estación " + normal.estacion + ": datos SIN calibrar.");
       return sinCalibrar;

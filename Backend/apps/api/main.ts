@@ -9,6 +9,7 @@ import { createContainer, loadConfigFromEnv } from "@agrocore/composition";
 import type { AppEnv } from "./src/types.ts";
 import { registrarRutas } from "./src/routes/index.ts";
 import { contextoSolicitud } from "./src/middlewares/proteccion.ts";
+import { servidorTiempos } from "./src/middlewares/tiempos.ts";
 
 const container = createContainer(loadConfigFromEnv());
 const app = new Hono<AppEnv>();
@@ -18,7 +19,8 @@ const frontendOrigin = Deno.env.get("FRONTEND_ORIGIN") ?? Deno.env.get("FRONTEND
 /** Tamaño máximo del cuerpo JSON (un polígono de 100 vértices ocupa ~5 KB). */
 const BODY_MAXIMO_BYTES = 64 * 1024;
 
-app.use("*", cors({ origin: frontendOrigin }));
+app.use("*", cors({ origin: frontendOrigin, exposeHeaders: ["Server-Timing"] }));
+app.use("*", servidorTiempos);
 app.use(
   "*",
   bodyLimit({
