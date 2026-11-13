@@ -30,14 +30,14 @@ AgroCore/
 ├── Backend/                 # Workspace Deno 2.x
 │   ├── packages/
 │   │   ├── shared-kernel/   # Result<T,E>, DomainError
-│   │   ├── core/            # dominio + casos de uso + puertos (fincas, clima, cultivos, terreno, rotaciones, impresion)
-│   │   ├── database/        # Drizzle + MySQL 8 (fincas, auditoría, caché de proveedores, catálogo en código)
+│   │   ├── core/            # dominio + casos de uso + puertos (clima, cultivos, terreno, rotaciones, recomendacion, impresion)
+│   │   ├── database/        # Drizzle + MySQL 8 (auditoría, caché de proveedores, precálculo regional, catálogo en código)
 │   │   ├── platform/        # NASA POWER, IDEAM, Overpass/OSM, ORNL MODIS, SoilGrids, OpenTopoData/SRTM, ESC/POS
 │   │   └── composition/     # createContainer (único lugar de ensamblaje)
 │   ├── apps/api/            # REST con Hono (API abierta, sin login)
 │   ├── apps/mcp-server/     # Servidor MCP para agentes de IA
 │   └── scripts/             # migraciones, smoke E2E y pruebas manuales sin MySQL
-├── Frontend/                # Next.js 16 + Tailwind v4 + Leaflet (/explorar, /rotaciones, /fincas)
+├── Frontend/                # Next.js 16 + Tailwind v4 + Leaflet (/explorar, /rotaciones)
 ├── Docs/                    # ddl.sql, migraciones, PROGRESO.md, VERIFICACION_FINAL.md, plan
 └── Http/                    # pruebas .http por módulo
 ```
@@ -88,15 +88,15 @@ Pruebas manuales sin MySQL (desde `Backend/`):
 | Método | Ruta | Qué hace |
 | :--- | :--- | :--- |
 | POST | `/api/terreno/analizar` | `{ area }` → aptitud, relieve, suelo, NDVI, cobertura, fuentes y vacíos |
-| POST | `/api/rotaciones/comparar` | `{ area, cultivoActual, tieneRiego, prioridades, secuenciaActual?, altitudM? }` → estrategias, calendario, oportunidades |
-| POST | `/api/rotaciones/fincas/:id/comparar` | Igual, para una finca guardada |
+| POST | `/api/rotaciones/comparar` | `{ area, cultivoActual?, tieneRiego, prioridades, secuenciaActual?, altitudM? }` → estrategias, calendario, oportunidades |
 | POST | `/api/impresion/terreno` | Ticket térmico (o vista previa con `soloVistaPrevia: true`) |
-| GET/POST | `/api/fincas` | Listar / guardar fincas (punto o polígono ≤ 100 ha) |
 | GET | `/api/cultivos[?tempMediaC=&lluviaAnualMm=&ph=&textura=…]` | Catálogo global filtrado por clima y suelo |
-| GET | `/api/clima/fincas/:id` | Perfil climático de una finca |
+| POST | `/api/clima/perfil` | `{ latitud, longitud, altitudM? }` → perfil climático de cualquier ubicación |
 
-Herramientas MCP: `terreno_analizar`, `rotaciones_comparar`, `rotaciones_comparar_ubicacion`, `impresion_terreno`,
-`cultivos_listar`, `cultivos_obtener`, `clima_perfil_finca`, `fincas_listar`, `fincas_crear`.
+Herramientas MCP: `terreno_analizar`, `rotaciones_comparar_ubicacion`, `impresion_terreno`,
+`cultivos_listar`, `cultivos_obtener`, `clima_perfil_ubicacion`, `recomendacion_por_epoca`.
+
+El flujo es por **área seleccionada** en el mapa (punto o polígono ≤ 100 ha): no se guardan fincas.
 
 ---
 

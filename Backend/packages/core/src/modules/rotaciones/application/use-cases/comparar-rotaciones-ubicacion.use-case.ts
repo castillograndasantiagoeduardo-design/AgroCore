@@ -1,5 +1,5 @@
 /**
- * Caso de uso: comparar estrategias de rotación para CUALQUIER punto o área del mundo, sin guardar finca.
+ * Caso de uso: comparar estrategias de rotación para CUALQUIER punto o área del mundo.
  * Valida el área (≤ 100 ha) y delega en MotorRotaciones.
  * Solo lectura: no muta estado, así que no audita (Regla 6).
  */
@@ -18,11 +18,11 @@ export class CompararRotacionesUbicacionUseCase {
     return await this.motor.comparar(
       {
         area: area.value,
-        sitio: { tipo: "ubicacion", fincaId: null, nombre: null },
+        sitio: { tipo: "ubicacion", nombre: null },
         altitudM: input.altitudM ?? null,
         fuenteAltitud: input.altitudM === undefined ? null : "usuario",
         tieneRiego: input.tieneRiego,
-        cultivoActual: input.cultivoActual,
+        cultivoActual: input.cultivoActual ?? null,
         secuenciaActual: input.secuenciaActual,
         prioridades: input.prioridades,
       },

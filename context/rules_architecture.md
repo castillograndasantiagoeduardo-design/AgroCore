@@ -114,14 +114,14 @@ Las dependencias **siempre apuntan hacia adentro** (hacia `core` y `shared-kerne
 ---
 
 ### Regla 3: Prohibición de Excepciones para Flujo de Negocio (`Result<T, DomainError>`)
-* Ninguna regla de negocio fallida (ej. finca duplicada, coordenadas inválidas, área demasiado grande) puede lanzar `throw new Error(...)`.
+* Ninguna regla de negocio fallida (ej. coordenadas inválidas, área demasiado grande) puede lanzar `throw new Error(...)`.
 * Todo fallo de dominio esperado debe devolverse como `Result.err(new DomainError('CODIGO', 'Mensaje'))`.
 * Las excepciones (`try/catch`) solo se usan en los adaptadores de infraestructura (`database`, `platform`, `safeHandler`) para atrapar fallos técnicos catastróficos (caída de red MySQL, timeout de un proveedor externo).
 
 ---
 
 ### Regla 4: Prohibición de Instanciación Manual fuera de `composition`
-* Ningún controlador de `apps/api` ni herramienta de `apps/mcp-server` puede hacer `new MySqlFincaRepository(...)` ni `new CrearFincaUseCase(...)`.
+* Ningún controlador de `apps/api` ni herramienta de `apps/mcp-server` puede hacer `new MySqlAuditor(...)` ni `new ObtenerPerfilClimaticoUseCase(...)`.
 * Todo caso de uso se registra en `Backend/packages/composition/src/container.ts` (`createContainer`) y se consume ya ensamblado desde `AppContainer`.
 
 ---

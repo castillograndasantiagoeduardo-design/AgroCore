@@ -1,7 +1,7 @@
 /**
- * Caso de uso: perfil climático de una finca o de CUALQUIER ubicación del mundo.
+ * Caso de uso: perfil climático de CUALQUIER ubicación del mundo.
  *
- * 1. Ubicación: la de la finca (execute) o la que llega directa (porUbicacion).
+ * 1. Ubicación: la que llega directa (porUbicacion).
  * 2. Define el periodo: los últimos 30 años completos (normal climatológica).
  * 3. Pide la serie diaria al proveedor satelital (puerto IClimaProvider, NASA POWER).
  * 4. Calibra con la estación IDEAM más cercana (solo aplica en Colombia, ≤ 25 km). Si no hay estación
@@ -13,10 +13,8 @@
  *
  * Solo lectura: no muta estado, así que no audita (Regla 6).
  */
-import type { CalibracionDto, PerfilClimaticoDto, PerfilClimaticoParams } from "@agrocore/contracts";
+import type { CalibracionDto, PerfilClimaticoDto } from "@agrocore/contracts";
 import { DomainError, Result } from "@agrocore/shared-kernel";
-import type { IFincaRepository } from "../../../fincas/domain/repositories/finca.repository.ts";
-import { FincaNoEncontradoError } from "../../../fincas/domain/errors/finca.errors.ts";
 import type { RegistroClimaDiario } from "../../domain/value-objects/registro-clima-diario.vo.ts";
 import { calcularAjusteTemperatura, DIFERENCIA_ALTITUD_GRANDE_M } from "../../domain/services/correccion-altitud.service.ts";
 import {
@@ -54,7 +52,6 @@ export interface UbicacionClima {
 
 export class ObtenerPerfilClimaticoUseCase {
   constructor(
-    private readonly fincas: IFincaRepository,
     private readonly clima: IClimaProvider,
     private readonly normales: INormalesClimatologicasProvider,
     private readonly reloj: IReloj,
@@ -64,19 +61,10 @@ export class ObtenerPerfilClimaticoUseCase {
     private readonly temporizador?: ITemporizador,
   ) {}
 
-  /** Perfil de una finca guardada. */
-  async execute(input: PerfilClimaticoParams, contexto: ContextoSolicitud): Promise<Result<PerfilClimaticoDto, DomainError>> {
-    const finca = await this.fincas.buscarPorId(input.fincaId);
-    if (!finca) return Result.err(new FincaNoEncontradoError(input.fincaId));
-    const { latitud, longitud, altitudM } = finca.ubicacion;
-    return await this.porUbicacion({ latitud, longitud, altitudM }, contexto, input.fincaId);
-  }
-
-  /** Perfil de cualquier punto del mundo (sin finca guardada). */
+  /** Perfil de cualquier punto del mundo. */
   async porUbicacion(
     ubicacion: UbicacionClima,
     _contexto: ContextoSolicitud,
-    fincaId: number | null = null,
   ): Promise<Result<PerfilClimaticoDto, DomainError>> {
     const { latitud, longitud, altitudM } = ubicacion;
 
@@ -126,7 +114,6 @@ export class ObtenerPerfilClimaticoUseCase {
     if (meses.length !== 12) return Result.err(new ClimaSinDatosError(latitud, longitud));
 
     return Result.ok(armarPerfil({
-      fincaId,
       latitud,
       longitud,
       altitudReferenciaM,
@@ -174,7 +161,6 @@ export class ObtenerPerfilClimaticoUseCase {
     const [desde, hasta] = c.periodo.split("-");
     return Result.ok({
       perfil: armarPerfil({
-        fincaId: null,
         latitud,
         longitud,
         altitudReferenciaM,
@@ -192,7 +178,7 @@ export class ObtenerPerfilClimaticoUseCase {
 
 
   /**
-   * Intenta calibrar la serie de la finca usando el resultado ya consultado de la estación IDEAM.
+   * Intenta calibrar la serie del sitio usando el resultado ya consultado de la estación IDEAM.
    * Nunca falla: si algo no está disponible devuelve la serie original, calibracion = null y deja una advertencia.
    */
   private async calibrarConBusqueda(
@@ -251,7 +237,6 @@ export class ObtenerPerfilClimaticoUseCase {
 }
 
 interface DatosPerfil {
-  fincaId: number | null;
   latitud: number;
   longitud: number;
   altitudReferenciaM: number;
@@ -270,7 +255,6 @@ function armarPerfil(d: DatosPerfil): PerfilClimaticoDto {
   const lluviaAnualMm = redondear1(meses.reduce((s, m) => s + m.lluviaMm, 0));
   const tempMediaAnualC = redondear1(meses.reduce((s, m) => s + m.tempMediaC, 0) / 12);
   return {
-    fincaId: d.fincaId,
     latitud,
     longitud: d.longitud,
     altitudReferenciaM: Math.round(d.altitudReferenciaM),

@@ -104,23 +104,11 @@ export type PrioridadesRotacion = z.infer<typeof PrioridadesRotacionSchema>;
  */
 const SecuenciaActualSchema = z.array(ClaveCultivoSchema).min(1).max(4);
 
-/** Cuerpo del POST /api/rotaciones/fincas/:fincaId/comparar (el fincaId va en la URL). */
-export const CompararRotacionesBodySchema = z.object({
-  prioridades: PrioridadesRotacionSchema.default({}),
-  secuenciaActual: SecuenciaActualSchema.optional(),
-});
-
-/** Entrada del caso de uso de finca guardada y de su tool MCP. */
-export const CompararRotacionesSchema = CompararRotacionesBodySchema.extend({
-  fincaId: z.coerce.number().int().min(1),
-});
-export type CompararRotacionesInput = z.infer<typeof CompararRotacionesSchema>;
-
-/** POST /api/rotaciones/comparar: cualquier lugar del mundo, sin guardar finca. */
+/** POST /api/rotaciones/comparar: cualquier punto o área del mundo. */
 export const CompararRotacionesUbicacionSchema = z.object({
   area: AreaSeleccionadaSchema,
-  /** Clave del cultivo principal de hoy. */
-  cultivoActual: ClaveCultivoSchema,
+  /** Clave del cultivo principal de hoy (opcional: sin él no hay estrategia A). */
+  cultivoActual: ClaveCultivoSchema.optional(),
   secuenciaActual: SecuenciaActualSchema.optional(),
   tieneRiego: z.boolean().default(false),
   prioridades: PrioridadesRotacionSchema.default({}),
@@ -251,13 +239,12 @@ export type MesCalendarioDto = z.infer<typeof MesCalendarioSchema>;
 
 export const ComparacionRotacionesSchema = z.object({
   sitio: z.object({
-    tipo: z.enum(["finca", "ubicacion"]),
-    fincaId: z.number().int().nullable(),
+    tipo: z.enum(["ubicacion"]),
     nombre: z.string().nullable(),
     ubicacion: UbicacionResueltaSchema,
-    /** Altitud usada (de la finca, del usuario, de SRTM o de la celda del clima). */
+    /** Altitud usada (del usuario, de SRTM o de la celda del clima). */
     altitudReferenciaM: z.number(),
-    fuenteAltitud: z.enum(["finca", "usuario", "srtm", "clima"]),
+    fuenteAltitud: z.enum(["usuario", "srtm", "clima"]),
     tieneRiego: z.boolean(),
     /** null si no se indicó el cultivo actual (no hay estrategia A). */
     cultivoActual: z.string().nullable(),

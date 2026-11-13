@@ -21,7 +21,7 @@ export type LineaTicketDto = z.infer<typeof LineaTicketSchema>;
 
 /** POST /api/impresion/terreno: la misma entrada que la recomendación (área, cultivo actual, riego y OBJETIVO elegido). */
 export const ImprimirTicketTerrenoSchema = RecomendacionInputSchema.extend({
-  /** Nombre del lote o de la finca para el encabezado del ticket. */
+  /** Nombre del lote o del sitio para el encabezado del ticket. */
   nombre: z.string().trim().min(1).max(40).optional(),
   /** true = solo componer el ticket (vista previa), sin enviarlo a la impresora. */
   soloVistaPrevia: z.boolean().default(false),

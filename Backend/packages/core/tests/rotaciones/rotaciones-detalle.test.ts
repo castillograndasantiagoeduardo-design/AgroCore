@@ -11,7 +11,6 @@ import {
   calcularPuntajeTotal,
   calcularTemporadasCultivo,
   CompararRotacionesUbicacionUseCase,
-  CompararRotacionesUseCase,
   construirVentanas,
   type ContextoMotor,
   type ContextoSolicitud,
@@ -19,14 +18,11 @@ import {
   et0MensualMm,
   evaluarPaso,
   evaluarSecuencia,
-  Finca,
   type IAnalisisTerrenoQuery,
   mejorCoberturaPara,
   mesesDesde,
   mesesEntre,
   MotorRotaciones,
-  NombreFinca,
-  UbicacionFinca,
 } from "../../src/index.ts";
 import { cultivoDePrueba } from "../_fixtures/cultivos.ts";
 
@@ -46,7 +42,7 @@ function perfil(latitud: number, temp: number[], lluvia: number[], heladas: numb
     };
   });
   return {
-    fincaId: null, latitud, longitud: 0, altitudReferenciaM: 500, altitudCeldaM: 500, ajusteTemperaturaC: 0,
+    latitud, longitud: 0, altitudReferenciaM: 500, altitudCeldaM: 500, ajusteTemperaturaC: 0,
     periodo: { desde: "1996-01-01", hasta: "2025-12-31", anios: 30 }, fuente: "NASA POWER (sintético)", calibracion: null,
     umbrales: { heladaC: 2, lluviaFuerteMm: 20, calorC: 32 }, meses,
     resumen: {
@@ -236,23 +232,17 @@ Deno.test("mejorCoberturaPara: en meses con helada elige una cobertura que la to
   assertEquals(mejorCoberturaPara([], CATALOGO, ctx(MEDITERRANEO)), null);
 });
 
-Deno.test("finca con polígono: el motor analiza el área y conserva el nombre de la finca", async () => {
+Deno.test("área poligonal: el motor analiza el área y no inventa nombre ni altitud", async () => {
   const d = 100 / 111_195;
-  const creada = Finca.crear({
-    nombre: "Cortijo", latitud: 37.8, longitud: -4.85, cultivoActual: "trigo",
-    area: { type: "Polygon", coordinates: [[[-4.85, 37.8], [-4.85 + d, 37.8], [-4.85 + d, 37.8 + d], [-4.85, 37.8 + d], [-4.85, 37.8]]] },
-  });
-  assert(creada.ok);
-  const finca = Finca.reconstruir({
-    id: 7, nombre: NombreFinca.reconstruir("Cortijo"), descripcion: null, ubicacion: UbicacionFinca.reconstruir(37.8, -4.85, null),
-    area: creada.value.area, localidad: null, pais: "España", region: null, tieneRiego: false, cultivoActual: "trigo", activo: true, creadoEn: null,
-  });
-  const r = await new CompararRotacionesUseCase(
-    { buscarPorId: () => Promise.resolve(finca), buscarPorNombre: () => Promise.resolve(null), listar: () => Promise.resolve({ items: [], total: 0, page: 1, pageSize: 1 }), guardar: (f) => Promise.resolve(f) },
-    motor(MEDITERRANEO),
-  ).execute({ fincaId: 7, prioridades: PRIORIDADES }, contexto);
+  const r = await new CompararRotacionesUbicacionUseCase(motor(MEDITERRANEO)).execute(
+    {
+      area: { tipo: "poligono", geojson: { type: "Polygon", coordinates: [[[-4.85, 37.8], [-4.85 + d, 37.8], [-4.85 + d, 37.8 + d], [-4.85, 37.8 + d], [-4.85, 37.8]]] } },
+      cultivoActual: "trigo", tieneRiego: false, prioridades: PRIORIDADES,
+    },
+    contexto,
+  );
   assert(r.ok);
-  assertEquals(r.value.sitio.nombre, "Cortijo");
+  assertEquals(r.value.sitio.nombre, null);
   assertEquals(r.value.sitio.ubicacion.tipo, "poligono");
   assertEquals(r.value.sitio.fuenteAltitud, "clima");
 });

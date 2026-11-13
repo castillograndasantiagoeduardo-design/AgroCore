@@ -48,7 +48,7 @@ export class AreaSeleccionada {
     return Result.ok(new AreaSeleccionada("punto", [latitud, longitud], [], null));
   }
 
-  /** Solo para coordenadas YA validadas (p. ej. la ubicación de una finca guardada). */
+  /** Solo para coordenadas YA validadas (p. ej. un punto ya verificado). */
   static puntoValidado(latitud: number, longitud: number): AreaSeleccionada {
     return new AreaSeleccionada("punto", [latitud, longitud], [], null);
   }

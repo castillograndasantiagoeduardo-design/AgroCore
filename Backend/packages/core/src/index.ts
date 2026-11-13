@@ -22,7 +22,6 @@ export { sanitizarDetalles } from "./modules/auditoria/domain/services/sanitizar
 export type { EjecucionMcpTool, IMcpToolLogger } from "./modules/mcp-audit/application/ports/mcp-tool-logger.port.ts";
 
 // Módulos de dominio
-export * from "./modules/fincas/index.ts";
 export * from "./modules/clima/index.ts";
 export * from "./modules/cultivos/index.ts";
 export * from "./modules/rotaciones/index.ts";

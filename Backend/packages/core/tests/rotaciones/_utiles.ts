@@ -47,7 +47,6 @@ export function perfilSintetico(o: OpcionesPerfil): PerfilClimaticoDto {
     };
   });
   return {
-    fincaId: null,
     latitud: o.latitud,
     longitud: 0,
     altitudReferenciaM: 500,

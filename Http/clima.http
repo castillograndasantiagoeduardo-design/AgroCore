@@ -1,16 +1,19 @@
 @baseUrl = http://localhost:8001/api
 
-### Perfil climático de la finca 1 (200). La primera vez tarda unos segundos: consulta 30 años en NASA POWER.
-GET {{baseUrl}}/clima/fincas/1
+### Perfil climático de un punto (200). La primera vez tarda: consulta 30 años en NASA POWER (o sale del precálculo regional).
+POST {{baseUrl}}/clima/perfil
+Content-Type: application/json
 
-### Segunda consulta de la misma finca (200, inmediata: viene de la caché)
-GET {{baseUrl}}/clima/fincas/1
+{ "latitud": 5.8269, "longitud": -73.0297, "altitudM": 2530 }
 
-### Finca inexistente (404 FINCA_NO_ENCONTRADO)
-GET {{baseUrl}}/clima/fincas/9999
+### Sin altitud: usa la de la celda y lo advierte (200)
+POST {{baseUrl}}/clima/perfil
+Content-Type: application/json
 
-### Id inválido (400 VALIDATION_ERROR)
-GET {{baseUrl}}/clima/fincas/abc
+{ "latitud": 5.8269, "longitud": -73.0297 }
 
-### Sin token (401 NO_AUTENTICADO)
-GET {{baseUrl}}/clima/fincas/1
+### Latitud fuera de rango (400 VALIDATION_ERROR)
+POST {{baseUrl}}/clima/perfil
+Content-Type: application/json
+
+{ "latitud": 95, "longitud": -73.0297 }

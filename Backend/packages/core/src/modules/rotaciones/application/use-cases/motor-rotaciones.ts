@@ -1,8 +1,8 @@
 /**
- * Servicio de aplicación: motor común de la comparación de rotaciones (finca guardada o cualquier lugar).
+ * Servicio de aplicación: motor común de la comparación de rotaciones (cualquier punto o área).
  *
  *  1. Terreno: si el sitio no es apto ("No se puede sembrar: es carretera"...) → error, sin rotaciones.
- *  2. Altitud de referencia: la del usuario / finca, si no SRTM, si no la celda del clima.
+ *  2. Altitud de referencia: la del usuario, si no SRTM, si no la celda del clima.
  *  3. Perfil climático (temporadas derivadas, vulnerabilidad).
  *  4. Ventanas de la rotación en las temporadas reales (secano o, con riego, con riego).
  *  5. Estrategias: A (actual, sin corregir; solo si hay cultivo actual), B (suelo), C (forraje / ingreso), D (agua, si
@@ -57,10 +57,10 @@ export const PRIORIDAD_AGUA_ESTRATEGIA_D = 4;
 
 export interface DatosComparacion {
   area: AreaSeleccionada;
-  sitio: { tipo: "finca" | "ubicacion"; fincaId: number | null; nombre: string | null };
-  /** Altitud conocida (de la finca o del usuario), o null. */
+  sitio: { tipo: "ubicacion"; nombre: string | null };
+  /** Altitud conocida (del usuario), o null. */
   altitudM: number | null;
-  fuenteAltitud: "finca" | "usuario" | null;
+  fuenteAltitud: "usuario" | null;
   tieneRiego: boolean;
   /** Clave del cultivo actual, o null si el lote no declara uno (no se calcula la estrategia A). */
   cultivoActual: string | null;
@@ -140,7 +140,6 @@ export class MotorRotaciones {
       const perfilR = await this.perfilClimatico.porUbicacion(
         { latitud: datos.area.latitud, longitud: datos.area.longitud, altitudM },
         contexto,
-        datos.sitio.fincaId,
       );
       if (!perfilR.ok) return Result.err(perfilR.error);
       perfil = perfilR.value;
@@ -275,7 +274,6 @@ export class MotorRotaciones {
     return Result.ok({
       sitio: {
         tipo: datos.sitio.tipo,
-        fincaId: datos.sitio.fincaId,
         nombre: datos.sitio.nombre,
         ubicacion: datos.area.resumen(),
         altitudReferenciaM: altitudM ?? perfil.altitudReferenciaM,

@@ -1,7 +1,7 @@
 /**
  * Herramientas MCP del módulo rotaciones. ToolGateway valida, ejecuta y registra.
  */
-import { CompararRotacionesSchema, CompararRotacionesUbicacionSchema, MCP_TOOLS } from "@agrocore/contracts";
+import { CompararRotacionesUbicacionSchema, MCP_TOOLS } from "@agrocore/contracts";
 import type { ToolGateway } from "../tool-gateway.ts";
 
 const QUE_DEVUELVE =
@@ -13,20 +13,11 @@ const QUE_DEVUELVE =
 
 export function registrarRotacionesTools(gateway: ToolGateway): void {
   gateway.register({
-    name: MCP_TOOLS.ROTACIONES_COMPARAR,
-    description:
-      "Compara estrategias de rotación para una FINCA GUARDADA. Recibe fincaId, prioridades opcionales (agua, suelo, plagas, forraje, " +
-      "ingreso: enteros 0-5, por defecto 3) y secuenciaActual opcional (1 a 4 claves de cultivo). " + QUE_DEVUELVE,
-    schema: CompararRotacionesSchema,
-    execute: (input, container, contexto) => container.compararRotaciones.execute(input, contexto),
-  });
-
-  gateway.register({
     name: MCP_TOOLS.ROTACIONES_COMPARAR_UBICACION,
     description:
-      "Compara estrategias de rotación para CUALQUIER punto o polígono (≤ 100 ha) del mundo, sin guardar finca. Recibe area " +
-      "({tipo:'punto',latitud,longitud} o {tipo:'poligono',geojson}), cultivoActual (clave del catálogo), tieneRiego, prioridades " +
-      "y opcionales secuenciaActual y altitudM. " + QUE_DEVUELVE,
+      "Compara estrategias de rotación para CUALQUIER punto o polígono (≤ 100 ha) del mundo. Recibe area " +
+      "({tipo:'punto',latitud,longitud} o {tipo:'poligono',geojson}), tieneRiego, prioridades " +
+      "y opcionales cultivoActual (clave del catálogo), secuenciaActual y altitudM. " + QUE_DEVUELVE,
     schema: CompararRotacionesUbicacionSchema,
     execute: (input, container, contexto) => container.compararRotacionesUbicacion.execute(input, contexto),
   });

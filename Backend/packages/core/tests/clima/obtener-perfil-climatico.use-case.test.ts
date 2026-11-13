@@ -2,23 +2,19 @@
  * Tests del módulo clima con datos sintéticos (sin internet ni MySQL).
  */
 import { assertAlmostEquals, assertEquals } from "@std/assert";
-import { type DomainError, type Paginated, Result } from "@agrocore/shared-kernel";
+import { type DomainError, Result } from "@agrocore/shared-kernel";
 import {
   calcularAjusteTemperatura,
   calcularCalendarioMensual,
   ClimaProveedorNoDisponibleError,
-  Finca,
   type IClimaProvider,
-  type IFincaRepository,
   type INormalesClimatologicasProvider,
   aplicarCalibracion,
   calcularFactoresCalibracion,
   distanciaKm,
   type NormalClimatologica,
-  NombreFinca,
   ObtenerPerfilClimaticoUseCase,
   type RegistroClimaDiario,
-  UbicacionFinca,
   type ContextoSolicitud,
 } from "../../src/index.ts";
 
@@ -59,31 +55,8 @@ class ClimaFalso implements IClimaProvider {
   }
 }
 
-function repoCon(fincas: Finca[]): IFincaRepository {
-  return {
-    buscarPorId: (id) => Promise.resolve(fincas.find((f) => f.id === id) ?? null),
-    buscarPorNombre: () => Promise.resolve(null),
-    listar: (): Promise<Paginated<Finca>> => Promise.resolve({ items: fincas, total: fincas.length, page: 1, pageSize: 20 }),
-    guardar: (f) => Promise.resolve(f),
-  };
-}
-
-function finca(id: number, altitudM: number | null): Finca {
-  return Finca.reconstruir({
-    id,
-    nombre: NombreFinca.reconstruir("Finca " + id),
-    descripcion: null,
-    ubicacion: UbicacionFinca.reconstruir(5.8269, -73.0297, altitudM),
-    area: null,
-    localidad: null,
-    pais: null,
-    region: null,
-    tieneRiego: false,
-    cultivoActual: "papa",
-    activo: true,
-    creadoEn: new Date(),
-  });
-}
+/** Ubicación de prueba (Duitama) con la altitud indicada. */
+const ubic = (altitudM: number | null) => ({ latitud: 5.8269, longitud: -73.0297, altitudM });
 
 const reloj = { hoy: () => new Date("2026-11-12T00:00:00Z") };
 const actor: ContextoSolicitud = { origen: "script", ip: null };
@@ -146,7 +119,7 @@ Deno.test("Calendario: enero tiene helada todos los años y abril es lluvioso", 
   assertEquals(meses[3].diasLluviaFuertePromedio, 1); // el aguacero del 15 de abril
 });
 
-Deno.test("Calendario: una finca 900 m más alta convierte julio (7 °C) en mes de helada", () => {
+Deno.test("Calendario: un sitio 900 m más alto convierte julio (7 °C) en mes de helada", () => {
   const ajuste = calcularAjusteTemperatura(2500, 3400); // −5,85 °C → Tmin julio ≈ 1,15 °C
   const meses = calcularCalendarioMensual(serieSintetica(1996, 30), ajuste, 5.83);
   assertEquals(meses[6].probabilidadHelada, 1);
@@ -161,9 +134,9 @@ Deno.test("Calendario: sin datos suficientes devuelve vacío", () => {
 // ---------------------------------------------------------------------------
 Deno.test("Perfil climático: consulta los últimos 30 años completos", async () => {
   const clima = new ClimaFalso(2515);
-  const uc = new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 2515)]), clima, sinEstacion, reloj);
+  const uc = new ObtenerPerfilClimaticoUseCase(clima, sinEstacion, reloj);
 
-  const r = await uc.execute({ fincaId: 1 }, actor);
+  const r = await uc.porUbicacion(ubic(2515), actor);
 
   assertEquals(r.ok, true);
   assertEquals(clima.consultas[0], { desde: "1996-01-01", hasta: "2025-12-31" });
@@ -175,9 +148,9 @@ Deno.test("Perfil climático: consulta los últimos 30 años completos", async (
   }
 });
 
-Deno.test("Perfil climático: finca alta recibe corrección negativa y advertencia", async () => {
-  const uc = new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 3100)]), new ClimaFalso(2515), sinEstacion, reloj);
-  const r = await uc.execute({ fincaId: 1 }, actor);
+Deno.test("Perfil climático: sitio alto recibe corrección negativa y advertencia", async () => {
+  const uc = new ObtenerPerfilClimaticoUseCase(new ClimaFalso(2515), sinEstacion, reloj);
+  const r = await uc.porUbicacion(ubic(3100), actor);
 
   assertEquals(r.ok, true);
   if (r.ok) {
@@ -186,9 +159,9 @@ Deno.test("Perfil climático: finca alta recibe corrección negativa y advertenc
   }
 });
 
-Deno.test("Perfil climático: finca sin altitud usa la de la celda y lo advierte", async () => {
-  const uc = new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, null)]), new ClimaFalso(2515), sinEstacion, reloj);
-  const r = await uc.execute({ fincaId: 1 }, actor);
+Deno.test("Perfil climático: sitio sin altitud usa la de la celda y lo advierte", async () => {
+  const uc = new ObtenerPerfilClimaticoUseCase(new ClimaFalso(2515), sinEstacion, reloj);
+  const r = await uc.porUbicacion(ubic(null), actor);
 
   assertEquals(r.ok, true);
   if (r.ok) {
@@ -198,29 +171,21 @@ Deno.test("Perfil climático: finca sin altitud usa la de la celda y lo advierte
   }
 });
 
-Deno.test("Perfil climático: finca inexistente → FINCA_NO_ENCONTRADO", async () => {
-  const uc = new ObtenerPerfilClimaticoUseCase(repoCon([]), new ClimaFalso(2515), sinEstacion, reloj);
-  const r = await uc.execute({ fincaId: 99 }, actor);
-
-  assertEquals(r.ok, false);
-  if (!r.ok) assertEquals(r.error.code, "FINCA_NO_ENCONTRADO");
-});
-
 Deno.test("Perfil climático: proveedor caído → CLIMA_PROVEEDOR_NO_DISPONIBLE", async () => {
   const caido: IClimaProvider = {
     obtenerSerieDiaria: () =>
       Promise.resolve(Result.err(new ClimaProveedorNoDisponibleError("NASA POWER", "timeout")) as Result<never, DomainError>),
   };
-  const uc = new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 2515)]), caido, sinEstacion, reloj);
-  const r = await uc.execute({ fincaId: 1 }, actor);
+  const uc = new ObtenerPerfilClimaticoUseCase(caido, sinEstacion, reloj);
+  const r = await uc.porUbicacion(ubic(2515), actor);
 
   assertEquals(r.ok, false);
   if (!r.ok) assertEquals(r.error.code, "CLIMA_PROVEEDOR_NO_DISPONIBLE");
 });
 
 Deno.test("Perfil climático: proveedor sin datos → CLIMA_SIN_DATOS", async () => {
-  const uc = new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 2515)]), new ClimaFalso(2515, []), sinEstacion, reloj);
-  const r = await uc.execute({ fincaId: 1 }, actor);
+  const uc = new ObtenerPerfilClimaticoUseCase(new ClimaFalso(2515, []), sinEstacion, reloj);
+  const r = await uc.porUbicacion(ubic(2515), actor);
 
   assertEquals(r.ok, false);
   if (!r.ok) assertEquals(r.error.code, "CLIMA_SIN_DATOS");
@@ -254,10 +219,10 @@ Deno.test("Calibración: se aplica día por día según el mes", () => {
 });
 
 Deno.test("Perfil calibrado: julio pasa a ser mes de helada y la lluvia se reduce a la mitad", async () => {
-  const sinCal = await new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 2515)]), new ClimaFalso(2515), sinEstacion, reloj)
-    .execute({ fincaId: 1 }, actor);
-  const conCal = await new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 2515)]), new ClimaFalso(2515), conEstacion(5.5), reloj)
-    .execute({ fincaId: 1 }, actor);
+  const sinCal = await new ObtenerPerfilClimaticoUseCase(new ClimaFalso(2515), sinEstacion, reloj)
+    .porUbicacion(ubic(2515), actor);
+  const conCal = await new ObtenerPerfilClimaticoUseCase(new ClimaFalso(2515), conEstacion(5.5), reloj)
+    .porUbicacion(ubic(2515), actor);
 
   assertEquals(sinCal.ok && conCal.ok, true);
   if (sinCal.ok && conCal.ok) {
@@ -271,8 +236,8 @@ Deno.test("Perfil calibrado: julio pasa a ser mes de helada y la lluvia se reduc
 });
 
 Deno.test("Perfil: estación a más de 25 km → sin calibrar y con advertencia", async () => {
-  const r = await new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 2515)]), new ClimaFalso(2515), conEstacion(40), reloj)
-    .execute({ fincaId: 1 }, actor);
+  const r = await new ObtenerPerfilClimaticoUseCase(new ClimaFalso(2515), conEstacion(40), reloj)
+    .porUbicacion(ubic(2515), actor);
 
   assertEquals(r.ok, true);
   if (r.ok) {
@@ -286,8 +251,8 @@ Deno.test("Perfil: si el IDEAM no responde, el perfil sale igual (sin calibrar)"
     estacionMasCercana: () =>
       Promise.resolve(Result.err(new ClimaProveedorNoDisponibleError("IDEAM", "timeout")) as Result<never, DomainError>),
   };
-  const r = await new ObtenerPerfilClimaticoUseCase(repoCon([finca(1, 2515)]), new ClimaFalso(2515), ideamCaido, reloj)
-    .execute({ fincaId: 1 }, actor);
+  const r = await new ObtenerPerfilClimaticoUseCase(new ClimaFalso(2515), ideamCaido, reloj)
+    .porUbicacion(ubic(2515), actor);
 
   assertEquals(r.ok, true);
   if (r.ok) {
