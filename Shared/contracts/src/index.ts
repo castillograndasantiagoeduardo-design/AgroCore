@@ -6,4 +6,5 @@ export * from "./fincas.schema.ts";
 export * from "./clima.schema.ts";
 export * from "./cultivos.schema.ts";
 export * from "./rotaciones.schema.ts";
+export * from "./impresion.schema.ts";
 // @scaffold:schemas

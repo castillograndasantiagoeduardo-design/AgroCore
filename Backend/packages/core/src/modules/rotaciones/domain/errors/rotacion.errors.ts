@@ -31,3 +31,23 @@ export class RotacionSinAlternativasError extends DomainError {
     );
   }
 }
+
+/**
+ * El sitio no es apto para sembrar (carretera, edificación, agua o uso del suelo): no se calculan rotaciones.
+ * El mensaje es el del módulo terreno, ej. "No se puede sembrar: es carretera". HTTP 422.
+ */
+export class TerrenoNoAptoError extends DomainError {
+  constructor(_aptitud: string, mensaje: string) {
+    super("TERRENO_NO_APTO", mensaje);
+  }
+}
+
+/** Ni con riego hay meses aptos para cultivar (frío o helada todo el año). HTTP 422. */
+export class RotacionSinTemporadasError extends DomainError {
+  constructor() {
+    super(
+      "ROTACION_SIN_TEMPORADAS",
+      "El clima del sitio no tiene ninguna temporada de cultivo (temperatura media < 5 °C o helada dura casi todo el año), ni siquiera con riego.",
+    );
+  }
+}
